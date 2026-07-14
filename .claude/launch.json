@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "landing",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vite", "--port", "5181", "--strictPort"],
+      "port": 5181,
+      "autoPort": false
+    }
+  ]
+}

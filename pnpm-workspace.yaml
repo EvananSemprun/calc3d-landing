@@ -1,0 +1,3 @@
+# Autoriza el postinstall de esbuild (binario nativo que Vite necesita para build).
+allowBuilds:
+  esbuild: true
