@@ -17,6 +17,7 @@
   --muted: 211 100% 12%;
   --muted-foreground: 210 30% 72%;
   --success: 152 60% 50%;
+  --destructive: 0 70% 52%; /* rojo de error/alerta — idéntico a apps/web (tema oscuro) */
   --border: 209 100% 20%; /* #003566 */
   --radius: 0.75rem;
 

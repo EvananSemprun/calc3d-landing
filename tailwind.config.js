@@ -15,6 +15,7 @@ export default {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         success: 'hsl(var(--success))',
+        destructive: 'hsl(var(--destructive))',
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
