@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tienda — Banano Lab</title>
+<meta name="description" content="Llaveros, identificadores, soportes, decoración y regalos personalizados, fabricados en impresión 3D en nuestro taller.">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<!--
+  Esta es `tienda.html` del proyecto de Claude Design, montada como la RAÍZ de
+  este repo: el repo es solo la tienda.
+
+  Del nav original quedan únicamente los enlaces que existen. Las otras páginas
+  del diseño (inicio, impresión 3D, calculadora) todavía no están en este repo, y
+  un enlace a una página inexistente es peor que no tenerlo.
+-->
+<!--#include header-->
+
+<section class="shop-head">
+  <div class="container">
+    <span class="kicker">Tienda · Impresión 3D</span>
+    <h1 class="h1 text-balance">Productos personalizados, hechos a pedido.</h1>
+    <p class="lead">Llaveros, identificadores, soportes, decoración y regalos. Todo personalizable, fabricado en nuestro taller.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container shop-layout">
+    <aside class="filters" id="filters">
+      <div class="filters-head">
+        <strong>Filtros</strong>
+        <button class="filters-clear" onclick="Shop.clear()">Limpiar</button>
+      </div>
+
+      <!-- La CATEGORÍA ya no vive acá: pasó a las pestañas, arriba de la
+           vitrina. Tenerla en los dos lados serían dos controles del mismo
+           campo, y el primero que se toque deja al otro mintiendo.
+           El material sale de los productos reales, igual que los colores. -->
+      <div class="filter-group" id="materialGroup" hidden>
+        <h4>Material</h4>
+        <div id="materialFilters" class="chip-row"></div>
+      </div>
+
+      <!-- Los colores salen de los productos reales, no de una lista fija. Si
+           ningún producto tiene colores, el grupo entero se oculta. -->
+      <div class="filter-group" id="colorGroup" hidden>
+        <h4>Color</h4>
+        <div class="color-row" id="colorFilters"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Precio máximo</h4>
+        <input type="range" id="priceRange" min="0" max="120" value="120" step="1" class="range" oninput="Shop.onPrice(this.value)" aria-label="Precio máximo">
+        <div class="range-val mono">Hasta <span id="priceVal">$120</span> USD</div>
+      </div>
+    </aside>
+
+    <div class="shop-main">
+      <!-- Selección ÚNICA (una pestaña no es una casilla). Son botones con
+           aria-pressed y no el patrón ARIA de tabs: acá no hay un panel por
+           pestaña, hay UNA vitrina que se filtra. -->
+      <div class="tabs" id="catTabs" role="group" aria-label="Filtrar por categoría" hidden></div>
+
+      <div class="shop-toolbar">
+        <button class="btn btn-ghost btn-sm filters-toggle" onclick="document.getElementById('filters').classList.toggle('open')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtros
+        </button>
+        <span class="result-count mono dim" id="resultCount"></span>
+        <select class="select sort-select" id="sortSel" onchange="Shop.apply()" style="width:auto;margin-left:auto" aria-label="Ordenar">
+          <option value="featured">Destacados</option>
+          <option value="price-asc">Precio: menor a mayor</option>
+          <option value="price-desc">Precio: mayor a menor</option>
+          <option value="name">Nombre A-Z</option>
+        </select>
+      </div>
+
+      <div class="grid shop-grid" id="shopGrid">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="shop-state" id="shopEmpty" hidden>
+        <strong>No hay productos con esos filtros.</strong>
+        <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="Shop.clear()">Limpiar filtros</button>
+      </div>
+
+      <div class="shop-state" id="shopError" hidden>
+        <strong>No pudimos cargar el catálogo.</strong>
+        <p class="dim">Puede ser una caída momentánea. Probá de nuevo en un momento.</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="location.reload()">Reintentar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--blue" style="padding-block:clamp(48px,6vw,80px)">
+  <div class="container shop-cta">
+    <div>
+      <h2 class="h2 text-balance">¿No encontrás lo que buscás?</h2>
+      <p class="lead" style="margin-top:10px">Fabricamos cualquier pieza a tu medida. Escribinos y te cotizamos.</p>
+    </div>
+    <a href="#" class="btn btn-primary btn-lg" data-bl="cotizar">Cotizar pieza personalizada</a>
+  </div>
+</section>
+
+<!--#include footer-->
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module">
+/* Vitrina: filtra, ordena y pinta. Los datos son los del panel. */
+const Shop = {
+  /** `cat` es UNA sola (pestañas); material y color son multi-selección. */
+  state: { cat: '', materials: new Set(), colors: new Set(), maxPrice: Infinity, sort: 'featured' },
+  /** Categorías que de verdad tienen productos (las llena paintFilters). */
+  cats: [],
+
+  async init() {
+    try {
+      await BL.load();
+    } catch (e) {
+      document.getElementById('shopGrid').innerHTML = '';
+      document.getElementById('shopError').hidden = false;
+      console.error('No se pudo cargar el catálogo:', e);
+      return;
+    }
+    this.paintChrome();
+    this.paintFilters();
+    this.apply();
+  },
+
+  /** Lo propio de esta pagina; el resto del cromo lo pinta blPintarNegocio(). */
+  paintChrome() {
+    document.title = `Tienda — ${BL.info.businessName}`;
+    blPintarNegocio();
+  },
+
+  paintFilters() {
+    // Una categoría SIN productos no llega a ser una pestaña: se vería, se
+    // tocaría y no mostraría nada. Vale también para los enlaces del pie.
+    this.cats = BL.cats
+      .map((c) => ({ ...c, n: BL.products.filter((p) => p.cat === c.key).length }))
+      .filter((c) => c.n > 0);
+
+    // Preselección desde la URL (?cat=llaveros): así enlazan el pie y las migas
+    // de la ficha. Si apunta a algo que ya no tiene productos se ignora, en vez
+    // de dejar la vitrina vacía y ninguna pestaña marcada.
+    const desdeUrl = new URLSearchParams(location.search).get('cat');
+    if (desdeUrl && this.cats.some((c) => c.key === desdeUrl)) this.state.cat = desdeUrl;
+    this.paintTabs();
+    // Deja la URL diciendo lo mismo que la pantalla: si el ?cat= venía roto o
+    // apuntaba a una categoría vacía, se limpia en vez de mentir.
+    this.syncUrl();
+
+    const grupoMat = document.getElementById('materialGroup');
+    grupoMat.hidden = BL.materials.length === 0;
+    document.getElementById('materialFilters').innerHTML = BL.materials
+      .map((m) => `<button class="chip" data-material="${esc(m.key)}">${esc(m.label)}</button>`)
+      .join('');
+    document.querySelectorAll('#materialFilters .chip').forEach((b) => {
+      b.addEventListener('click', () => this.toggle('materials', b.dataset.material, b));
+    });
+
+    const colores = Object.entries(BL.colors);
+    const grupo = document.getElementById('colorGroup');
+    grupo.hidden = colores.length === 0;
+    document.getElementById('colorFilters').innerHTML = colores
+      .map(([v, hex]) => `<button class="color-pick" data-color="${esc(v)}" style="--c:${esc(hex)}" aria-label="${esc(v)}" title="${esc(v)}"></button>`)
+      .join('');
+    document.querySelectorAll('#colorFilters .color-pick').forEach((b) => {
+      b.addEventListener('click', () => this.toggle('colors', b.dataset.color, b));
+    });
+
+    // El tope del control se ajusta al producto más caro del catálogo real.
+    const max = Math.max(120, ...BL.products.map((p) => Math.ceil(p.price)));
+    const rango = document.getElementById('priceRange');
+    rango.max = String(max);
+    rango.value = String(max);
+    this.state.maxPrice = max;
+    document.getElementById('priceVal').textContent = `$${max}`;
+
+    document.getElementById('footerCats').innerHTML = this.cats
+      .map((c) => `<a href="/tienda/?cat=${encodeURIComponent(c.key)}">${esc(c.label)}</a>`)
+      .join('');
+  },
+
+  /** Pestañas de categoría. Se repintan enteras al cambiar: son cuatro botones,
+   *  no vale la pena sincronizar clases a mano. */
+  paintTabs() {
+    const cont = document.getElementById('catTabs');
+    // Con una sola categoría no hay elección que ofrecer.
+    cont.hidden = this.cats.length < 2;
+    if (cont.hidden) return;
+    const tab = (key, label, n) => {
+      const on = this.state.cat === key;
+      return `<button class="tab${on ? ' on' : ''}" data-cat="${esc(key)}" aria-pressed="${on}">${esc(label)}<small>${n}</small></button>`;
+    };
+    cont.innerHTML =
+      tab('', 'Todos', BL.products.length) +
+      this.cats.map((c) => tab(c.key, c.label, c.n)).join('');
+    cont.querySelectorAll('.tab').forEach((b) => {
+      b.addEventListener('click', () => this.setCat(b.dataset.cat));
+    });
+  },
+
+  setCat(key) {
+    this.state.cat = key;
+    this.paintTabs();
+    this.syncUrl();
+    this.apply();
+  },
+
+  /** La categoría elegida queda en la URL: la vista es compartible y volver
+   *  atrás desde una ficha devuelve la misma pestaña. */
+  syncUrl() {
+    const url = new URL(location.href);
+    if (this.state.cat) url.searchParams.set('cat', this.state.cat);
+    else url.searchParams.delete('cat');
+    history.replaceState(null, '', url);
+  },
+
+  toggle(campo, valor, el) {
+    const set = this.state[campo];
+    set.has(valor) ? set.delete(valor) : set.add(valor);
+    el.classList.toggle('on');
+    this.apply();
+  },
+
+  onPrice(v) {
+    this.state.maxPrice = +v;
+    document.getElementById('priceVal').textContent = `$${v}`;
+    this.apply();
+  },
+
+  clear() {
+    const max = +document.getElementById('priceRange').max;
+    this.state = { cat: '', materials: new Set(), colors: new Set(), maxPrice: max, sort: 'featured' };
+    document.querySelectorAll('.chip.on, .color-pick.on').forEach((e) => e.classList.remove('on'));
+    document.getElementById('priceRange').value = String(max);
+    document.getElementById('priceVal').textContent = `$${max}`;
+    document.getElementById('sortSel').value = 'featured';
+    this.paintTabs();
+    this.syncUrl();
+    this.apply();
+  },
+
+  apply() {
+    const s = this.state;
+    s.sort = document.getElementById('sortSel').value;
+    const list = BL.products.filter(
+      (p) =>
+        (!s.cat || p.cat === s.cat) &&
+        // `materialKey` está normalizado (ver materialesDe en app.js).
+        (s.materials.size === 0 || s.materials.has(p.materialKey)) &&
+        (s.colors.size === 0 || p.colors.some((c) => s.colors.has(c))) &&
+        p.price <= s.maxPrice,
+    );
+    if (s.sort === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else if (s.sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+    else if (s.sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+    const grid = document.getElementById('shopGrid');
+    document.getElementById('resultCount').textContent =
+      `${list.length} producto${list.length === 1 ? '' : 's'}`;
+    document.getElementById('shopEmpty').hidden = list.length > 0;
+    if (!list.length) { grid.innerHTML = ''; return; }
+
+    grid.innerHTML = list.map(blTarjetaProducto).join('');
+    blEngancharTarjetas(grid);
+  },
+};
+
+window.Shop = Shop;
+window.addEventListener('DOMContentLoaded', () => Shop.init());
+</script>
+</body>
+</html>

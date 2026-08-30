@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Producto — Banano Lab</title>
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<!--
+  Ficha de producto. La estructura viene del diseño de Lovable (migas, galería,
+  selectores de variante, especificaciones y relacionados), que es lo que le
+  faltaba al de Claude Design.
+
+  La URL es /producto/{slug}: nginx sirve este archivo para todo lo que cuelgue
+  de /producto/ y el slug se lee del path. Sin eso, cada producto necesitaría su
+  propio HTML generado en el build.
+-->
+<!--#include header-->
+
+<div class="container">
+  <nav class="crumbs" id="crumbs" aria-label="Ruta"></nav>
+</div>
+
+<main class="container" id="pdp">
+  <div class="shop-state"><strong>Cargando…</strong></div>
+</main>
+
+<section class="section" style="padding-top:clamp(40px,5vw,64px)" id="relacionadosWrap" hidden>
+  <div class="container">
+    <div class="eyebrow-row" style="margin-bottom:24px">
+      <h2 class="h2">También te puede servir</h2>
+      <a href="/tienda/" class="btn btn-ghost btn-sm">Ver todo el catálogo</a>
+    </div>
+    <div class="grid shop-grid" id="relacionados"></div>
+  </div>
+</section>
+
+<!--#include footer-->
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module">
+const Pdp = {
+  producto: null,
+  /** Opción elegida por grupo: { "Color": "Rojo" }. */
+  elegido: {},
+  cantidad: 1,
+  fotoActiva: 0,
+
+  slug() {
+    // /producto/llavero-personalizado → "llavero-personalizado"
+    return decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() ?? '');
+  },
+
+  async init() {
+    const slug = this.slug();
+    if (!slug || slug === 'producto') return this.fallo('Falta el producto en la dirección.');
+    try {
+      await BL.load();
+      this.producto = await fetchProduct(slug);
+    } catch (e) {
+      console.error(e);
+      return this.fallo('No encontramos este producto. Puede que ya no esté publicado.');
+    }
+    this.cantidad = this.producto.minQty || 1;
+    // Las opciones obligatorias arrancan con la primera elegida: obliga menos y
+    // el precio mostrado siempre corresponde a algo pedible.
+    for (const g of this.producto.optionGroups ?? []) {
+      if (g.required && g.options.length) this.elegido[g.name] = g.options[0].value;
+    }
+    this.chrome();
+    this.render();
+    this.relacionados();
+  },
+
+  fallo(msg) {
+    document.getElementById('pdp').innerHTML =
+      `<div class="shop-state"><strong>${esc(msg)}</strong>
+       <a class="btn btn-primary btn-sm" style="margin-top:14px" href="/tienda/">Volver a la tienda</a></div>`;
+  },
+
+  chrome() {
+    const p = this.producto;
+    document.title = `${p.name} — ${BL.info.businessName}`;
+    blPintarNegocio();
+
+    // El "cotizar" de esta pagina habla del producto que se esta mirando, asi
+    // que pisa el mensaje generico que dejo blPintarNegocio().
+    const tel = blTelefono(BL.info.whatsappPhone);
+    if (tel) {
+      const msg = encodeURIComponent(`Hola ${BL.info.businessName}, quiero consultar por "${p.name}".`);
+      document.querySelectorAll('[data-bl="cotizar"]').forEach((a) => {
+        a.href = `https://wa.me/${tel}?text=${msg}`;
+      });
+    }
+
+    document.getElementById('crumbs').innerHTML =
+      '<a href="/tienda/">Tienda</a><span>/</span>' +
+      (p.catLabel ? `<a href="/tienda/?cat=${encodeURIComponent(p.cat)}">${esc(p.catLabel)}</a><span>/</span>` : '') +
+      `<span class="dim">${esc(p.name)}</span>`;
+  },
+
+  /** Precio con los recargos de las opciones elegidas. */
+  precio() {
+    let total = this.producto.price;
+    for (const g of this.producto.optionGroups ?? []) {
+      const op = g.options.find((o) => o.value === this.elegido[g.name]);
+      if (op) total += op.priceDeltaUsd || 0;
+    }
+    return total;
+  },
+
+  render() {
+    const p = this.producto;
+    const fotos = p.images ?? (p.image ? [p.image] : []);
+    const principal = fotos[this.fotoActiva];
+
+    const galeria = `
+      <div class="pdp-gallery">
+        ${principal
+          ? `<img class="pdp-main" src="${esc(principal.url)}" alt="${esc(principal.alt || p.name)}">`
+          : `<div class="ph pdp-main" data-label="sin foto"></div>`}
+        ${fotos.length > 1
+          ? `<div class="pdp-thumbs">${fotos.map((f, i) =>
+              `<img class="pdp-thumb${i === this.fotoActiva ? ' on' : ''}" data-foto="${i}" src="${esc(f.url)}" alt="${esc(f.alt || '')}">`).join('')}</div>`
+          : ''}
+      </div>`;
+
+    const insignias = [
+      p.badge ? `<span class="badge">${esc(p.badge)}</span>` : '',
+      p.custom ? `<span class="badge badge-soft">Personalizable</span>` : '',
+      p.kind === 'SERVICE' ? `<span class="badge badge-soft">Servicio</span>` : '',
+    ].filter(Boolean).join('');
+
+    const hechos = [
+      p.catLabel ? esc(p.catLabel) : '',
+      p.material ? esc(p.material) : '',
+      p.ship ? `Listo en ${esc(p.ship)}` : '',
+      p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
+    ].filter(Boolean).map((h) => `<span>${h}</span>`).join('<span class="dim">·</span>');
+
+    const grupos = (p.optionGroups ?? []).map((g) => `
+      <div class="pdp-opt-group">
+        <h4>${esc(g.name)}${g.required ? '' : ' (opcional)'}</h4>
+        <div class="pdp-opts" data-grupo="${esc(g.name)}">
+          ${g.options.map((o) => `
+            <button class="pdp-opt${this.elegido[g.name] === o.value ? ' on' : ''}" data-opt="${esc(o.value)}">
+              ${o.swatchHex ? `<i style="background:${esc(o.swatchHex)}"></i>` : ''}${esc(o.value)}${o.priceDeltaUsd ? ` +$${o.priceDeltaUsd.toFixed(2)}` : ''}
+            </button>`).join('')}
+        </div>
+      </div>`).join('');
+
+    const specs = (p.specs ?? []).length
+      ? `<table class="pdp-specs"><tbody>${p.specs.map((e) =>
+          `<tr><th scope="row">${esc(e.label)}</th><td>${esc(e.value)}</td></tr>`).join('')}</tbody></table>`
+      : '';
+
+    document.getElementById('pdp').innerHTML = `
+      <div class="pdp">
+        ${galeria}
+        <div class="pdp-info">
+          ${insignias ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${insignias}</div>` : ''}
+          <h1 class="h2">${esc(p.name)}</h1>
+          ${hechos ? `<div class="pdp-facts">${hechos}</div>` : ''}
+          <div class="pdp-price">${formatPrice(this.precio())}</div>
+          ${p.desc ? `<p class="lead" style="font-size:17px">${esc(p.desc)}</p>` : ''}
+          ${grupos}
+          <div class="pdp-buy">
+            <div class="qty">
+              <button data-cant="-1" aria-label="menos">–</button>
+              <span id="cantVal">${this.cantidad}</span>
+              <button data-cant="1" aria-label="más">+</button>
+            </div>
+            <button class="btn btn-primary" id="agregar">Agregar al pedido</button>
+          </div>
+          ${p.description ? `<div class="pdp-desc">${esc(p.description)}</div>` : ''}
+          ${specs ? `<div><h3 class="h3" style="margin-top:10px;font-size:20px">Especificaciones</h3>${specs}</div>` : ''}
+        </div>
+      </div>`;
+
+    // Eventos (delegados a mano: el HTML se regenera en cada cambio).
+    document.querySelectorAll('.pdp-thumb').forEach((t) =>
+      t.addEventListener('click', () => { this.fotoActiva = +t.dataset.foto; this.render(); }));
+    document.querySelectorAll('.pdp-opts').forEach((cont) =>
+      cont.querySelectorAll('.pdp-opt').forEach((b) =>
+        b.addEventListener('click', () => {
+          this.elegido[cont.dataset.grupo] = b.dataset.opt;
+          this.render();
+        })));
+    document.querySelectorAll('[data-cant]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const min = this.producto.minQty || 1;
+        this.cantidad = Math.max(min, this.cantidad + Number(b.dataset.cant));
+        document.getElementById('cantVal').textContent = String(this.cantidad);
+      }));
+    document.getElementById('agregar')?.addEventListener('click', () => {
+      // Van las opciones elegidas: son las que definen el precio del renglón.
+      Cart.add(this.producto.id, this.cantidad, this.elegido, this.precio());
+    });
+  },
+
+  /** Otros productos de la misma categoría (o cualquiera, si no hay). */
+  /** Otros productos de la misma categoria (o cualquiera, si no hay). */
+  relacionados() {
+    const p = this.producto;
+    let otros = BL.products.filter((x) => x.id !== p.id && p.cat && x.cat === p.cat);
+    if (otros.length === 0) otros = BL.products.filter((x) => x.id !== p.id);
+    if (!otros.length) return;
+    document.getElementById('relacionadosWrap').hidden = false;
+    const grid = document.getElementById('relacionados');
+    grid.innerHTML = otros.slice(0, 3).map(blTarjetaProducto).join('');
+    blEngancharTarjetas(grid);
+  },
+};
+
+window.Pdp = Pdp;
+window.addEventListener('DOMContentLoaded', () => Pdp.init());
+</script>
+</body>
+</html>

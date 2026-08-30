@@ -1,0 +1,33 @@
+<!--
+  Pie ÚNICO del sitio (ver partials/header.html para el porqué de los parciales).
+  `#footerCats` lo llena la tienda con las categorías reales; en las demás
+  páginas queda vacío y la columna se oculta sola.
+-->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/"><span class="brand-mark">B</span><span data-bl="brand">Banano Lab<small>FÍSICO · DIGITAL</small></span></a>
+        <p class="dim" style="margin-top:18px;max-width:34ch">Taller de fabricación digital. Materializamos ideas, físicas y digitales.</p>
+      </div>
+      <div>
+        <h4>Qué hacemos</h4>
+        <a href="/impresion-3d/">Impresión 3D</a>
+        <a href="/programacion/">Programación</a>
+        <a href="/calculadora/">Estimar un proyecto</a>
+      </div>
+      <div>
+        <h4>Tienda</h4>
+        <a href="/tienda/">Ver catálogo</a>
+        <div id="footerCats"></div>
+      </div>
+      <div>
+        <h4>Contacto</h4>
+        <a href="#" data-bl="cotizar">WhatsApp</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-bl="year"></span> <span data-bl="brand-plain">Banano Lab</span>. Todos los derechos reservados.</span>
+    </div>
+  </div>
+</footer>

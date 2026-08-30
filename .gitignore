@@ -17,15 +17,9 @@ build/
 npm-debug.log*
 pnpm-debug.log*
 
-# Prisma
-apps/api/prisma/migrations/dev.db*
-
 # Editores / SO
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
-
-# Coverage
-coverage/

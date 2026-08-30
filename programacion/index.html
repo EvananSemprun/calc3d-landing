@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programación — Banano Lab</title>
+<meta name="description" content="Desarrollo a medida: landings, sitios corporativos, tiendas en línea, sistemas administrativos y automatización. La otra mitad del taller.">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<!--
+  La mitad DIGITAL del negocio. La marca dice "FÍSICO · DIGITAL" desde siempre y
+  el sitio solo mostraba lo físico: esta página cierra ese hueco.
+
+  El argumento fuerte de esta página no es una lista de tecnologías, es que el
+  sistema con el que corre este mismo taller lo hicimos nosotros. Eso es
+  verificable y es lo que la hace creíble.
+-->
+<!--#include header-->
+
+<section class="hero hero--sm">
+  <div class="container">
+    <span class="kicker">Digital</span>
+    <h1 class="h1 text-balance">Software a medida, hecho por quien también fabrica.</h1>
+    <p class="lead">Sitios, tiendas y sistemas internos. Entendemos el negocio de un taller porque llevamos el nuestro con el software que escribimos.</p>
+    <div class="hero-actions">
+      <a href="/calculadora/" class="btn btn-primary btn-lg">Estimar mi proyecto</a>
+      <a href="#" class="btn btn-ghost btn-lg" data-bl="cotizar">Hablar por WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:24px">Qué desarrollamos</h2>
+    <div class="grid grid-3">
+      <article class="card pad">
+        <h3 class="h3">Landing page</h3>
+        <p class="dim">Una página que explica y convierte. Para lanzar un producto, una campaña o un servicio.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Sitio corporativo</h3>
+        <p class="dim">Varias secciones, contenido editable y posicionamiento pensado desde el principio.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Tienda en línea</h3>
+        <p class="dim">Catálogo, carrito y cierre por WhatsApp o pasarela. Como esta misma tienda.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Sistema administrativo</h3>
+        <p class="dim">Clientes, pedidos, cobros y reportes. Lo que hoy llevás en cuadernos o en Excel.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Automatización</h3>
+        <p class="dim">Tareas repetidas que dejan de hacerse a mano: avisos, planillas, envíos, cargas de datos.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Tableros y reportes</h3>
+        <p class="dim">Ver el negocio en números: ventas, costos, márgenes y punto de equilibrio.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--blue">
+  <div class="container">
+    <div class="grid grid-2 halves">
+      <div>
+        <h2 class="h2 text-balance">Lo que usamos, probado en casa</h2>
+        <p class="lead" style="margin-top:10px">Este taller corre sobre un sistema propio: calcula costos, arma cotizaciones, lleva pedidos y cobros en dólares y bolívares. No es una demo — es lo que usamos todos los días.</p>
+        <p class="dim">Por eso, cuando decimos que entendemos el problema de un negocio chico, hablamos del nuestro primero.</p>
+      </div>
+      <div class="card pad">
+        <h3 class="h3">Con qué está hecho</h3>
+        <ul class="ticks">
+          <li>TypeScript en todo el proyecto</li>
+          <li>React para las interfaces</li>
+          <li>NestJS y PostgreSQL en el servidor</li>
+          <li>Sitios estáticos cuando alcanzan (más rápidos y más baratos de mantener)</li>
+        </ul>
+        <p class="dim" style="margin-top:14px;font-size:14px">Elegimos la herramienta según el problema, no al revés. Un sitio de cinco secciones no necesita el mismo andamiaje que un sistema de pedidos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:8px">Cómo trabajamos</h2>
+    <p class="lead" style="max-width:52ch">Sin sorpresas ni presupuestos abiertos.</p>
+    <ol class="steps">
+      <li><span class="step-n">1</span><h3>Entendemos el problema</h3><p class="dim">Qué hacés hoy a mano, qué te cuesta tiempo, qué se te escapa. Antes de hablar de pantallas.</p></li>
+      <li><span class="step-n">2</span><h3>Definimos el alcance</h3><p class="dim">Qué entra y qué no. Lo que queda afuera se anota para después, no se olvida.</p></li>
+      <li><span class="step-n">3</span><h3>Precio cerrado</h3><p class="dim">Un número por el alcance acordado. Si cambia el alcance, se recotiza antes.</p></li>
+      <li><span class="step-n">4</span><h3>Entregas parciales</h3><p class="dim">Vas viendo el avance funcionando, no un informe. Se corrige temprano.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section section--blue" style="padding-block:clamp(48px,6vw,80px)">
+  <div class="container shop-cta">
+    <div>
+      <h2 class="h2 text-balance">¿Cuánto saldría lo tuyo?</h2>
+      <p class="lead" style="margin-top:10px">Armá un estimado en un minuto y después lo afinamos juntos.</p>
+    </div>
+    <a href="/calculadora/" class="btn btn-primary btn-lg">Estimar mi proyecto</a>
+  </div>
+</section>
+
+<!--#include footer-->
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module">
+window.addEventListener('DOMContentLoaded', () => {
+  BL.load().then(blPintarNegocio).catch((e) => console.error('Sin datos del negocio:', e));
+});
+</script>
+</body>
+</html>

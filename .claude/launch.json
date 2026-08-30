@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "landing",
+      "name": "sitio",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "--port", "5181", "--strictPort"],
-      "port": 5181,
+      "runtimeArgs": ["exec", "vite", "--port", "5182", "--strictPort"],
+      "port": 5182,
       "autoPort": false
     }
   ]

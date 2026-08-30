@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impresión 3D — Banano Lab</title>
+<meta name="description" content="Impresión 3D por encargo en PLA, PETG, ABS, TPU y resina. Piezas propias, tu archivo o diseño desde cero. Producción bajo pedido, cotización antes de empezar.">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<!--
+  Servicio de impresión 3D. Todo el contenido está en el HTML (es lo que lee un
+  buscador y lo que hace que esta página valga la pena existir).
+
+  Los materiales y los usos son los REALES del taller — no una lista genérica
+  copiada de otro sitio. Si mañana se suma un material, se agrega acá.
+-->
+<!--#include header-->
+
+<section class="hero hero--sm">
+  <div class="container">
+    <span class="kicker">Físico</span>
+    <h1 class="h1 text-balance">Impresión 3D por encargo.</h1>
+    <p class="lead">Desde una pieza suelta hasta una tanda para tu negocio. Producimos bajo pedido: no hay stock que se venza ni mínimos absurdos.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn btn-primary btn-lg" data-bl="cotizar">Cotizar una pieza</a>
+      <a href="/tienda/" class="btn btn-ghost btn-lg">Ver lo que ya hacemos</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:8px">Materiales</h2>
+    <p class="lead" style="max-width:56ch;margin-bottom:28px">Cada material sirve para algo distinto. Si no sabés cuál necesitás, contanos para qué es la pieza y lo elegimos nosotros.</p>
+    <div class="grid grid-3">
+      <article class="card pad">
+        <h3 class="h3">PLA</h3>
+        <p class="dim">El más versátil. Buen acabado y detalle fino. Ideal para llaveros, decoración, figuras y prototipos que no van a estar al sol.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">PETG</h3>
+        <p class="dim">Más resistente y aguanta mejor el calor y la humedad. Para piezas de uso, soportes y cosas que van a la intemperie.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">ABS</h3>
+        <p class="dim">Duro y resistente a golpes. Para repuestos y piezas mecánicas que trabajan.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">TPU</h3>
+        <p class="dim">Flexible, tipo goma. Para fundas, topes, juntas y todo lo que tenga que doblarse sin romperse.</p>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Resina</h3>
+        <p class="dim">Máximo detalle. Para miniaturas, joyería y piezas chicas donde se nota cada línea.</p>
+      </article>
+      <article class="card pad card--soft">
+        <h3 class="h3">¿Otro?</h3>
+        <p class="dim">Si tu pieza necesita algo que no está en esta lista, preguntanos. Se consigue casi todo.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--blue">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:8px">Cómo es el proceso</h2>
+    <p class="lead" style="max-width:52ch">Tengas el archivo o solo la idea.</p>
+    <ol class="steps">
+      <li><span class="step-n">1</span><h3>Mandás lo que tengas</h3><p class="dim">Un archivo STL, 3MF o STEP; una foto de la pieza rota; o simplemente la descripción y las medidas.</p></li>
+      <li><span class="step-n">2</span><h3>Definimos la pieza</h3><p class="dim">Material, color, acabado y cantidad. Acá se decide todo lo que cambia el precio.</p></li>
+      <li><span class="step-n">3</span><h3>Cotizamos y producimos</h3><p class="dim">Precio cerrado antes de encender la impresora. Recién ahí arranca la producción.</p></li>
+      <li><span class="step-n">4</span><h3>Entregamos</h3><p class="dim">Coordinamos entrega y pago por WhatsApp.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:24px">Qué se puede hacer</h2>
+    <div class="grid grid-2">
+      <article class="card pad">
+        <h3 class="h3">Para tu negocio</h3>
+        <ul class="ticks">
+          <li>Llaveros y souvenirs con tu logo</li>
+          <li>Identificadores y señalética</li>
+          <li>Exhibidores y soportes de mostrador</li>
+          <li>Regalos corporativos en tanda</li>
+        </ul>
+      </article>
+      <article class="card pad">
+        <h3 class="h3">Para vos</h3>
+        <ul class="ticks">
+          <li>Repuestos de cosas que ya no se consiguen</li>
+          <li>Organizadores y soportes a medida</li>
+          <li>Decoración y regalos personalizados</li>
+          <li>Prototipos de un proyecto propio</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--blue" style="padding-block:clamp(48px,6vw,80px)">
+  <div class="container shop-cta">
+    <div>
+      <h2 class="h2 text-balance">Contanos qué necesitás imprimir.</h2>
+      <p class="lead" style="margin-top:10px">Con las medidas y la cantidad ya podemos darte un precio.</p>
+    </div>
+    <a href="#" class="btn btn-primary btn-lg" data-bl="cotizar">Cotizar una pieza</a>
+  </div>
+</section>
+
+<!--#include footer-->
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module">
+// Página estática: lo único que necesita de la API son los datos del negocio
+// del header y el pie. Si no responden, la página sirve igual.
+window.addEventListener('DOMContentLoaded', () => {
+  BL.load().then(blPintarNegocio).catch((e) => console.error('Sin datos del negocio:', e));
+});
+</script>
+</body>
+</html>

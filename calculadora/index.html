@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estimar un proyecto — Banano Lab</title>
+<meta name="description" content="Armá un estimado de tu sitio, tienda o sistema a medida en un minuto. Rango orientativo; el precio final se cierra al conocer el alcance.">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+
+<!--
+  Estimador de proyectos de PROGRAMACIÓN.
+
+  Por qué no es la calculadora de Calc3D: el motor real necesita gramos de
+  filamento y horas de impresión —datos del slicer— que un visitante no tiene.
+  Y para software directamente no aplica. Así que esto es otra cosa: un
+  estimador por RANGOS que orienta y termina en una cotización de verdad.
+
+  Regla que no se rompe: nunca sale un precio cerrado. Salen dos números y una
+  advertencia. Comprometer un monto sin ver el alcance es prometer lo que no se
+  sabe si se puede cumplir.
+-->
+<!--#include header-->
+
+<section class="hero hero--sm">
+  <div class="container">
+    <span class="kicker">Estimador</span>
+    <h1 class="h1 text-balance">¿Cuánto sale tu proyecto?</h1>
+    <p class="lead">Respondé cuatro cosas y te damos un rango para orientarte. No es un presupuesto: el precio se cierra cuando entendemos bien qué necesitás.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container calc-layout">
+    <form class="calc-form" id="calcForm">
+      <fieldset class="calc-group">
+        <legend>1. ¿Qué necesitás?</legend>
+        <div class="calc-options" id="tipoOpts"></div>
+      </fieldset>
+
+      <fieldset class="calc-group">
+        <legend>2. ¿Cuántas secciones o pantallas?</legend>
+        <div class="calc-range">
+          <input type="range" id="secciones" class="range" min="1" max="20" value="5" step="1">
+          <output class="range-val mono" id="seccionesVal">5 secciones</output>
+        </div>
+        <p class="dim calc-hint" id="seccionesHint"></p>
+      </fieldset>
+
+      <fieldset class="calc-group">
+        <legend>3. ¿Algo de esto hace falta?</legend>
+        <div class="calc-checks" id="extrasOpts"></div>
+      </fieldset>
+
+      <fieldset class="calc-group">
+        <legend>4. ¿Para cuándo?</legend>
+        <div class="calc-options calc-options--row" id="urgenciaOpts"></div>
+      </fieldset>
+    </form>
+
+    <aside class="calc-result" id="calcResult">
+      <span class="kicker">Estimado</span>
+      <div class="calc-price" id="calcPrice">—</div>
+      <p class="calc-time mono dim" id="calcTime"></p>
+      <ul class="calc-detail" id="calcDetail"></ul>
+      <button class="btn btn-primary btn-block" id="calcPedir" type="button">Pedir cotización exacta</button>
+      <p class="dim calc-disclaimer">
+        Es un rango orientativo, no un presupuesto. El precio final depende del
+        alcance real y se cierra por escrito antes de empezar.
+      </p>
+    </aside>
+  </div>
+</section>
+
+<section class="section section--blue" style="padding-block:clamp(40px,5vw,64px)">
+  <div class="container">
+    <h2 class="h2" style="margin-bottom:20px">Por qué un rango y no un precio</h2>
+    <div class="grid grid-3">
+      <article class="card pad card--soft">
+        <h3 class="h3">El alcance manda</h3>
+        <p class="dim">"Una tienda" puede ser un catálogo simple o un sistema con inventario. Hasta no saber cuál es, cualquier número es un invento.</p>
+      </article>
+      <article class="card pad card--soft">
+        <h3 class="h3">Lo que ya tenés cuenta</h3>
+        <p class="dim">Si traés el contenido, las fotos o el diseño hecho, el trabajo baja. Eso no se puede adivinar desde un formulario.</p>
+      </article>
+      <article class="card pad card--soft">
+        <h3 class="h3">Preferimos decirlo antes</h3>
+        <p class="dim">Un precio cerrado que después se corrige hacia arriba es peor que un rango honesto desde el principio.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!--#include footer-->
+
+<script type="module" src="/assets/app.js"></script>
+<script type="module">
+/* ============================================================
+   ⚠️ PRECIOS BASE — REVISAR ANTES DE PUBLICAR EL SITIO ⚠️
+
+   Estos son los ÚNICOS números del estimador: todo lo demás se deriva de acá.
+   Son valores de arranque, NO los precios reales del taller. Ajustalos a lo que
+   de verdad cobrás antes de que esta página sea pública, porque un visitante va
+   a tomarlos como referencia.
+
+   Todo en USD (la base del sistema). Cada entrada es [mínimo, máximo].
+   ============================================================ */
+const PRECIOS = {
+  tipos: [
+    { id: 'landing',     label: 'Landing page',           desc: 'Una página que explica y convierte',        base: [250, 450],    incluye: 5,  semanas: [1, 2] },
+    { id: 'corporativo', label: 'Sitio corporativo',      desc: 'Varias secciones y contenido editable',     base: [500, 900],    incluye: 6,  semanas: [2, 4] },
+    { id: 'tienda',      label: 'Tienda en línea',        desc: 'Catálogo, carrito y cierre de pedido',      base: [900, 1800],   incluye: 8,  semanas: [3, 6] },
+    { id: 'sistema',     label: 'Sistema administrativo', desc: 'Clientes, pedidos, cobros y reportes',      base: [1500, 3500],  incluye: 8,  semanas: [5, 10] },
+  ],
+  /** Por cada sección/pantalla que pase de las incluidas en el tipo. */
+  seccionExtra: [40, 80],
+  extras: [
+    { id: 'diseno',    label: 'Diseño a medida',            desc: 'En vez de partir de una base',        precio: [200, 500],  semanas: [1, 2] },
+    { id: 'contenido', label: 'Carga de contenido',         desc: 'Textos y fotos los subimos nosotros', precio: [80, 200],   semanas: [0, 1] },
+    { id: 'whatsapp',  label: 'Pedidos por WhatsApp',       desc: 'El pedido se cierra en el chat',      precio: [80, 150],   semanas: [0, 1] },
+    { id: 'pagos',     label: 'Pasarela de pago',           desc: 'Cobro en línea con tarjeta',          precio: [300, 700],  semanas: [1, 2] },
+    { id: 'panel',     label: 'Panel de administración',    desc: 'Para que edites vos, sin depender',   precio: [400, 900],  semanas: [2, 3] },
+    { id: 'integra',   label: 'Conexión con otro sistema',  desc: 'Facturación, inventario, planillas',  precio: [300, 800],  semanas: [1, 3] },
+    { id: 'hosting',   label: 'Dominio y puesta en línea',  desc: 'Lo dejamos andando en tu dominio',    precio: [60, 120],   semanas: [0, 1] },
+  ],
+  urgencias: [
+    { id: 'normal', label: 'Sin apuro',   desc: 'El plazo normal',              factor: 1,    semanasFactor: 1 },
+    { id: 'rapido', label: 'Lo necesito ya', desc: 'Se prioriza sobre el resto', factor: 1.3, semanasFactor: 0.7 },
+  ],
+};
+
+const Calc = {
+  tipo: PRECIOS.tipos[0],
+  secciones: 5,
+  extras: new Set(),
+  urgencia: PRECIOS.urgencias[0],
+
+  init() {
+    document.getElementById('tipoOpts').innerHTML = PRECIOS.tipos.map((t, i) => `
+      <label class="calc-option${i === 0 ? ' on' : ''}">
+        <input type="radio" name="tipo" value="${t.id}"${i === 0 ? ' checked' : ''}>
+        <span class="calc-option-title">${esc(t.label)}</span>
+        <span class="calc-option-desc">${esc(t.desc)}</span>
+      </label>`).join('');
+
+    document.getElementById('extrasOpts').innerHTML = PRECIOS.extras.map((e) => `
+      <label class="calc-check">
+        <input type="checkbox" name="extra" value="${e.id}">
+        <span><strong>${esc(e.label)}</strong><small class="dim">${esc(e.desc)}</small></span>
+      </label>`).join('');
+
+    document.getElementById('urgenciaOpts').innerHTML = PRECIOS.urgencias.map((u, i) => `
+      <label class="calc-option${i === 0 ? ' on' : ''}">
+        <input type="radio" name="urgencia" value="${u.id}"${i === 0 ? ' checked' : ''}>
+        <span class="calc-option-title">${esc(u.label)}</span>
+        <span class="calc-option-desc">${esc(u.desc)}</span>
+      </label>`).join('');
+
+    // Un solo listener para todo el formulario: los controles se repintan
+    // enteros y enganchar uno por uno se rompería al re-renderizar.
+    const form = document.getElementById('calcForm');
+    form.addEventListener('input', () => this.leer());
+    form.addEventListener('change', () => this.leer());
+    document.getElementById('calcPedir').addEventListener('click', () => this.pedir());
+    this.leer();
+  },
+
+  leer() {
+    const form = document.getElementById('calcForm');
+    this.tipo = PRECIOS.tipos.find((t) => t.id === form.tipo.value) ?? PRECIOS.tipos[0];
+    this.secciones = Number(document.getElementById('secciones').value);
+    this.extras = new Set([...form.querySelectorAll('input[name="extra"]:checked')].map((i) => i.value));
+    this.urgencia = PRECIOS.urgencias.find((u) => u.id === form.urgencia.value) ?? PRECIOS.urgencias[0];
+
+    // El resalte de la tarjeta elegida sigue al radio, no al clic: así también
+    // funciona navegando con el teclado.
+    form.querySelectorAll('.calc-option').forEach((l) => {
+      l.classList.toggle('on', l.querySelector('input').checked);
+    });
+    this.pintar();
+  },
+
+  /** Devuelve [min, max] en USD y [minSem, maxSem] de plazo. */
+  calcular() {
+    const t = this.tipo;
+    let min = t.base[0];
+    let max = t.base[1];
+    let semMin = t.semanas[0];
+    let semMax = t.semanas[1];
+
+    const demas = Math.max(0, this.secciones - t.incluye);
+    min += demas * PRECIOS.seccionExtra[0];
+    max += demas * PRECIOS.seccionExtra[1];
+    // Cada 4 secciones extra, una semana más.
+    semMax += Math.floor(demas / 4);
+
+    for (const e of PRECIOS.extras) {
+      if (!this.extras.has(e.id)) continue;
+      min += e.precio[0];
+      max += e.precio[1];
+      semMin += e.semanas[0];
+      semMax += e.semanas[1];
+    }
+
+    min *= this.urgencia.factor;
+    max *= this.urgencia.factor;
+    semMin = Math.max(1, Math.round(semMin * this.urgencia.semanasFactor));
+    semMax = Math.max(semMin, Math.round(semMax * this.urgencia.semanasFactor));
+
+    // Se redondea a la decena para arriba: un rango con centavos finge una
+    // precisión que un estimado no tiene.
+    return {
+      min: Math.ceil(min / 10) * 10,
+      max: Math.ceil(max / 10) * 10,
+      semMin,
+      semMax,
+    };
+  },
+
+  pintar() {
+    const r = this.calcular();
+    document.getElementById('seccionesVal').textContent =
+      `${this.secciones} ${this.secciones === 1 ? 'sección' : 'secciones'}`;
+    const demas = Math.max(0, this.secciones - this.tipo.incluye);
+    document.getElementById('seccionesHint').textContent = demas
+      ? `${this.tipo.incluye} vienen incluidas en ${this.tipo.label.toLowerCase()}; ${demas} suman al estimado.`
+      : `Entran en el precio base de ${this.tipo.label.toLowerCase()}.`;
+
+    document.getElementById('calcPrice').innerHTML =
+      `$${r.min.toLocaleString('es-VE')} <small>a</small> $${r.max.toLocaleString('es-VE')}<small> USD</small>`;
+    document.getElementById('calcTime').textContent =
+      r.semMin === r.semMax ? `Alrededor de ${r.semMin} semanas` : `Entre ${r.semMin} y ${r.semMax} semanas`;
+
+    const elegidos = PRECIOS.extras.filter((e) => this.extras.has(e.id));
+    document.getElementById('calcDetail').innerHTML = [
+      `<li>${esc(this.tipo.label)}</li>`,
+      `<li>${this.secciones} ${this.secciones === 1 ? 'sección' : 'secciones'}</li>`,
+      ...elegidos.map((e) => `<li>${esc(e.label)}</li>`),
+      this.urgencia.factor > 1 ? `<li>${esc(this.urgencia.label)}</li>` : '',
+    ].filter(Boolean).join('');
+  },
+
+  /** Manda el estimado a la bandeja como solicitud a medida, ya redactado. */
+  pedir() {
+    const r = this.calcular();
+    const elegidos = PRECIOS.extras.filter((e) => this.extras.has(e.id)).map((e) => e.label);
+    const texto = [
+      `Quiero cotizar: ${this.tipo.label}.`,
+      `Secciones o pantallas: ${this.secciones}.`,
+      elegidos.length ? `Incluye: ${elegidos.join(', ')}.` : 'Sin extras.',
+      `Plazo: ${this.urgencia.label.toLowerCase()}.`,
+      `Estimado que me mostró la web: $${r.min} a $${r.max} USD.`,
+    ].join('\n');
+    Custom.open({ description: texto, titulo: 'Pedir cotización exacta' });
+  },
+};
+
+window.Calc = Calc;
+window.addEventListener('DOMContentLoaded', () => {
+  Calc.init();
+  BL.load().then(blPintarNegocio).catch((e) => console.error('Sin datos del negocio:', e));
+});
+</script>
+</body>
+</html>
