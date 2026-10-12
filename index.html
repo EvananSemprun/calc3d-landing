@@ -27,16 +27,45 @@
 -->
 <!--#include header-->
 
-<section class="hero">
-  <div class="container">
-    <span class="kicker">Taller de fabricación digital</span>
-    <h1 class="h1 text-balance">De la idea al producto. Físico o digital, lo fabricamos.</h1>
-    <p class="lead">Imprimimos piezas en 3D y desarrollamos sitios, tiendas y sistemas a medida. Un solo taller para las dos mitades de tu proyecto.</p>
-    <div class="hero-actions">
-      <a href="/tienda/" class="btn btn-primary btn-lg">Ver el catálogo</a>
-      <a href="#" class="btn btn-ghost btn-lg" data-bl="cotizar">Cotizar a medida</a>
-    </div>
+<section class="carousel" id="heroCarousel" aria-roledescription="carrusel" aria-label="Destacados">
+  <div class="carousel-track">
+    <article class="carousel-slide is-active">
+      <div class="container carousel-content">
+        <div class="carousel-text">
+          <span class="kicker">Impresión 3D</span>
+          <h1 class="h1 text-balance">De la idea a la pieza. La imprimimos por vos.</h1>
+          <p class="lead">Piezas por encargo en PLA, PETG, ABS, TPU y resina. Desde una unidad.</p>
+          <a href="/tienda/" class="btn btn-primary btn-lg">Ver el catálogo</a>
+        </div>
+        <img class="carousel-art" src="/assets/brand/banano-hola.png" alt="" loading="eager">
+      </div>
+    </article>
+    <article class="carousel-slide">
+      <div class="container carousel-content">
+        <div class="carousel-text">
+          <span class="kicker">A tu medida</span>
+          <h1 class="h1 text-balance">¿No está en el catálogo? Lo fabricamos.</h1>
+          <p class="lead">Traés el archivo, la foto de una pieza rota o solo la idea. Te cotizamos por WhatsApp.</p>
+          <a href="#" class="btn btn-primary btn-lg" data-bl="cotizar">Cotizar a medida</a>
+        </div>
+        <img class="carousel-art" src="/assets/brand/banano-chamba.png" alt="" loading="lazy">
+      </div>
+    </article>
+    <article class="carousel-slide">
+      <div class="container carousel-content">
+        <div class="carousel-text">
+          <span class="kicker">Hecho acá</span>
+          <h1 class="h1 text-balance">Taller propio, producción bajo pedido.</h1>
+          <p class="lead">Sin stock que se venza ni mínimos absurdos. Listo en los días que dice cada ficha.</p>
+          <a href="/impresion-3d/" class="btn btn-primary btn-lg">Cómo trabajamos</a>
+        </div>
+        <img class="carousel-art" src="/assets/brand/impresora-3d.png" alt="" loading="lazy">
+      </div>
+    </article>
   </div>
+  <button class="carousel-nav prev" aria-label="Anterior">‹</button>
+  <button class="carousel-nav next" aria-label="Siguiente">›</button>
+  <div class="carousel-dots" role="tablist" aria-label="Elegir banner"></div>
 </section>
 
 <!-- Soluciones: la rejilla densa que da el pulso a toda la página. -->
@@ -238,6 +267,48 @@ window.addEventListener('DOMContentLoaded', async () => {
   grid.innerHTML = destacados.map(blTarjetaProducto).join('');
   blEngancharTarjetas(grid);
 });
+</script>
+<script type="module">
+// Carrusel del hero: avanza solo salvo que el usuario pida menos movimiento,
+// se pausa al pasar el mouse y es operable por teclado (prev/next/puntos).
+(function () {
+  const root = document.getElementById('heroCarousel');
+  if (!root) return;
+  const slides = [...root.querySelectorAll('.carousel-slide')];
+  const dotsBox = root.querySelector('.carousel-dots');
+  let i = slides.findIndex((s) => s.classList.contains('is-active'));
+  if (i < 0) i = 0;
+
+  slides.forEach((_, n) => {
+    const d = document.createElement('button');
+    d.setAttribute('role', 'tab');
+    d.setAttribute('aria-label', `Banner ${n + 1}`);
+    d.addEventListener('click', () => go(n, true));
+    dotsBox.appendChild(d);
+  });
+  const dots = [...dotsBox.children];
+
+  function go(n, stop) {
+    slides[i].classList.remove('is-active');
+    dots[i].setAttribute('aria-selected', 'false');
+    i = (n + slides.length) % slides.length;
+    slides[i].classList.add('is-active');
+    dots[i].setAttribute('aria-selected', 'true');
+    if (stop) pause();
+  }
+  go(i);
+
+  root.querySelector('.prev').addEventListener('click', () => go(i - 1, true));
+  root.querySelector('.next').addEventListener('click', () => go(i + 1, true));
+
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let timer = null;
+  function play() { if (!reduce && slides.length > 1) timer = setInterval(() => go(i + 1), 6000); }
+  function pause() { if (timer) { clearInterval(timer); timer = null; } }
+  root.addEventListener('mouseenter', pause);
+  root.addEventListener('mouseleave', play);
+  play();
+})();
 </script>
 </body>
 </html>
