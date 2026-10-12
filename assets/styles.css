@@ -235,6 +235,15 @@ select.select { appearance: none; background-image: url("data:image/svg+xml,%3Cs
 .benefits { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 22px; }
 .benefit h3 { color: var(--yellow); margin-bottom: 6px; }
 
+/* ---------- Hero de impresión 3D (con mascota) ---------- */
+.impresion-hero { display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 32px; }
+.impresion-hero-art { width: 100%; max-width: 320px; justify-self: center; height: auto; }
+@media (max-width: 760px) {
+  .impresion-hero { grid-template-columns: 1fr; text-align: center; }
+  .impresion-hero .kicker, .impresion-hero .hero-actions { justify-content: center; }
+  .impresion-hero-art { order: -1; max-width: 200px; }
+}
+
 /* ---------- Bloques por categoría (inicio) ---------- */
 .cat-block { padding-block: clamp(40px, 6vw, 80px); }
 .cat-block:nth-of-type(even) { background: var(--ink-700); }
