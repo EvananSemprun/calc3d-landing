@@ -118,22 +118,21 @@
   </div>
 </section>
 
-<!-- Productos reales del catálogo (los trae la API, no están escritos acá). -->
-<section class="section">
+<!-- Tira de destacados: primeras fichas reales del catálogo (los trae la API). -->
+<section class="section" id="destacadosSection">
   <div class="container">
     <div class="eyebrow-row" style="margin-bottom:24px">
-      <h2 class="h2">Del catálogo</h2>
+      <h2 class="h2">Lo más pedido</h2>
       <a href="/tienda/" class="btn btn-ghost btn-sm">Ver todo</a>
     </div>
     <div class="grid shop-grid" id="destacados">
       <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     </div>
-    <div class="shop-state" id="destacadosVacio" hidden>
-      <strong>El catálogo está en preparación.</strong>
-      <p class="dim">Mientras tanto, escribinos y te cotizamos lo que necesites.</p>
-    </div>
   </div>
 </section>
+
+<!-- Bloques por categoría, generados desde la API (orden por position del panel). -->
+<div id="catBlocks"></div>
 
 <!-- Servicio FÍSICO, condensado. El detalle vive en su página. -->
 <section class="section section--blue">
@@ -245,27 +244,46 @@
 
 <script type="module" src="/assets/app.js"></script>
 <script type="module">
-// Lo único dinámico del inicio: las primeras fichas de la vitrina real.
-// Si la API no responde, la sección se oculta y el resto de la página sigue en
-// pie — el inicio no puede depender de que el catálogo esté arriba.
+// Lo dinámico del inicio: destacados + un bloque por categoría con productos.
+// Si la API no responde, se ocultan SOLO las secciones dinámicas; hero,
+// beneficios, proceso y FAQ siguen en pie.
 window.addEventListener('DOMContentLoaded', async () => {
-  const grid = document.getElementById('destacados');
   try {
     await BL.load();
   } catch (e) {
     console.error('No se pudo cargar el catálogo:', e);
-    grid.closest('.section').hidden = true;
+    document.getElementById('destacadosSection').hidden = true;
     return;
   }
   blPintarNegocio();
-  const destacados = BL.products.slice(0, 3);
+
+  // Destacados
+  const grid = document.getElementById('destacados');
+  const destacados = BL.products.slice(0, 4);
   if (!destacados.length) {
-    grid.innerHTML = '';
-    document.getElementById('destacadosVacio').hidden = false;
-    return;
+    document.getElementById('destacadosSection').hidden = true;
+  } else {
+    grid.innerHTML = destacados.map(blTarjetaProducto).join('');
+    blEngancharTarjetas(grid);
   }
-  grid.innerHTML = destacados.map(blTarjetaProducto).join('');
-  blEngancharTarjetas(grid);
+
+  // Bloques por categoría (solo categorías CON productos).
+  const cont = document.getElementById('catBlocks');
+  const conProductos = BL.cats
+    .map((c) => ({ ...c, items: BL.products.filter((p) => p.cat === c.key) }))
+    .filter((c) => c.items.length > 0);
+
+  cont.innerHTML = conProductos.map((c) => `
+    <section class="section cat-block">
+      <div class="container">
+        <div class="eyebrow-row">
+          <h2 class="h2">${esc(c.label)}</h2>
+          <a href="/tienda/?cat=${encodeURIComponent(c.key)}" class="btn btn-ghost btn-sm">Ver todo</a>
+        </div>
+        <div class="grid shop-grid">${c.items.slice(0, 4).map(blTarjetaProducto).join('')}</div>
+      </div>
+    </section>`).join('');
+  cont.querySelectorAll('.shop-grid').forEach((g) => blEngancharTarjetas(g));
 });
 </script>
 <script type="module">

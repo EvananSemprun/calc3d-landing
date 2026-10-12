@@ -230,6 +230,11 @@ select.select { appearance: none; background-image: url("data:image/svg+xml,%3Cs
   .carousel-art { order: -1; max-width: 190px; }
   .carousel-nav { display: none; }
 }
+
+/* ---------- Bloques por categoría (inicio) ---------- */
+.cat-block { padding-block: clamp(40px, 6vw, 80px); }
+.cat-block:nth-of-type(even) { background: var(--ink-700); }
+.cat-block .eyebrow-row { margin-bottom: 22px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
 .brand-logo { width: 34px; height: auto; flex: none; }
 .brand-word { height: 20px; width: auto; }
