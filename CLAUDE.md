@@ -142,8 +142,10 @@ Design": pisaría el rediseño.
   carrusel del inicio, `impresora-3d` en `/impresion-3d/`,
   `banano-error`/`banano-molesto` reservados para estados de error/404.
 - La home sigue la estructura estilo tienda (ref. Bambu Lab) descrita en "Las
-  páginas del sitio". El carrusel usa **banners fijos** en el HTML (hito A);
-  volverlos administrables desde el panel es el hito B (aún pendiente).
+  páginas del sitio". El carrusel **consume los banners que administra el panel**
+  (`GET /public/store/banners`, hito B); si no hay ninguno o la API falla, se
+  queda con los **3 slides FIJOS del HTML** como fallback. Los banners se cargan
+  desde `calc3d-web` (Tienda → Banners) y necesitan R2 configurado en la API.
 - **`assets/app.js` sí cambió** respecto del prototipo, por tres razones que
   conviene no revertir:
   1. El catálogo **no está escrito en el front**. Un catálogo duplicado se

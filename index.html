@@ -215,9 +215,45 @@ window.addEventListener('DOMContentLoaded', async () => {
 <script type="module">
 // Carrusel del hero: avanza solo salvo que el usuario pida menos movimiento,
 // se pausa al pasar el mouse y es operable por teclado (prev/next/puntos).
-(function () {
+//
+// Los banners los administra el panel (GET /public/store/banners). Si no hay
+// ninguno o la API falla, se quedan los 3 slides FIJOS escritos en el HTML.
+(async function () {
   const root = document.getElementById('heroCarousel');
   if (!root) return;
+
+  const API = (import.meta?.env?.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hrefDe = (b) =>
+    b.linkType === 'CATEGORY' ? `/tienda/?cat=${encodeURIComponent(b.linkValue)}`
+    : b.linkType === 'PRODUCT' ? `/producto/${encodeURIComponent(b.linkValue)}`
+    : b.linkType === 'URL' ? b.linkValue
+    : null;
+  try {
+    const r = await fetch(`${API}/public/store/banners`);
+    const { banners } = await r.json();
+    if (Array.isArray(banners) && banners.length) {
+      root.querySelector('.carousel-track').innerHTML = banners
+        .map((b, n) => {
+          const href = hrefDe(b);
+          const btn = href ? `<a href="${esc(href)}" class="btn btn-primary btn-lg">Ver más</a>` : '';
+          return `<article class="carousel-slide${n === 0 ? ' is-active' : ''}">
+        <div class="container carousel-content">
+          <div class="carousel-text">
+            <h1 class="h1 text-balance">${esc(b.title)}</h1>
+            ${b.subtitle ? `<p class="lead">${esc(b.subtitle)}</p>` : ''}
+            ${btn}
+          </div>
+          <img class="carousel-art" src="${esc(b.imageUrl)}" alt="">
+        </div>
+      </article>`;
+        })
+        .join('');
+    }
+  } catch (e) {
+    /* se quedan los banners fijos del HTML */
+  }
+
   const slides = [...root.querySelectorAll('.carousel-slide')];
   const dotsBox = root.querySelector('.carousel-dots');
   let i = slides.findIndex((s) => s.classList.contains('is-active'));
