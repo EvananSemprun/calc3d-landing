@@ -224,10 +224,20 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const API = (import.meta?.env?.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Defensa en profundidad: el servidor ya exige http(s) (schema Zod), pero la
+  // landing no confía en la URL: un `javascript:` que se cuele no termina en un href.
+  const safeUrl = (u) => {
+    try {
+      const x = new URL(String(u), location.origin);
+      return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : null;
+    } catch {
+      return null;
+    }
+  };
   const hrefDe = (b) =>
     b.linkType === 'CATEGORY' ? `/tienda/?cat=${encodeURIComponent(b.linkValue)}`
     : b.linkType === 'PRODUCT' ? `/producto/${encodeURIComponent(b.linkValue)}`
-    : b.linkType === 'URL' ? b.linkValue
+    : b.linkType === 'URL' ? safeUrl(b.linkValue)
     : null;
   try {
     const r = await fetch(`${API}/public/store/banners`);
