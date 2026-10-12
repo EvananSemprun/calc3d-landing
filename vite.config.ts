@@ -13,8 +13,6 @@ const PAGINAS: Record<string, string> = {
   '/': 'index.html',
   '/tienda/': 'tienda/index.html',
   '/impresion-3d/': 'impresion-3d/index.html',
-  '/programacion/': 'programacion/index.html',
-  '/calculadora/': 'calculadora/index.html',
 };
 
 /**
@@ -163,8 +161,6 @@ export default defineConfig({
         tienda: resolve(__dirname, 'tienda/index.html'),
         producto: resolve(__dirname, 'producto/index.html'),
         impresion3d: resolve(__dirname, 'impresion-3d/index.html'),
-        programacion: resolve(__dirname, 'programacion/index.html'),
-        calculadora: resolve(__dirname, 'calculadora/index.html'),
       },
     },
   },
