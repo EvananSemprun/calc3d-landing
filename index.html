@@ -3,27 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Banano Lab — Fabricación digital: impresión 3D y software a medida</title>
-<meta name="description" content="Taller de fabricación digital en Venezuela. Imprimimos piezas en 3D y desarrollamos sitios, tiendas y sistemas a medida. Cotizá por WhatsApp.">
+<title>Banano Lab — Impresión 3D a pedido en Venezuela</title>
+<meta name="description" content="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS, TPU y resina, desde una unidad. Cotizá por WhatsApp.">
+
 <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
 
 <!--
-  Inicio. Es la única página con las DOS mitades del negocio a la vista: la
-  marca dice "FÍSICO · DIGITAL" y hasta acá el sitio solo mostraba lo físico.
+  Inicio. Estructura estilo tienda (referencia: Bambu Lab): barra info, carrusel
+  de banners, destacados, bloques por categoría, beneficios, proceso y FAQ. La
+  tienda es 100% impresión 3D (se quitaron programación y calculadora).
 
-  El RITMO (rejilla densa de soluciones, fondos alternos, bloques de servicio a
-  dos columnas, proceso de 5 pasos) viene del diseño de Lovable. Lo que NO se
-  copió es su arquitectura de página única con anclas: acá cada servicio tiene
-  su propia página y este inicio la resume y enlaza. Fundirlas borraría dos URL
-  que pueden posicionarse — una página rankea para un tema, no para cuatro.
+  El texto estático está en el HTML, no pintado con JS: es lo que lee un buscador.
+  Lo dinámico (destacados y bloques por categoría) llega de la API; si se cae,
+  esas secciones se ocultan y el resto del inicio sigue en pie.
 
-  El texto está escrito en el HTML, no pintado con JS: es lo que lee un buscador.
-  Lo único que llega de la API son los productos destacados, que son datos.
-
-  NO hay contadores ("500+ proyectos") ni portafolio: serían inventados. En su
-  lugar va lo que sí es verdad — soluciones, materiales, proceso y tiempos.
+  NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad —
+  materiales, proceso, tiempos y beneficios reales.
 -->
 <!--#include header-->
 
@@ -68,56 +65,6 @@
   <div class="carousel-dots" role="tablist" aria-label="Elegir banner"></div>
 </section>
 
-<!-- Soluciones: la rejilla densa que da el pulso a toda la página. -->
-<section class="section section--blue">
-  <div class="container">
-    <h2 class="h2 text-balance" style="margin-bottom:8px">Soluciones que construimos para tu negocio</h2>
-    <p class="lead" style="max-width:56ch;margin-bottom:30px">Si hace falta fabricarlo o programarlo, lo hacemos acá adentro.</p>
-    <div class="grid solutions">
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span>
-        <h3>Impresión 3D</h3>
-        <p>Piezas por encargo en PLA, PETG, ABS, TPU y resina. Desde una unidad.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 7.4 12 2 3.4 7.4v9.2L12 22l8.6-5.4z"/><circle cx="12" cy="12" r="3"/></svg></span>
-        <h3>Artículos promocionales</h3>
-        <p>Llaveros, identificadores y souvenirs con tu logo, en tanda.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span>
-        <h3>Branding físico</h3>
-        <p>Señalética, exhibidores y soportes de mostrador para tu local.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 17-5-5 5-5M16 7l5 5-5 5"/></svg></span>
-        <h3>Desarrollo web</h3>
-        <p>Landings y sitios corporativos rápidos, hechos para que te encuentren.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.4 12.1a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 2-1.6L21.5 8H6"/></svg></span>
-        <h3>Tiendas en línea</h3>
-        <p>Catálogo, carrito y cierre de pedido. Como esta misma tienda.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2 19 19M19 5l-2.8 2.8M7.8 16.2 5 19"/><circle cx="12" cy="12" r="3"/></svg></span>
-        <h3>Automatización</h3>
-        <p>Tareas repetidas que dejan de hacerse a mano: avisos, planillas, cargas.</p>
-      </article>
-      <article class="card solution">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 3.5-4 3 2.5L20 7"/></svg></span>
-        <h3>Sistemas y tableros</h3>
-        <p>Clientes, pedidos, cobros y reportes. Ver el negocio en números.</p>
-      </article>
-      <article class="card solution card--soft">
-        <span class="solution-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 1 1 4 2.8c-.8.3-1.1 1-1.1 1.7v.5"/><path d="M12 17.5h.01"/><circle cx="12" cy="12" r="10"/></svg></span>
-        <h3>¿Otra cosa?</h3>
-        <p>Si no está en la lista, preguntanos igual. Se resuelve casi todo.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
 <!-- Tira de destacados: primeras fichas reales del catálogo (los trae la API). -->
 <section class="section" id="destacadosSection">
   <div class="container">
@@ -159,31 +106,14 @@
   </div>
 </section>
 
-<!-- Servicio DIGITAL, condensado. Invertido para romper el ritmo. -->
+<!-- Beneficios reales (nada inventado: sin garantías que no damos). -->
 <section class="section">
-  <div class="container svc svc--flip">
-    <div class="card svc-panel">
-      <h3>Qué desarrollamos</h3>
-      <ul class="ticks">
-        <li>Landings y sitios corporativos</li>
-        <li>Tiendas y catálogos en línea</li>
-        <li>Sistemas administrativos</li>
-        <li>Automatización y tableros</li>
-      </ul>
-      <p class="dim" style="font-size:14px;margin:0">Este taller corre sobre un sistema propio. No es una demo: es lo que usamos todos los días.</p>
-    </div>
-    <div class="svc-body">
-      <span class="kicker">Digital</span>
-      <h2 class="h2 text-balance">Software a medida, hecho por quien también fabrica</h2>
-      <p class="lead">Entendemos el problema de un negocio chico porque llevamos el nuestro con el software que escribimos.</p>
-      <div class="tags">
-        <span class="tag">TypeScript</span><span class="tag">React</span>
-        <span class="tag">NestJS</span><span class="tag">PostgreSQL</span>
-      </div>
-      <div class="hero-actions" style="margin-top:4px">
-        <a href="/tienda/" class="btn btn-primary">Ver el catálogo</a>
-        <a href="/impresion-3d/" class="btn btn-ghost">Cómo trabajamos</a>
-      </div>
+  <div class="container">
+    <div class="grid benefits">
+      <div class="benefit"><h3>Hecho a pedido</h3><p class="dim">Producimos cuando encargás: sin stock viejo ni sobreproducción.</p></div>
+      <div class="benefit"><h3>Atención por WhatsApp</h3><p class="dim">Coordinás directo con el taller, sin formularios eternos.</p></div>
+      <div class="benefit"><h3>Listo en N días</h3><p class="dim">Cada ficha dice sus días de producción. Sin promesas vagas.</p></div>
+      <div class="benefit"><h3>Pagás al coordinar</h3><p class="dim">En dólares o en bolívares a la tasa del día, como prefieras.</p></div>
     </div>
   </div>
 </section>
@@ -191,11 +121,11 @@
 <section class="section section--blue">
   <div class="container">
     <h2 class="h2 text-balance" style="margin-bottom:8px">Cómo trabajamos</h2>
-    <p class="lead" style="max-width:52ch">Igual para una pieza impresa que para un sistema: primero entendemos qué necesitás, después ponemos precio.</p>
+    <p class="lead" style="max-width:52ch">Primero entendemos qué necesitás, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.</p>
     <ol class="steps">
       <li><span class="step-n">1</span><h3>Nos contás</h3><p class="dim">Por WhatsApp o desde acá. Medidas, cantidad, para cuándo — lo que tengas.</p></li>
       <li><span class="step-n">2</span><h3>Cotizamos</h3><p class="dim">Precio cerrado antes de empezar. Sin sorpresas a mitad del trabajo.</p></li>
-      <li><span class="step-n">3</span><h3>Producimos</h3><p class="dim">Arranca la impresora o el desarrollo, con el alcance ya acordado.</p></li>
+      <li><span class="step-n">3</span><h3>Producimos</h3><p class="dim">Arranca la impresora con el alcance ya acordado.</p></li>
       <li><span class="step-n">4</span><h3>Revisás</h3><p class="dim">Te mostramos avances. Si algo no va, se corrige antes de terminar.</p></li>
       <li><span class="step-n">5</span><h3>Entregamos</h3><p class="dim">Coordinamos entrega y pago por WhatsApp, como prefieras.</p></li>
     </ol>
@@ -221,10 +151,6 @@
       <details>
         <summary>¿Hay cantidad mínima?</summary>
         <p>Algunos productos sí, y está indicado en su ficha. Para trabajos a medida no hay mínimo fijo: se cotiza según el caso.</p>
-      </details>
-      <details>
-        <summary>¿También hacen software?</summary>
-        <p>Sí. Escribinos por WhatsApp y coordinamos lo que necesites.</p>
       </details>
     </div>
   </div>

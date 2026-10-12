@@ -231,6 +231,10 @@ select.select { appearance: none; background-image: url("data:image/svg+xml,%3Cs
   .carousel-nav { display: none; }
 }
 
+/* ---------- Banda de beneficios (inicio) ---------- */
+.benefits { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 22px; }
+.benefit h3 { color: var(--yellow); margin-bottom: 6px; }
+
 /* ---------- Bloques por categoría (inicio) ---------- */
 .cat-block { padding-block: clamp(40px, 6vw, 80px); }
 .cat-block:nth-of-type(even) { background: var(--ink-700); }
