@@ -41,12 +41,14 @@ el `package.json` sigue diciendo `@calc3d/store`.
 
 | Ruta | Archivo | Qué es |
 |---|---|---|
-| `/` | `index.html` | Inicio: las dos mitades del negocio, destacados reales, proceso, FAQ |
-| `/tienda/` | `tienda/index.html` | El catálogo (vivía en la raíz hasta que apareció el inicio) |
+| `/` | `index.html` | Inicio estilo tienda (ref. Bambu Lab): barra info, carrusel de banners, destacados, bloques por categoría, beneficios, proceso, FAQ |
+| `/tienda/` | `tienda/index.html` | El catálogo (vitrina con pestañas de categoría + filtros) |
 | `/producto/{slug}` | `producto/index.html` | Ficha; un solo HTML para todos los productos |
-| `/impresion-3d/` | | Servicio físico: materiales, proceso, qué se puede hacer |
-| `/programacion/` | | Servicio digital: qué se desarrolla, con qué, cómo se trabaja |
-| `/calculadora/` | | Estimador de proyectos de programación |
+| `/impresion-3d/` | `impresion-3d/index.html` | Servicio de impresión 3D: materiales, proceso, qué se puede hacer |
+
+> ⚠️ **La tienda es 100% impresión 3D.** `/programacion/` y `/calculadora/`
+> (estimador de software) **se eliminaron** el 2026-10-12 — el negocio en la
+> tienda es solo 3D. Si alguna vez vuelven, se recuperan del historial git.
 
 **El header y el pie son UN solo archivo** (`partials/`), inyectado por el plugin
 `parciales()` de `vite.config.ts` donde cada página pone su marca de inclusión.
@@ -65,26 +67,12 @@ el sitio incoherente.
   habían empezado a divergir (la tarjeta de "relacionados" no mostraba ni las
   insignias ni el material).
 
-## El estimador (`/calculadora/`)
-
-**No es la calculadora de Calc3D, y no puede serlo.** El motor real necesita
-gramos de filamento y horas de impresión —datos del slicer— que un visitante no
-tiene; y para software directamente no aplica. Así que es otra cosa: un
-estimador por **rangos** de proyectos de programación que termina en una
-cotización de verdad.
-
-- **Nunca sale un precio cerrado.** Salen dos números y una advertencia.
-  Comprometer un monto sin ver el alcance es prometer lo que no se sabe si se
-  puede cumplir.
-- ⚠️ **Los precios base son PROVISIONALES.** Viven en la constante `PRECIOS` al
-  tope del `<script>` de esa página, marcada. Hay que ajustarlos a lo que de
-  verdad se cobra **antes** de publicar el sitio: un visitante los va a tomar
-  como referencia.
-- "Pedir cotización exacta" abre el modal de pieza a medida con la descripción
-  **ya redactada** (tipo, secciones, extras, plazo y el rango que vio), y cae en
-  la misma bandeja. Nadie reescribe lo que acaba de elegir.
-
 ## Qué se tomó de Lovable y qué no
+
+> ⚠️ **Histórico (predata el refoco 3D del 2026-10-12).** Esta sección y la
+> siguiente describen la provenance del diseño cuando la tienda tenía la mitad
+> "programación". Esa parte ya no existe; las menciones a `/programacion/` y al
+> estimador son contexto, no instrucciones vigentes.
 
 Ese diseño es **una sola pagina de ~7.000 px** con todo adentro: su menu no
 lleva a paginas sino a anclas (`/#impresion3d`, `/#programacion`). La paleta, en
@@ -117,8 +105,8 @@ En su lugar va contenido que sí es verdad — materiales, proceso y tiempos.
 
 Vite + HTML + CSS + JS de navegador. React no aporta nada a una vitrina de solo
 lectura y el HTML plano se indexa mejor. El bundle completo pesa ~20 KB (10 KB
-gzip). Tampoco hay Tailwind: el CSS es una copia del diseño (ver más abajo), y el
-Tailwind que quedaba era el de la landing descartada.
+gzip). Tampoco hay Tailwind: el CSS es **propio** (`assets/styles.css`, ver "El
+diseño" más abajo), y el Tailwind que quedaba era el de la landing descartada.
 
 ```
 pnpm dev        # http://localhost:5182
@@ -135,18 +123,27 @@ error que se ve no menciona el puerto.
 `pnpm-workspace.yaml` autoriza el postinstall de **esbuild**; sin eso `pnpm`
 aborta la instalación.
 
-## El diseño viene de Claude Design
+## El diseño: marca Banano Lab (esta landing es la fuente de verdad del CSS)
 
-Proyecto **"banano"** (`claude.ai/design/p/081cd977-…`), archivo `tienda.html`.
+El diseño nació del proyecto Claude Design **"banano"**, pero desde el rediseño
+del **2026-10-12** (manual de marca Banano Lab) **`assets/styles.css` es la fuente
+de verdad de su propio CSS**: ya NO se copia ni se sincroniza desde ningún lado.
+Editá el CSS acá directamente. ⚠️ No volver a tratarlo como "copia de Claude
+Design": pisaría el rediseño.
 
-- **`assets/styles.css` es una COPIA LITERAL** del diseño. Si hay que cambiar el
-  aspecto, se cambia **allá** y se vuelve a copiar acá; editar solo este archivo
-  hace que las dos versiones se separen en silencio. Incluye estilos de páginas
-  que este repo todavía no tiene (inicio, calculadora, cotizador), conservados a
-  propósito para cuando se sumen.
-- `index.html` es la `tienda.html` del diseño montada en la raíz. Del nav quedan
-  solo los enlaces que existen: las otras tres páginas del diseño **no están en
-  este repo**, y un enlace a una página inexistente es peor que no tenerlo.
+**Identidad de marca** (de `BananoLAB/CONTENIDO COMPLETO.pdf`):
+- **Paleta navy + amarillo** (ya en `:root`): `--ink-900 #000814`, `--ink-700
+  #001D3D`, `--ink-600 #003566`, `--yellow #FFC300`, `--yellow-2 #FFD60A`. Tema
+  **oscuro navy en todo el sitio**.
+- **Tipografía Poppins** (`@import` de Google Fonts): `700` para el cuerpo y los
+  botones, `900` (Black) para los títulos display (`h1,h2,h3` y el hero).
+- **Logo, isotipo y mascota "Banano"** viven en `assets/brand/` (PNG versionados,
+  copiados del kit de marca). La mascota se usa con criterio: `banano-hola` en el
+  carrusel del inicio, `impresora-3d` en `/impresion-3d/`,
+  `banano-error`/`banano-molesto` reservados para estados de error/404.
+- La home sigue la estructura estilo tienda (ref. Bambu Lab) descrita en "Las
+  páginas del sitio". El carrusel usa **banners fijos** en el HTML (hito A);
+  volverlos administrables desde el panel es el hito B (aún pendiente).
 - **`assets/app.js` sí cambió** respecto del prototipo, por tres razones que
   conviene no revertir:
   1. El catálogo **no está escrito en el front**. Un catálogo duplicado se
@@ -279,11 +276,15 @@ diseño, para no separarla del original.
 - Windows / PowerShell para los comandos.
 
 ## Pendiente
-- ⚠️ **Ajustar `PRECIOS` en `/calculadora/`** antes de publicar (ver arriba).
-- **SEO**: las páginas nuevas (inicio, impresión 3D, programación, estimador)
-  tienen su contenido **en el HTML** y se indexan bien. Lo que sigue sin verse
-  son la **vitrina y las fichas**, que se pintan en el cliente: hay que
-  pre-renderizarlas en el build o aceptar que no se indexen. `nginx.conf`
+- **Hito B — banners administrables** desde el panel (hoy el carrusel usa banners
+  fijos en `index.html`). Toca `calc3d-api` + `calc3d-web` + esta landing.
+- **Hito C — Flash Sale** (ventana en `Settings` + contador; solo tacha el precio,
+  no cobra menos). **Hito D — SEO** (pre-render de vitrina/fichas) **y responsive**.
+  Specs/planes en `calc3d-api/docs/superpowers/`.
+- **SEO**: las páginas de contenido (inicio, impresión 3D) tienen su contenido
+  **en el HTML** y se indexan bien. Lo que sigue sin verse son la **vitrina y las
+  fichas**, que se pintan en el cliente: hay que pre-renderizarlas en el build
+  (hito D) o aceptar que no se indexen. `nginx.conf`
   devuelve **404** ante una dirección inexistente y no el inicio, para no generar
   "404 blandos" (páginas duplicadas a ojos de un buscador).
 - `sitemap.xml` y `robots.txt` los **genera el build** (plugin `seo()` en
