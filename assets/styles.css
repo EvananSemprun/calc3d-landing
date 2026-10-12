@@ -208,6 +208,8 @@ select.select { appearance: none; background-image: url("data:image/svg+xml,%3Cs
   border-bottom: 1px solid var(--card-line);
 }
 .nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
+.topbar { background: var(--ink-700); color: var(--text-dim); font-size: 13px; border-bottom: 1px solid var(--card-line); }
+.topbar-inner { display: flex; justify-content: center; align-items: center; gap: 10px; padding-block: 8px; text-align: center; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
 .brand-logo { width: 34px; height: auto; flex: none; }
 .brand-word { height: 20px; width: auto; }
