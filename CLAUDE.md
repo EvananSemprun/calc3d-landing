@@ -146,6 +146,16 @@ Design": pisaría el rediseño.
   (`GET /public/store/banners`, hito B); si no hay ninguno o la API falla, se
   queda con los **3 slides FIJOS del HTML** como fallback. Los banners se cargan
   desde `calc3d-web` (Tienda → Banners) y necesitan R2 configurado en la API.
+- **Sección Flash Sale** (hito C): entre el carrusel y los destacados. Un script
+  propio consume `GET /public/store/sale`; si la respuesta es `{ sale: null }`
+  (sin ventana activa o sin productos en oferta) la sección queda **oculta**. Con
+  datos muestra el título, un **contador regresivo** hasta `endsAt` (al llegar a 0
+  dice "Oferta finalizada", no se auto-oculta en vivo) y los productos con
+  `compareAtUsd > priceUsd` (tarjeta estándar + badge `-XX%` propio de la
+  sección). La ventana se edita en el panel (Tienda → Flash Sale), en hora de
+  Venezuela. **El tachado de catálogo/ficha es independiente de la ventana**
+  (siempre visible donde haya descuento). "Solo tacha": el pedido se cobra
+  `priceUsd`. Reusa `window.blAdapt` + `window.blTarjetaProducto`.
 - **`assets/app.js` sí cambió** respecto del prototipo, por tres razones que
   conviene no revertir:
   1. El catálogo **no está escrito en el front**. Un catálogo duplicado se

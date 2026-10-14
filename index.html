@@ -65,6 +65,17 @@
   <div class="carousel-dots" role="tablist" aria-label="Elegir banner"></div>
 </section>
 
+<!-- Flash Sale: solo se muestra si hay una ventana activa CON productos (los trae la API). -->
+<section class="section flash-sale" id="flashSale" hidden>
+  <div class="container">
+    <div class="eyebrow-row" style="margin-bottom:24px">
+      <h2 class="h2" id="flashSaleTitle">Flash Sale</h2>
+      <div class="flash-countdown" id="flashCountdown" aria-live="polite"></div>
+    </div>
+    <div class="grid shop-grid" id="flashSaleGrid"></div>
+  </div>
+</section>
+
 <!-- Tira de destacados: primeras fichas reales del catálogo (los trae la API). -->
 <section class="section" id="destacadosSection">
   <div class="container">
@@ -298,6 +309,68 @@ window.addEventListener('DOMContentLoaded', async () => {
   root.addEventListener('mouseenter', pause);
   root.addEventListener('mouseleave', play);
   play();
+})();
+</script>
+<script type="module">
+// Sección Flash Sale: consume GET /public/store/sale. Si no hay ventana activa
+// o no hay productos en oferta, la respuesta es { sale: null } y la sección
+// queda oculta. El contador corre en el navegador; al llegar a 0 muestra
+// "Oferta finalizada" (no se auto-oculta en vivo). El precio cobrado no cambia.
+(async function () {
+  const root = document.getElementById('flashSale');
+  if (!root) return;
+  const API = (import.meta?.env?.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
+
+  let sale = null;
+  try {
+    const r = await fetch(`${API}/public/store/sale`);
+    ({ sale } = await r.json());
+  } catch {
+    return; // la sección se queda oculta
+  }
+  if (!sale || !Array.isArray(sale.products) || !sale.products.length) return;
+
+  document.getElementById('flashSaleTitle').textContent = sale.title || 'Flash Sale';
+
+  // Productos: se adaptan con el MISMO adaptador del catálogo y se dibujan con
+  // la MISMA tarjeta (ya muestra el precio tachado y la insignia "Oferta"). El
+  // %OFF se agrega solo acá, sin tocar la tarjeta que usa el resto del sitio.
+  const grid = document.getElementById('flashSaleGrid');
+  grid.innerHTML = sale.products
+    .map((raw) => {
+      const p = window.blAdapt(raw);
+      const off =
+        p.compareAt && p.compareAt > p.price
+          ? Math.round(((p.compareAt - p.price) / p.compareAt) * 100)
+          : 0;
+      const badge = off > 0 ? `<span class="flash-off">-${off}%</span>` : '';
+      return `<div class="flash-item">${badge}${window.blTarjetaProducto(p)}</div>`;
+    })
+    .join('');
+  window.blEngancharTarjetas(grid);
+
+  root.hidden = false;
+
+  // Contador regresivo.
+  const box = document.getElementById('flashCountdown');
+  const fin = new Date(sale.endsAt).getTime();
+  const dos = (n) => String(n).padStart(2, '0');
+  function tick() {
+    const faltan = fin - Date.now();
+    if (faltan <= 0) {
+      box.textContent = 'Oferta finalizada';
+      clearInterval(timer);
+      return;
+    }
+    const s = Math.floor(faltan / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const seg = s % 60;
+    box.textContent = `${d > 0 ? `${d}d ` : ''}${dos(h)}:${dos(m)}:${dos(seg)}`;
+  }
+  tick();
+  const timer = setInterval(tick, 1000);
 })();
 </script>
 </body>

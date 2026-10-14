@@ -712,3 +712,25 @@ html.reveal-on .reveal.in { opacity: 1; transform: none; }
 @media (max-width: 640px) {
   .nav-right [data-bl="cotizar"] { display: none; }
 }
+
+/* Flash Sale: contador y badge de %OFF (el badge va solo en esta sección, no
+   toca la tarjeta que usa el resto del sitio). */
+.flash-sale .flash-countdown {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--yellow);
+  font-variant-numeric: tabular-nums;
+}
+.flash-item { position: relative; }
+.flash-item .flash-off {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: var(--yellow);
+  color: var(--ink-900);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}

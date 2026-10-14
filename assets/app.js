@@ -767,6 +767,7 @@ function blEngancharTarjetas(contenedor) {
    `BL`, así que se exponen a mano. Sin esto, los botones del HTML no encuentran
    nada y fallan en silencio. */
 window.BL = BL;
+window.blAdapt = adapt;
 window.Cart = Cart;
 window.formatPrice = formatPrice;
 window.fetchProduct = fetchProduct;
