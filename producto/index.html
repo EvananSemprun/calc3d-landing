@@ -108,14 +108,19 @@ const Pdp = {
       `<span class="dim">${esc(p.name)}</span>`;
   },
 
-  /** Precio con los recargos de las opciones elegidas y el tramo por cantidad. */
-  precio() {
+  /** Precio con los recargos de las opciones, SIN el tramo por cantidad. Es lo
+   *  que se guarda en el carrito; el tramo se recalcula ahí según la cantidad. */
+  precioBase() {
     let total = this.producto.price;
     for (const g of this.producto.optionGroups ?? []) {
       const op = g.options.find((o) => o.value === this.elegido[g.name]);
       if (op) total += op.priceDeltaUsd || 0;
     }
-    return precioConTramos(total, this.cantidad, this.producto.priceTiers);
+    return total;
+  },
+  /** Precio unitario mostrado: base + recargos + tramo de la cantidad actual. */
+  precio() {
+    return precioConTramos(this.precioBase(), this.cantidad, this.producto.priceTiers);
   },
 
   render() {
@@ -146,7 +151,8 @@ const Pdp = {
       }));
     document.getElementById('agregar')?.addEventListener('click', () => {
       // Van las opciones elegidas: son las que definen el precio del renglón.
-      Cart.add(this.producto.id, this.cantidad, this.elegido, this.precio());
+      // Se guarda el unitario SIN tramo; el carrito aplica el tramo por cantidad.
+      Cart.add(this.producto.id, this.cantidad, this.elegido, this.precioBase());
     });
   },
 

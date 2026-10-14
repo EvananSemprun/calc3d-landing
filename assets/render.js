@@ -60,6 +60,15 @@ export function precioConTramos(baseUnit, qty, tiers) {
   return Math.round(baseUnit * (1 - t.discountPct) * 10000) / 10000;
 }
 
+/** Precio unitario de un renglón del carrito aplicando el tramo según su cantidad
+ *  ACTUAL. `item.unit` es el unitario SIN tramo (base + recargos de opción), que
+ *  se congela al agregar; el tramo se recalcula acá con `item.qty`, así bajar o
+ *  subir la cantidad en el carrito actualiza el precio. Sin producto, usa `unit`. */
+export function precioUnitarioItem(item, product) {
+  const base = typeof item.unit === 'number' ? item.unit : (product?.price ?? 0);
+  return precioConTramos(base, item.qty, product?.priceTiers ?? []);
+}
+
 /** Precio USD con el equivalente en la moneda de la tasa (o solo USD si no hay). */
 export function formatPriceHtml(usd, rate) {
   const base = `$${usd.toFixed(2)}<small> USD</small>`;

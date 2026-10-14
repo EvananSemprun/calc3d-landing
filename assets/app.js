@@ -15,7 +15,7 @@
       de tres.
    ============================================================ */
 
-import { escapeHtml, escapeAttr, adapt, formatPriceHtml, renderCard } from './render.js';
+import { escapeHtml, escapeAttr, adapt, formatPriceHtml, renderCard, precioUnitarioItem } from './render.js';
 
 const API = (import.meta?.env?.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
 
@@ -305,11 +305,11 @@ function unitPrice(p, opts) {
   return total;
 }
 
-/** Precio del renglón guardado. Se congeló al agregarlo, así que sobrevive a que
- *  el listado (que no trae los grupos de opciones) no pueda recalcularlo. */
+/** Precio del renglón: el unitario sin tramo (base + opciones) se congela al
+ *  agregarlo (sobrevive a que el listado no traiga los grupos de opciones), y el
+ *  tramo por cantidad se recalcula con la cantidad ACTUAL del renglón. */
 function precioDeItem(i) {
-  if (typeof i.unit === 'number') return i.unit;
-  return BL.find(i.id)?.price ?? 0;
+  return precioUnitarioItem(i, BL.find(i.id));
 }
 
 /** "Color: Rojo · Tamaño: Grande" */

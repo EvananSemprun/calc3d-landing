@@ -118,3 +118,15 @@ test('precioConTramos aplica el mayor tramo aplicable', () => {
   assert.ok(Math.abs(precioConTramos(10, 30, t) - 8) < 1e-9);
   assert.equal(precioConTramos(5, 100, []), 5);
 });
+
+import { precioUnitarioItem } from './render.js';
+test('precioUnitarioItem aplica el tramo según la cantidad ACTUAL del renglón', () => {
+  const prod = { price: 9.5, priceTiers: [{ minQty: 10, discountPct: 0.2 }] };
+  // unit = base+opciones SIN tramo (9.5). A qty 10 → 7.60; a qty 2 → 9.50 (no congelado).
+  assert.ok(Math.abs(precioUnitarioItem({ unit: 9.5, qty: 10 }, prod) - 7.6) < 1e-9);
+  assert.ok(Math.abs(precioUnitarioItem({ unit: 9.5, qty: 2 }, prod) - 9.5) < 1e-9);
+  // sin unit guardado, usa el precio del producto
+  assert.ok(Math.abs(precioUnitarioItem({ qty: 10 }, prod) - 7.6) < 1e-9);
+  // sin producto (listado viejo), no rompe
+  assert.equal(precioUnitarioItem({ unit: 5, qty: 1 }, null), 5);
+});
