@@ -130,3 +130,53 @@ test('precioUnitarioItem aplica el tramo según la cantidad ACTUAL del renglón'
   // sin producto (listado viejo), no rompe
   assert.equal(precioUnitarioItem({ unit: 5, qty: 1 }, null), 5);
 });
+
+test('renderFichaHtml usa la foto de la opción elegida del grupo que define la foto', () => {
+  const p = adapt({
+    slug: 'x',
+    name: 'X',
+    priceUsd: 10,
+    minQty: 1,
+    images: [{ url: 'https://cdn/base.jpg' }],
+    optionGroups: [
+      {
+        name: 'Color',
+        required: true,
+        drivesPhoto: true,
+        options: [
+          { value: 'Rojo', images: [{ url: 'https://cdn/rojo.jpg' }] },
+          { value: 'Azul', images: [] },
+        ],
+      },
+    ],
+  });
+  // El color elegido tiene foto propia → la galería usa esa.
+  const rojo = renderFichaHtml(p, { elegido: { Color: 'Rojo' } });
+  assert.ok(rojo.includes('https://cdn/rojo.jpg'));
+  assert.ok(!rojo.includes('https://cdn/base.jpg'));
+  // Un color sin foto propia → cae a la galería base, no se rompe.
+  const azul = renderFichaHtml(p, { elegido: { Color: 'Azul' } });
+  assert.ok(azul.includes('https://cdn/base.jpg'));
+  assert.ok(!azul.includes('https://cdn/rojo.jpg'));
+});
+
+test('renderFichaHtml sin grupo que define la foto usa la galería base', () => {
+  const p = adapt({
+    slug: 'y',
+    name: 'Y',
+    priceUsd: 10,
+    minQty: 1,
+    images: [{ url: 'https://cdn/base.jpg' }],
+    optionGroups: [
+      {
+        name: 'Color',
+        required: true,
+        drivesPhoto: false,
+        options: [{ value: 'Rojo', images: [{ url: 'https://cdn/rojo.jpg' }] }],
+      },
+    ],
+  });
+  const html = renderFichaHtml(p, { elegido: { Color: 'Rojo' } });
+  assert.ok(html.includes('https://cdn/base.jpg'));
+  assert.ok(!html.includes('https://cdn/rojo.jpg'));
+});

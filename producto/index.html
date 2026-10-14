@@ -140,6 +140,10 @@ const Pdp = {
       cont.querySelectorAll('.pdp-opt').forEach((b) =>
         b.addEventListener('click', () => {
           this.elegido[cont.dataset.grupo] = b.dataset.opt;
+          // Si cambió el color del grupo que define la foto, la galería cambia:
+          // volver a la primera foto para no quedar en una miniatura inexistente.
+          const grupoFoto = (this.producto.optionGroups || []).find((g) => g.drivesPhoto);
+          if (grupoFoto && grupoFoto.name === cont.dataset.grupo) this.fotoActiva = 0;
           this.render();
         })));
     document.querySelectorAll('[data-cant]').forEach((b) =>

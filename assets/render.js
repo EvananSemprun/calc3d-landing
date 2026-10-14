@@ -216,7 +216,15 @@ export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = n
         .join('')}</tbody></table>`
     : '';
 
-  const fotos = p.images ?? (p.image ? [p.image] : []);
+  // Galería: si un grupo "define la foto" y el color elegido tiene fotos propias,
+  // la galería muestra esas; si no (color sin foto, o ningún grupo foto), la base.
+  const fotosBase = p.images ?? (p.image ? [p.image] : []);
+  const grupoFoto = (p.optionGroups ?? []).find((g) => g.drivesPhoto);
+  const opcionFoto = grupoFoto
+    ? grupoFoto.options.find((o) => o.value === elegidas[grupoFoto.name])
+    : null;
+  const fotos =
+    opcionFoto && opcionFoto.images && opcionFoto.images.length ? opcionFoto.images : fotosBase;
   const principal = fotos[fotoActiva];
 
   const galeria = `
