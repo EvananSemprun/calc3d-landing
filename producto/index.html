@@ -41,6 +41,8 @@
 
 <script type="module" src="/assets/app.js"></script>
 <script type="module">
+import { renderFichaHtml } from '/assets/render.js';
+
 const Pdp = {
   producto: null,
   /** Opción elegida por grupo: { "Color": "Rojo" }. */
@@ -112,72 +114,14 @@ const Pdp = {
   },
 
   render() {
-    const p = this.producto;
-    const fotos = p.images ?? (p.image ? [p.image] : []);
-    const principal = fotos[this.fotoActiva];
-
-    const galeria = `
-      <div class="pdp-gallery">
-        ${principal
-          ? `<img class="pdp-main" src="${esc(principal.url)}" alt="${esc(principal.alt || p.name)}">`
-          : `<div class="ph pdp-main" data-label="sin foto"></div>`}
-        ${fotos.length > 1
-          ? `<div class="pdp-thumbs">${fotos.map((f, i) =>
-              `<img class="pdp-thumb${i === this.fotoActiva ? ' on' : ''}" data-foto="${i}" src="${esc(f.url)}" alt="${esc(f.alt || '')}">`).join('')}</div>`
-          : ''}
-      </div>`;
-
-    const insignias = [
-      p.badge ? `<span class="badge">${esc(p.badge)}</span>` : '',
-      p.custom ? `<span class="badge badge-soft">Personalizable</span>` : '',
-      p.kind === 'SERVICE' ? `<span class="badge badge-soft">Servicio</span>` : '',
-    ].filter(Boolean).join('');
-
-    const hechos = [
-      p.catLabel ? esc(p.catLabel) : '',
-      p.material ? esc(p.material) : '',
-      p.ship ? `Listo en ${esc(p.ship)}` : '',
-      p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
-    ].filter(Boolean).map((h) => `<span>${h}</span>`).join('<span class="dim">·</span>');
-
-    const grupos = (p.optionGroups ?? []).map((g) => `
-      <div class="pdp-opt-group">
-        <h4>${esc(g.name)}${g.required ? '' : ' (opcional)'}</h4>
-        <div class="pdp-opts" data-grupo="${esc(g.name)}">
-          ${g.options.map((o) => `
-            <button class="pdp-opt${this.elegido[g.name] === o.value ? ' on' : ''}" data-opt="${esc(o.value)}">
-              ${o.swatchHex ? `<i style="background:${esc(o.swatchHex)}"></i>` : ''}${esc(o.value)}${o.priceDeltaUsd ? ` +$${o.priceDeltaUsd.toFixed(2)}` : ''}
-            </button>`).join('')}
-        </div>
-      </div>`).join('');
-
-    const specs = (p.specs ?? []).length
-      ? `<table class="pdp-specs"><tbody>${p.specs.map((e) =>
-          `<tr><th scope="row">${esc(e.label)}</th><td>${esc(e.value)}</td></tr>`).join('')}</tbody></table>`
-      : '';
-
-    document.getElementById('pdp').innerHTML = `
-      <div class="pdp">
-        ${galeria}
-        <div class="pdp-info">
-          ${insignias ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${insignias}</div>` : ''}
-          <h1 class="h2">${esc(p.name)}</h1>
-          ${hechos ? `<div class="pdp-facts">${hechos}</div>` : ''}
-          <div class="pdp-price">${formatPrice(this.precio())}</div>
-          ${p.desc ? `<p class="lead" style="font-size:17px">${esc(p.desc)}</p>` : ''}
-          ${grupos}
-          <div class="pdp-buy">
-            <div class="qty">
-              <button data-cant="-1" aria-label="menos">–</button>
-              <span id="cantVal">${this.cantidad}</span>
-              <button data-cant="1" aria-label="más">+</button>
-            </div>
-            <button class="btn btn-primary" id="agregar">Agregar al pedido</button>
-          </div>
-          ${p.description ? `<div class="pdp-desc">${esc(p.description)}</div>` : ''}
-          ${specs ? `<div><h3 class="h3" style="margin-top:10px;font-size:20px">Especificaciones</h3>${specs}</div>` : ''}
-        </div>
-      </div>`;
+    // El markup vive en renderFichaHtml (render.js), compartido con el build para
+    // que el pre-render y este render no diverjan. Acá solo se pasa el estado.
+    document.getElementById('pdp').innerHTML = renderFichaHtml(this.producto, {
+      elegido: this.elegido,
+      cantidad: this.cantidad,
+      fotoActiva: this.fotoActiva,
+      rate: BL.info.rate,
+    });
 
     // Eventos (delegados a mano: el HTML se regenera en cada cambio).
     document.querySelectorAll('.pdp-thumb').forEach((t) =>

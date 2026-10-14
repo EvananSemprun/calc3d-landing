@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, adapt, renderCard, formatPriceHtml } from './render.js';
+import { escapeHtml, adapt, renderCard, formatPriceHtml, renderFichaHtml } from './render.js';
 
 test('escapeHtml neutraliza < > & " \'', () => {
   assert.equal(escapeHtml('<b>"x"&\'y\''), '&lt;b&gt;&quot;x&quot;&amp;&#39;y&#39;');
@@ -33,4 +33,32 @@ test('formatPriceHtml sin tasa es solo USD; con tasa agrega el equivalente', () 
   const conBs = formatPriceHtml(10, { rate: 40, currencyCode: 'VES' });
   assert.ok(conBs.includes('price-alt'));
   assert.ok(conBs.includes('VES'));
+});
+
+const fichaDemo = adapt({
+  slug: 'llavero', name: 'Llavero <x>', priceUsd: 10, compareAtUsd: null, minQty: 1,
+  summary: 'Resumen', description: 'Descripción larga', kind: 'PHYSICAL', material: 'PLA',
+  leadTimeDays: 3, badge: 'Top', custom: true,
+  images: [{ url: 'https://cdn/x.jpg', alt: 'foto', width: 800, height: 800 }],
+  specs: [{ label: 'Alto', value: '5cm' }],
+  optionGroups: [{ name: 'Color', required: true, options: [
+    { value: 'Rojo', priceDeltaUsd: 0, swatchHex: '#f00' },
+    { value: 'Grande', priceDeltaUsd: 3, swatchHex: null },
+  ] }],
+});
+
+test('renderFichaHtml arma el nombre (escapado), precio y specs con defaults', () => {
+  const html = renderFichaHtml(fichaDemo, { rate: null });
+  assert.ok(html.includes('<h1 class="h2">Llavero &lt;x&gt;</h1>'));
+  assert.ok(html.includes('$10.00')); // precio base (opción Rojo = +0)
+  assert.ok(html.includes('Especificaciones'));
+  assert.ok(html.includes('Alto'));
+  assert.ok(html.includes('pdp-opt on')); // la primera opción obligatoria arranca elegida
+});
+
+test('renderFichaHtml no rompe sin fotos ni specs ni opciones', () => {
+  const simple = adapt({ slug: 's', name: 'Simple', priceUsd: 5, minQty: 1 });
+  const html = renderFichaHtml(simple, {});
+  assert.ok(html.includes('sin foto'));
+  assert.ok(!html.includes('Especificaciones'));
 });

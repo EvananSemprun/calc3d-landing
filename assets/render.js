@@ -107,3 +107,90 @@ export function renderCard(p, rate) {
     </div>
   </article>`;
 }
+
+/**
+ * Cuerpo de la ficha de producto (el innerHTML de `#pdp`). Puro: lo usa el
+ * cliente (producto/index.html) con el estado interactivo, y el build con los
+ * defaults. `opts.elegido` = opción elegida por grupo (default: la primera de
+ * cada grupo obligatorio), `opts.cantidad` (default minQty||1), `opts.fotoActiva`
+ * (default 0), `opts.rate` (tasa para el precio, default null).
+ */
+export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = null } = {}) {
+  const elegidas = elegido ?? Object.fromEntries(
+    (p.optionGroups ?? [])
+      .filter((g) => g.required && g.options.length)
+      .map((g) => [g.name, g.options[0].value]),
+  );
+  const cant = cantidad ?? (p.minQty || 1);
+  let precio = p.price;
+  for (const g of p.optionGroups ?? []) {
+    const op = g.options.find((o) => o.value === elegidas[g.name]);
+    if (op) precio += op.priceDeltaUsd || 0;
+  }
+
+  const fotos = p.images ?? (p.image ? [p.image] : []);
+  const principal = fotos[fotoActiva];
+
+  const galeria = `
+      <div class="pdp-gallery">
+        ${principal
+          ? `<img class="pdp-main" src="${escapeAttr(principal.url)}" alt="${escapeAttr(principal.alt || p.name)}">`
+          : `<div class="ph pdp-main" data-label="sin foto"></div>`}
+        ${fotos.length > 1
+          ? `<div class="pdp-thumbs">${fotos.map((f, i) =>
+              `<img class="pdp-thumb${i === fotoActiva ? ' on' : ''}" data-foto="${i}" src="${escapeAttr(f.url)}" alt="${escapeAttr(f.alt || '')}">`).join('')}</div>`
+          : ''}
+      </div>`;
+
+  const insignias = [
+    p.badge ? `<span class="badge">${escapeHtml(p.badge)}</span>` : '',
+    p.custom ? `<span class="badge badge-soft">Personalizable</span>` : '',
+    p.kind === 'SERVICE' ? `<span class="badge badge-soft">Servicio</span>` : '',
+  ].filter(Boolean).join('');
+
+  const hechos = [
+    p.catLabel ? escapeHtml(p.catLabel) : '',
+    p.material ? escapeHtml(p.material) : '',
+    p.ship ? `Listo en ${escapeHtml(p.ship)}` : '',
+    p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
+  ].filter(Boolean).map((h) => `<span>${h}</span>`).join('<span class="dim">·</span>');
+
+  const grupos = (p.optionGroups ?? []).map((g) => `
+      <div class="pdp-opt-group">
+        <h4>${escapeHtml(g.name)}${g.required ? '' : ' (opcional)'}</h4>
+        <div class="pdp-opts" data-grupo="${escapeAttr(g.name)}">
+          ${g.options.map((o) => `
+            <button class="pdp-opt${elegidas[g.name] === o.value ? ' on' : ''}" data-opt="${escapeAttr(o.value)}">
+              ${o.swatchHex ? `<i style="background:${escapeAttr(o.swatchHex)}"></i>` : ''}${escapeHtml(o.value)}${o.priceDeltaUsd ? ` +$${o.priceDeltaUsd.toFixed(2)}` : ''}
+            </button>`).join('')}
+        </div>
+      </div>`).join('');
+
+  const specs = (p.specs ?? []).length
+    ? `<table class="pdp-specs"><tbody>${p.specs.map((e) =>
+        `<tr><th scope="row">${escapeHtml(e.label)}</th><td>${escapeHtml(e.value)}</td></tr>`).join('')}</tbody></table>`
+    : '';
+
+  return `
+      <div class="pdp">
+        ${galeria}
+        <div class="pdp-info">
+          ${insignias ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${insignias}</div>` : ''}
+          <h1 class="h2">${escapeHtml(p.name)}</h1>
+          ${hechos ? `<div class="pdp-facts">${hechos}</div>` : ''}
+          <div class="pdp-price">${formatPriceHtml(precio, rate)}</div>
+          ${p.desc ? `<p class="lead" style="font-size:17px">${escapeHtml(p.desc)}</p>` : ''}
+          ${grupos}
+          <div class="pdp-buy">
+            <div class="qty">
+              <button data-cant="-1" aria-label="menos">–</button>
+              <span id="cantVal">${cant}</span>
+              <button data-cant="1" aria-label="más">+</button>
+            </div>
+            <button class="btn btn-primary" id="agregar">Agregar al pedido</button>
+          </div>
+          ${p.description ? `<div class="pdp-desc">${escapeHtml(p.description)}</div>` : ''}
+          ${specs ? `<div><h3 class="h3" style="margin-top:10px;font-size:20px">Especificaciones</h3>${specs}</div>` : ''}
+        </div>
+      </div>`;
+}
