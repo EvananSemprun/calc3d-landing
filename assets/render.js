@@ -30,6 +30,7 @@ export function adapt(p) {
     catLabel: p.category?.name ?? '',
     price: p.priceUsd,
     compareAt: p.compareAtUsd,
+    priceTiers: p.priceTiers ?? [],
     desc: p.summary ?? '',
     kind: p.kind,
     minQty: p.minQty,
@@ -49,6 +50,14 @@ export function adapt(p) {
     colorList,
     colors: colorList.map((c) => c.value),
   };
+}
+
+/** Precio unitario tras el mayor tramo aplicable (minQty <= qty). Sin tramos, baseUnit.
+ *  Reimplementa precioConTramos de @calc3d/shared: la landing no importa shared. */
+export function precioConTramos(baseUnit, qty, tiers) {
+  const t = (tiers || []).filter((x) => qty >= x.minQty).sort((a, b) => b.minQty - a.minQty)[0];
+  if (!t) return baseUnit;
+  return Math.round(baseUnit * (1 - t.discountPct) * 10000) / 10000;
 }
 
 /** Precio USD con el equivalente en la moneda de la tasa (o solo USD si no hay). */
@@ -185,6 +194,18 @@ export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = n
     const op = g.options.find((o) => o.value === elegidas[g.name]);
     if (op) precio += op.priceDeltaUsd || 0;
   }
+  // El unitario mostrado refleja el tramo por cantidad de la cantidad actual.
+  precio = precioConTramos(precio, cant, p.priceTiers);
+
+  // Tabla de mayoreo: cada tramo con su unitario (sobre el precio base).
+  const tabla = (p.priceTiers ?? []).length
+    ? `<table class="pdp-tiers"><tbody>${(p.priceTiers ?? [])
+        .map(
+          (t) =>
+            `<tr><th scope="row">Desde ${t.minQty} u</th><td>$${precioConTramos(p.price, t.minQty, p.priceTiers).toFixed(2)} c/u</td><td class="dim">−${Math.round(t.discountPct * 100)}%</td></tr>`,
+        )
+        .join('')}</tbody></table>`
+    : '';
 
   const fotos = p.images ?? (p.image ? [p.image] : []);
   const principal = fotos[fotoActiva];
@@ -237,6 +258,7 @@ export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = n
           <h1 class="h2">${escapeHtml(p.name)}</h1>
           ${hechos ? `<div class="pdp-facts">${hechos}</div>` : ''}
           <div class="pdp-price">${formatPriceHtml(precio, rate)}</div>
+          ${tabla}
           ${p.desc ? `<p class="lead" style="font-size:17px">${escapeHtml(p.desc)}</p>` : ''}
           ${grupos}
           <div class="pdp-buy">

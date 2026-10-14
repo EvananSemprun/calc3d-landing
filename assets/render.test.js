@@ -109,3 +109,12 @@ test('inyectarFicha no interpreta el $ del contenido (replacer function, no corr
   assert.ok(out.startsWith('<title>Taza'));
   assert.ok(out.endsWith('DESPUES'));
 });
+
+import { precioConTramos } from './render.js';
+test('precioConTramos aplica el mayor tramo aplicable', () => {
+  const t = [{ minQty: 10, discountPct: 0.1 }, { minQty: 25, discountPct: 0.2 }];
+  assert.equal(precioConTramos(10, 9, t), 10);
+  assert.ok(Math.abs(precioConTramos(10, 10, t) - 9) < 1e-9);
+  assert.ok(Math.abs(precioConTramos(10, 30, t) - 8) < 1e-9);
+  assert.equal(precioConTramos(5, 100, []), 5);
+});

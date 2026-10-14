@@ -41,7 +41,7 @@
 
 <script type="module" src="/assets/app.js"></script>
 <script type="module">
-import { renderFichaHtml } from '/assets/render.js';
+import { renderFichaHtml, precioConTramos } from '/assets/render.js';
 
 const Pdp = {
   producto: null,
@@ -108,14 +108,14 @@ const Pdp = {
       `<span class="dim">${esc(p.name)}</span>`;
   },
 
-  /** Precio con los recargos de las opciones elegidas. */
+  /** Precio con los recargos de las opciones elegidas y el tramo por cantidad. */
   precio() {
     let total = this.producto.price;
     for (const g of this.producto.optionGroups ?? []) {
       const op = g.options.find((o) => o.value === this.elegido[g.name]);
       if (op) total += op.priceDeltaUsd || 0;
     }
-    return total;
+    return precioConTramos(total, this.cantidad, this.producto.priceTiers);
   },
 
   render() {
@@ -141,7 +141,8 @@ const Pdp = {
       b.addEventListener('click', () => {
         const min = this.producto.minQty || 1;
         this.cantidad = Math.max(min, this.cantidad + Number(b.dataset.cant));
-        document.getElementById('cantVal').textContent = String(this.cantidad);
+        // Re-render para que el precio unitario refleje el tramo de la cantidad.
+        this.render();
       }));
     document.getElementById('agregar')?.addEventListener('click', () => {
       // Van las opciones elegidas: son las que definen el precio del renglón.
