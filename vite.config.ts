@@ -1,6 +1,44 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import {
+  adapt,
+  renderCard,
+  renderFichaHtml,
+  metaTagsFor,
+  jsonLdProduct,
+  tituloFicha,
+  escapeHtml,
+} from './assets/render.js';
+
+/** API y dominio del build (mismas variables que el cliente). */
+const API = (process.env.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
+const SITE = (process.env.VITE_SITE_URL ?? '').trim().replace(/\/+$/, '');
+
+/**
+ * Catálogo consultado en el BUILD (fichas completas). Lo llena el plugin
+ * `prerender` en `buildStart` y lo lee también `seo` para el sitemap. Módulo-scope
+ * para compartirlo sin reconsultar la API.
+ */
+let catalogo: any[] = [];
+let infoRate: any = null;
+let businessName = 'Banano Lab';
+
+/** fetch con reintentos y espera creciente (para el cold start de Render). */
+async function fetchConReintentos(url: string, intentos = 6): Promise<any> {
+  let ultimoError: unknown;
+  for (let i = 0; i < intentos; i++) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) return await r.json();
+      ultimoError = new Error(`HTTP ${r.status}`);
+    } catch (e) {
+      ultimoError = e;
+    }
+    await new Promise((res) => setTimeout(res, 2000 * (i + 1)));
+  }
+  throw new Error(`[prerender] No se pudo consultar ${url} tras ${intentos} intentos: ${ultimoError}`);
+}
 
 /**
  * Tienda y sitio público de Banano Lab. Estático y SIN React, igual que
@@ -86,7 +124,12 @@ function seo(): Plugin {
       const fecha = statSync(resolve(__dirname, archivo)).mtime.toISOString().slice(0, 10);
       return `  <url>\n    <loc>${base}${ruta}</loc>\n    <lastmod>${fecha}</lastmod>\n  </url>`;
     });
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+    // Las fichas pre-renderizadas (las llenó `prerender` en buildStart) ya SON
+    // páginas reales con contenido, así que entran al sitemap.
+    const fichas = catalogo.map(
+      (raw) => `  <url>\n    <loc>${base}/producto/${encodeURIComponent(raw.slug)}/</loc>\n  </url>`,
+    );
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...urls, ...fichas].join('\n')}\n</urlset>\n`;
   };
 
   return {
@@ -148,10 +191,74 @@ function rutasLimpias(): Plugin {
   };
 }
 
+/**
+ * Pre-render (SSG) de la vitrina y de cada ficha. Consulta la API en el BUILD
+ * (con reintentos; FALLA el build si no responde) para que el buscador y el
+ * primer paint vean el contenido escrito en el HTML. El cliente sigue
+ * re-renderizando con las MISMAS funciones puras (render.js), así que no diverge.
+ *
+ * - La VITRINA es un input del build: se inyecta la grilla en `transformIndexHtml`
+ *   (post), con los assets ya resueltos por Vite.
+ * - Las FICHAS por slug NO son inputs: se escriben en `closeBundle` usando el
+ *   `dist/producto/index.html` ya construido como plantilla (hereda assets
+ *   hasheados + parciales resueltos).
+ */
+function prerender(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'prerender',
+    configResolved(config) {
+      outDir = config.build.outDir;
+    },
+    async buildStart() {
+      const info = await fetchConReintentos(`${API}/public/store/info`);
+      infoRate = info?.rate ?? null;
+      businessName = info?.businessName ?? 'Banano Lab';
+      const { products } = await fetchConReintentos(`${API}/public/store/products`);
+      catalogo = [];
+      for (const card of products) {
+        catalogo.push(await fetchConReintentos(`${API}/public/store/products/${encodeURIComponent(card.slug)}`));
+      }
+      this.info(`[prerender] ${catalogo.length} fichas desde ${API}`);
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!/(^|\/)tienda\/index\.html$/.test(ctx.path)) return html;
+        const grid = catalogo.map((raw) => renderCard(adapt(raw), infoRate)).join('');
+        // El contenido de #shopGrid son SOLO los skeletons: se matchean uno a uno
+        // (y su cierre), para no cortar en el primer </div> ni dejar skeletons sueltos.
+        return html.replace(
+          /(<div class="grid shop-grid" id="shopGrid">)(?:\s*<div class="skeleton"><\/div>)*\s*(<\/div>)/,
+          `$1${grid}$2`,
+        );
+      },
+    },
+    closeBundle() {
+      const plantilla = readFileSync(resolve(outDir, 'producto/index.html'), 'utf8');
+      for (const raw of catalogo) {
+        const p = adapt(raw);
+        const path = `/producto/${p.id}/`;
+        const head =
+          `<title>${escapeHtml(tituloFicha(p, businessName))}</title>\n` +
+          metaTagsFor(p, { siteUrl: SITE, path }) +
+          '\n' +
+          jsonLdProduct(p, { siteUrl: SITE, path });
+        const cuerpo = renderFichaHtml(p, { rate: infoRate });
+        const html = plantilla
+          .replace(/<title>[\s\S]*?<\/title>/, head)
+          .replace('<div class="shop-state"><strong>Cargando…</strong></div>', cuerpo);
+        mkdirSync(resolve(outDir, `producto/${p.id}`), { recursive: true });
+        writeFileSync(resolve(outDir, `producto/${p.id}/index.html`), html);
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  // `seo` va antes que `rutasLimpias`: si no, `/robots.txt` no llegaría a su
-  // middleware (aunque hoy el patrón no lo tocaría, el orden lo deja explícito).
-  plugins: [parciales(), seo(), rutasLimpias()],
+  // `prerender` va antes que `seo`: su `buildStart` llena `catalogo`, que `seo`
+  // lee para el sitemap. `seo` va antes que `rutasLimpias` (orden explícito).
+  plugins: [parciales(), prerender(), seo(), rutasLimpias()],
   server: { port: 5182 },
   build: {
     target: 'es2019',

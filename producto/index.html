@@ -63,6 +63,11 @@ const Pdp = {
       this.producto = await fetchProduct(slug);
     } catch (e) {
       console.error(e);
+      // Si la página vino PRE-RENDERIZADA (SSG), el contenido ya está en el HTML:
+      // se deja en vez de reemplazarlo por un error. Perdemos lo interactivo
+      // (el fetch falló), pero el visitante igual ve y lee la ficha — que es
+      // justo el valor del pre-render. Sin pre-render, mostramos el error.
+      if (document.querySelector('#pdp .pdp')) return;
       return this.fallo('No encontramos este producto. Puede que ya no esté publicado.');
     }
     this.cantidad = this.producto.minQty || 1;
