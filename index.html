@@ -369,8 +369,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     const seg = s % 60;
     box.textContent = `${d > 0 ? `${d}d ` : ''}${dos(h)}:${dos(m)}:${dos(seg)}`;
   }
+  // `timer` se declara antes del primer tick: si la oferta ya venció en ese
+  // primer tick (reloj del cliente adelantado), clearInterval(null) es no-op y
+  // no hay TDZ. Sin esto, leer `timer` antes del `const` lanzaba ReferenceError.
+  let timer = null;
   tick();
-  const timer = setInterval(tick, 1000);
+  timer = setInterval(tick, 1000);
 })();
 </script>
 </body>
