@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, adapt, renderCard, formatPriceHtml, renderFichaHtml, metaTagsFor, jsonLdProduct, tituloFicha } from './render.js';
+import { escapeHtml, adapt, renderCard, formatPriceHtml, renderFichaHtml, metaTagsFor, jsonLdProduct, tituloFicha, inyectarFicha } from './render.js';
 
 test('escapeHtml neutraliza < > & " \'', () => {
   assert.equal(escapeHtml('<b>"x"&\'y\''), '&lt;b&gt;&quot;x&quot;&amp;&#39;y&#39;');
@@ -94,4 +94,18 @@ test('jsonLdProduct arma Product con offers USD y neutraliza </script>', () => {
 test('tituloFicha', () => {
   const p = adapt({ slug: 'x', name: 'Llavero', priceUsd: 1, minQty: 1 });
   assert.equal(tituloFicha(p, 'Banano Lab'), 'Llavero — Banano Lab');
+});
+
+test('inyectarFicha no interpreta el $ del contenido (replacer function, no corrompe)', () => {
+  const plantilla = '<title>Producto — Banano Lab</title>ANTES<div class="shop-state"><strong>Cargando…</strong></div>DESPUES';
+  // Simula HTML ya escapado con `$` pegado a un carácter escapado (empieza con &):
+  // sin replacer-function, `$&`/`$"`... se interpretan como la subcadena matcheada.
+  const head = '<title>Taza $&quot;promo&quot; — Banano Lab</title>';
+  const cuerpo = '<div class="pdp">precio $&lt;100 y $"especial"</div>';
+  const out = inyectarFicha(plantilla, head, cuerpo);
+  assert.ok(out.includes('<title>Taza $&quot;promo&quot; — Banano Lab</title>'));
+  assert.ok(out.includes('<div class="pdp">precio $&lt;100 y $"especial"</div>'));
+  assert.ok(!out.includes('Cargando'));
+  assert.ok(out.startsWith('<title>Taza'));
+  assert.ok(out.endsWith('DESPUES'));
 });

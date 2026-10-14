@@ -113,6 +113,19 @@ export function tituloFicha(p, businessName) {
   return `${p.name} — ${businessName}`;
 }
 
+/**
+ * Inyecta en la plantilla de ficha el `<head>` (meta/OG/JSON-LD) y el `cuerpo`
+ * pre-renderizado. Los reemplazos usan FUNCIONES replacer a propósito: el string
+ * de reemplazo de `String.replace` interpreta `$&`, `$\``, `$'`, `$$`, y el HTML
+ * escapado del dueño trae `$` pegado a `&amp;`/`&lt;`/… que dispararía esa
+ * sustitución y corrompería la ficha. Una función no interpreta el `$`.
+ */
+export function inyectarFicha(plantilla, head, cuerpo) {
+  return plantilla
+    .replace(/<title>[\s\S]*?<\/title>/, () => head)
+    .replace('<div class="shop-state"><strong>Cargando…</strong></div>', () => cuerpo);
+}
+
 /** Etiquetas de <head> de una ficha (sin el <title>): description, canonical,
  *  Open Graph y precio. Todo escapado. `ctx = { siteUrl, path }`. */
 export function metaTagsFor(p, { siteUrl, path }) {

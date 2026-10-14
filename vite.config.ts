@@ -9,6 +9,7 @@ import {
   jsonLdProduct,
   tituloFicha,
   escapeHtml,
+  inyectarFicha,
 } from './assets/render.js';
 
 /** API y dominio del build (mismas variables que el cliente). */
@@ -207,6 +208,10 @@ function prerender(): Plugin {
   let outDir = 'dist';
   return {
     name: 'prerender',
+    // Solo en BUILD: su `buildStart` consulta la API, y en `pnpm dev` (que también
+    // dispara `buildStart`) eso bloquearía el arranque del server si la API está
+    // caída. En dev el sitio sigue degradándose solo (lo renderiza el cliente).
+    apply: 'build',
     configResolved(config) {
       outDir = config.build.outDir;
     },
@@ -245,9 +250,7 @@ function prerender(): Plugin {
           '\n' +
           jsonLdProduct(p, { siteUrl: SITE, path });
         const cuerpo = renderFichaHtml(p, { rate: infoRate });
-        const html = plantilla
-          .replace(/<title>[\s\S]*?<\/title>/, head)
-          .replace('<div class="shop-state"><strong>Cargando…</strong></div>', cuerpo);
+        const html = inyectarFicha(plantilla, head, cuerpo);
         mkdirSync(resolve(outDir, `producto/${p.id}`), { recursive: true });
         writeFileSync(resolve(outDir, `producto/${p.id}/index.html`), html);
       }
