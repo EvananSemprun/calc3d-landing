@@ -108,6 +108,51 @@ export function renderCard(p, rate) {
   </article>`;
 }
 
+/** Título del documento para una ficha. */
+export function tituloFicha(p, businessName) {
+  return `${p.name} — ${businessName}`;
+}
+
+/** Etiquetas de <head> de una ficha (sin el <title>): description, canonical,
+ *  Open Graph y precio. Todo escapado. `ctx = { siteUrl, path }`. */
+export function metaTagsFor(p, { siteUrl, path }) {
+  const url = `${siteUrl}${path}`;
+  const desc = p.desc || p.description || `${p.name} — impresión 3D a pedido.`;
+  const foto = p.image?.url;
+  return [
+    `<meta name="description" content="${escapeAttr(desc)}">`,
+    `<link rel="canonical" href="${escapeAttr(url)}">`,
+    `<meta property="og:type" content="product">`,
+    `<meta property="og:title" content="${escapeAttr(p.name)}">`,
+    `<meta property="og:description" content="${escapeAttr(desc)}">`,
+    `<meta property="og:url" content="${escapeAttr(url)}">`,
+    foto ? `<meta property="og:image" content="${escapeAttr(foto)}">` : '',
+    `<meta property="product:price:amount" content="${p.price.toFixed(2)}">`,
+    `<meta property="product:price:currency" content="USD">`,
+  ].filter(Boolean).join('\n');
+}
+
+/** JSON-LD `Product` (schema.org) para una ficha. El `<` va escapado a <
+ *  para que un nombre con </script> no cierre el bloque. */
+export function jsonLdProduct(p, { siteUrl, path }) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.name,
+    description: p.desc || p.description || p.name,
+    ...(p.image?.url ? { image: [p.image.url] } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: p.price.toFixed(2),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${siteUrl}${path}`,
+    },
+  };
+  const json = JSON.stringify(data).replace(/</g, '\\u003c');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 /**
  * Cuerpo de la ficha de producto (el innerHTML de `#pdp`). Puro: lo usa el
  * cliente (producto/index.html) con el estado interactivo, y el build con los

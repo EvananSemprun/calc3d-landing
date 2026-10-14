@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, adapt, renderCard, formatPriceHtml, renderFichaHtml } from './render.js';
+import { escapeHtml, adapt, renderCard, formatPriceHtml, renderFichaHtml, metaTagsFor, jsonLdProduct, tituloFicha } from './render.js';
 
 test('escapeHtml neutraliza < > & " \'', () => {
   assert.equal(escapeHtml('<b>"x"&\'y\''), '&lt;b&gt;&quot;x&quot;&amp;&#39;y&#39;');
@@ -61,4 +61,37 @@ test('renderFichaHtml no rompe sin fotos ni specs ni opciones', () => {
   const html = renderFichaHtml(simple, {});
   assert.ok(html.includes('sin foto'));
   assert.ok(!html.includes('Especificaciones'));
+});
+
+const ctx = { siteUrl: 'https://bananolab.com', path: '/producto/llavero/' };
+
+test('metaTagsFor: description, canonical y OG, todo escapado', () => {
+  const p = adapt({ slug: 'llavero', name: 'Llavero "A"', priceUsd: 9.5, summary: 'PLA <b>', minQty: 1,
+    images: [{ url: 'https://cdn/x.jpg' }] });
+  const h = metaTagsFor(p, ctx);
+  assert.ok(h.includes('rel="canonical" href="https://bananolab.com/producto/llavero/"'));
+  assert.ok(h.includes('property="og:type" content="product"'));
+  assert.ok(h.includes('PLA &lt;b&gt;'));
+  assert.ok(h.includes('og:image') && h.includes('https://cdn/x.jpg'));
+  assert.ok(h.includes('product:price:amount" content="9.50"'));
+});
+
+test('metaTagsFor sin foto omite og:image', () => {
+  const p = adapt({ slug: 's', name: 'Simple', priceUsd: 5, minQty: 1 });
+  assert.ok(!metaTagsFor(p, ctx).includes('og:image'));
+});
+
+test('jsonLdProduct arma Product con offers USD y neutraliza </script>', () => {
+  const p = adapt({ slug: 'x', name: 'Taza </script>', priceUsd: 12, summary: 'desc', minQty: 1 });
+  const s = jsonLdProduct(p, ctx);
+  assert.ok(s.includes('"@type":"Product"'));
+  assert.ok(s.includes('"priceCurrency":"USD"'));
+  assert.ok(s.includes('"price":"12.00"'));
+  assert.ok(s.includes('\\u003c/script>'));
+  assert.ok(!s.includes('Taza </script>'));
+});
+
+test('tituloFicha', () => {
+  const p = adapt({ slug: 'x', name: 'Llavero', priceUsd: 1, minQty: 1 });
+  assert.equal(tituloFicha(p, 'Banano Lab'), 'Llavero — Banano Lab');
 });
