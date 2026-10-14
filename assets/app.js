@@ -321,7 +321,8 @@ function describeOpts(opts) {
 
 /* ---------- Nav móvil ---------- */
 function blToggleNav() {
-  document.querySelector('.nav-links')?.classList.toggle('open');
+  const abierto = document.querySelector('.nav-links')?.classList.toggle('open');
+  document.querySelector('.nav-toggle')?.setAttribute('aria-expanded', String(!!abierto));
 }
 
 /* ---------- Reveal al hacer scroll (mejora progresiva) ---------- */
@@ -687,6 +688,11 @@ window.blTelefono = blTelefono;
 
 /* ---------- Arranque ---------- */
 window.addEventListener('DOMContentLoaded', () => {
+  // El año del footer NO depende de la API: se setea siempre, así sale aunque
+  // `BL.load()` falle (si no, `blPintarNegocio()` no corre y el año queda vacío).
+  document.querySelectorAll('[data-bl="year"]').forEach((el) => {
+    el.textContent = String(new Date().getFullYear());
+  });
   blInjectCart();
   blInjectCustomModal();
   blInitReveal();

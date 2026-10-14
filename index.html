@@ -41,7 +41,7 @@
       <div class="container carousel-content">
         <div class="carousel-text">
           <span class="kicker">A tu medida</span>
-          <h1 class="h1 text-balance">¿No está en el catálogo? Lo fabricamos.</h1>
+          <h2 class="h1 text-balance">¿No está en el catálogo? Lo fabricamos.</h2>
           <p class="lead">Traés el archivo, la foto de una pieza rota o solo la idea. Te cotizamos por WhatsApp.</p>
           <a href="#" class="btn btn-primary btn-lg" data-bl="cotizar">Cotizar a medida</a>
         </div>
@@ -52,7 +52,7 @@
       <div class="container carousel-content">
         <div class="carousel-text">
           <span class="kicker">Hecho acá</span>
-          <h1 class="h1 text-balance">Taller propio, producción bajo pedido.</h1>
+          <h2 class="h1 text-balance">Taller propio, producción bajo pedido.</h2>
           <p class="lead">Sin stock que se venza ni mínimos absurdos. Listo en los días que dice cada ficha.</p>
           <a href="/impresion-3d/" class="btn btn-primary btn-lg">Cómo trabajamos</a>
         </div>
@@ -258,10 +258,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         .map((b, n) => {
           const href = hrefDe(b);
           const btn = href ? `<a href="${esc(href)}" class="btn btn-primary btn-lg">Ver más</a>` : '';
+          // Un solo h1 por página: la primera slide lo lleva, el resto h2.
+          const tag = n === 0 ? 'h1' : 'h2';
           return `<article class="carousel-slide${n === 0 ? ' is-active' : ''}">
         <div class="container carousel-content">
           <div class="carousel-text">
-            <h1 class="h1 text-balance">${esc(b.title)}</h1>
+            <${tag} class="h1 text-balance">${esc(b.title)}</${tag}>
             ${b.subtitle ? `<p class="lead">${esc(b.subtitle)}</p>` : ''}
             ${btn}
           </div>
@@ -280,10 +282,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   let i = slides.findIndex((s) => s.classList.contains('is-active'));
   if (i < 0) i = 0;
 
-  slides.forEach((_, n) => {
+  // Patrón ARIA del carrusel: cada slide es un tabpanel con su id; cada punto es
+  // un tab que lo controla. go() mantiene aria-selected/aria-hidden.
+  slides.forEach((s, n) => {
+    s.id = `slide-${n}`;
+    s.setAttribute('role', 'tabpanel');
+    s.setAttribute('aria-roledescription', 'diapositiva');
+    s.setAttribute('aria-hidden', String(n !== i));
     const d = document.createElement('button');
     d.setAttribute('role', 'tab');
     d.setAttribute('aria-label', `Banner ${n + 1}`);
+    d.setAttribute('aria-controls', `slide-${n}`);
     d.addEventListener('click', () => go(n, true));
     dotsBox.appendChild(d);
   });
@@ -291,9 +300,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   function go(n, stop) {
     slides[i].classList.remove('is-active');
+    slides[i].setAttribute('aria-hidden', 'true');
     dots[i].setAttribute('aria-selected', 'false');
     i = (n + slides.length) % slides.length;
     slides[i].classList.add('is-active');
+    slides[i].setAttribute('aria-hidden', 'false');
     dots[i].setAttribute('aria-selected', 'true');
     if (stop) pause();
   }
