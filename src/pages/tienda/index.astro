@@ -1,0 +1,46 @@
+---
+/**
+ * Catálogo (`/tienda/`). Los productos, las categorías y la ficha del negocio se traen
+ * en el BUILD: el HTML ya trae el catálogo completo (es lo que lee un buscador, con o
+ * sin JavaScript) y la isla <Catalogo> se hidrata encima para filtrar, ordenar y
+ * restaurar los filtros del enlace compartido (?cat&mat&col&max&sort).
+ *
+ * Si la API falla durante el build, el build FALLA a propósito (sin try/catch): publicar
+ * un catálogo vacío en silencio sería peor que no publicar.
+ */
+import Base from '../../layouts/Base.astro';
+import Catalogo from '../../components/catalogo/Catalogo';
+import CtaCotizar from '../../components/CtaCotizar.astro';
+import { fetchCategorias, fetchInfo, fetchProductos } from '../../lib/api';
+import { categoriasConProductos } from '../../lib/catalogo';
+
+const [productos, categorias, info] = await Promise.all([fetchProductos(), fetchCategorias(), fetchInfo()]);
+const categoriasDelPie = categoriasConProductos(categorias, productos);
+---
+
+<Base
+  title={`Catálogo — ${info.businessName}`}
+  description="Llaveros, identificadores, soportes, decoración y regalos personalizados, fabricados en impresión 3D en nuestro taller."
+  canonical="/tienda/"
+  categorias={categoriasDelPie}
+>
+  <section class="shop-head">
+    <div class="container">
+      <span class="kicker">Catálogo · Impresión 3D</span>
+      <h1 class="h1 text-balance">Productos personalizados, hechos a pedido.</h1>
+      <p class="lead">
+        Llaveros, identificadores, soportes, decoración y regalos. Todo personalizable, fabricado en nuestro taller.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <Catalogo client:load productos={productos} info={info} categorias={categorias} />
+  </section>
+
+  <CtaCotizar
+    titulo="¿No encontrás lo que buscás?"
+    texto="Fabricamos cualquier pieza a tu medida. Escribinos y te cotizamos."
+    boton="Cotizar pieza personalizada"
+  />
+</Base>

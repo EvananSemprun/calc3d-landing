@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { precioConTramos, precioUnitarioItem } from './precio';
+import { equivalenteEnMoneda, precioConTramos, precioUnitarioItem } from './precio';
 
 describe('precioConTramos', () => {
   const t = [
@@ -69,5 +69,17 @@ describe('precioUnitarioItem', () => {
   it('el unit del renglón (con recargos de opción) manda sobre el price del producto', () => {
     // 9.5 + 3 de opción = 12.5; tramo 20% a qty 10 -> 10
     expect(precioUnitarioItem({ unit: 12.5, qty: 10 }, prod)).toBeCloseTo(10, 9);
+  });
+});
+
+describe('equivalenteEnMoneda', () => {
+  it('sin tasa no hay equivalente (solo USD)', () => {
+    expect(equivalenteEnMoneda(10, null)).toBeNull();
+    expect(equivalenteEnMoneda(10, undefined)).toBeNull();
+  });
+
+  it('multiplica por la tasa y formatea a la venezolana, máx. 2 decimales', () => {
+    expect(equivalenteEnMoneda(10, { rate: 36.5 })).toBe('365');
+    expect(equivalenteEnMoneda(9.5, { rate: 36.123 })).toBe('343,17');
   });
 });

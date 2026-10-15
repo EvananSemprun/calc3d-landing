@@ -1,11 +1,18 @@
 ---
 /**
  * Pie ÚNICO del sitio (porte de partials/footer.html).
- * `#footerCats` queda vacío: lo llenará la tienda con las categorías reales
- * (tarea del catálogo). El año se fija al construir.
+ * `categorias` (opcional) llena `#footerCats` con enlaces a `/tienda/?cat=…`: se pasan
+ * en el build desde las páginas que ya tienen las categorías reales (el catálogo). El
+ * año se fija al construir.
  */
 import isotipo from '../assets/brand/isotipo-amarillo.png';
 import logotipo from '../assets/brand/logotipo-blanco.png';
+
+interface Props {
+  /** Categorías con productos, para los enlaces del pie. */
+  categorias?: { slug: string; nombre: string }[];
+}
+const { categorias = [] } = Astro.props;
 
 const anio = new Date().getFullYear();
 ---
@@ -30,7 +37,9 @@ const anio = new Date().getFullYear();
       <div>
         <h4>Catálogo</h4>
         <a href="/tienda/">Ver catálogo</a>
-        <div id="footerCats"></div>
+        <div id="footerCats">
+          {categorias.map((c) => <a href={`/tienda/?cat=${encodeURIComponent(c.slug)}`}>{c.nombre}</a>)}
+        </div>
       </div>
       <div>
         <h4>Contacto</h4>

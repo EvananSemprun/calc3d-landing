@@ -384,3 +384,196 @@
   }
   .shop-cta .lead { max-width: 46ch; }
 }
+
+/* ============================================================
+   Catálogo (/tienda/), portado de assets/styles.css (sección TIENDA y tarjeta de
+   producto). Los controles (select, slider, botones, insignias) son de shadcn: acá
+   solo queda la disposición y lo que no existe como componente (chips, colores).
+   ============================================================ */
+@layer components {
+  .mono { font-family: var(--font-display); }
+
+  .shop-head { padding-block: clamp(40px, 6vw, 72px) clamp(28px, 4vw, 44px); }
+  .shop-head .lead { margin-top: 14px; }
+  .shop-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
+
+  /* ---------- Barra lateral de filtros ---------- */
+  .filters { position: sticky; top: 92px; display: flex; flex-direction: column; gap: 26px; }
+  .filters-head { display: flex; align-items: center; justify-content: space-between; }
+  .filters-head strong { font-family: var(--font-display); font-size: 18px; }
+  .filters-clear { background: none; border: none; color: var(--text-dim); font-size: 13px; cursor: pointer; }
+  .filters-clear:hover { color: var(--yellow); }
+  .filters-close {
+    display: none;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  .filters-close:hover { background: var(--card); color: var(--text); }
+  .filter-group h4 {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+    font-weight: 700;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--card-line);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .chip:hover { border-color: var(--card-line-strong); color: var(--text); }
+  .chip[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--ink-900); }
+  .color-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .color-pick {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--c);
+    border: 2px solid var(--card-line);
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-pick:hover { transform: scale(1.1); }
+  .color-pick[aria-pressed="true"] { border-color: var(--yellow); }
+  .color-pick[aria-pressed="true"]::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--ink-900);
+    font-weight: 700;
+    font-size: 14px;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.6);
+  }
+  .range-val { font-size: 13px; color: var(--text-dim); margin-top: 12px; }
+  .range-val span { color: var(--yellow); }
+
+  /* ---------- Barra superior y rejilla ---------- */
+  .shop-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+  .filters-toggle { display: none; }
+  .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .shop-state { text-align: center; padding: 60px 0; color: var(--text-dim); }
+  .shop-state strong {
+    display: block;
+    font-family: var(--font-display);
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 19px;
+  }
+
+  @media (max-width: 900px) {
+    .shop-layout { grid-template-columns: minmax(0, 1fr); }
+    /* Panel lateral deslizable. Cerrado queda fuera de la tabulación (visibility),
+       si no el teclado entraría a controles que no se ven. */
+    .filters {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 150;
+      width: min(320px, 86vw);
+      background: var(--ink-800);
+      border-right: 1px solid var(--card-line);
+      padding: 24px;
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.3s var(--ease), visibility 0s 0.3s;
+      overflow-y: auto;
+    }
+    .filters.open { transform: none; visibility: visible; transition: transform 0.3s var(--ease), visibility 0s; }
+    .filters-toggle { display: inline-flex; }
+    .filters-close { display: inline-flex; }
+    .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .shop-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* ---------- Tarjeta de producto ---------- */
+  .product { display: flex; flex-direction: column; overflow: hidden; }
+  .product-media { display: block; position: relative; }
+  .product-photo { display: block; aspect-ratio: 4/3; width: 100%; object-fit: cover; background: var(--ink-700); }
+  .product .ph { aspect-ratio: 4/3; border-radius: 0; }
+  .ph {
+    position: relative;
+    background-color: var(--ink-700);
+    background-image: repeating-linear-gradient(135deg, rgba(255, 195, 0, 0.07) 0 2px, transparent 2px 13px);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
+  }
+  .ph::after {
+    content: attr(data-label);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: rgba(157, 178, 204, 0.7);
+    padding: 6px 10px;
+    border: 1px dashed rgba(157, 178, 204, 0.35);
+    border-radius: 6px;
+    text-align: center;
+  }
+  .product-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: calc(100% - 24px);
+  }
+  .product-body { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .product-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  /* Alto fijo para ~2 líneas: un título de 1 línea y otro de 2 reservan el mismo
+     espacio, así el resto del contenido de las tarjetas queda nivelado. */
+  .product h3 { font-size: 18px; line-height: 1.25; min-height: 2.5em; }
+  .product h3 a { transition: color 0.2s; }
+  .product h3 a:hover { color: var(--yellow); }
+  .product-line { font-size: 12px; color: var(--text-faint); margin: -4px 0 0; letter-spacing: 0.04em; }
+  .product-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin: 0;
+    /* La descripción a 2 líneas como tope: una corta y una larga ocupan igual. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .product-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+  .swatches { display: flex; gap: 5px; }
+  .swatch { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.25); }
+  /* Pie en COLUMNA (precio arriba, botones abajo): mide igual en todas las tarjetas y
+     el espacio sobrante de una tarjeta estirada queda parejo, sin el gap desigual que
+     daba el envolver horizontal. */
+  .product-foot {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+  .price { font-family: var(--font-display); font-weight: 700; font-size: 22px; }
+  .price small { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  /* Equivalente en la moneda de la tasa bajo el precio en dólares (presentación). */
+  .price-alt { font-size: 12px; color: var(--text-dim); display: block; margin-top: 2px; font-weight: 400; }
+  .product-actions { display: flex; align-items: center; gap: 8px; }
+  .product-actions > * { flex: 1; justify-content: center; }
+}

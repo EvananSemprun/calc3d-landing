@@ -1,6 +1,7 @@
 // Cliente delgado de la API pública de la tienda (solo lectura). El mismo
 // `fetch` sirve en el build (Node) y en el navegador. Las ESCRITURAS (pedidos,
 // piezas a medida, subida de foto) llegan con el carrito, en otra tarea.
+import type { Categoria } from './catalogo';
 import { adapt, type ProductoApi, type ProductoVitrina } from './producto';
 
 /** Tasa de presentación publicada por el negocio (null = solo USD). */
@@ -34,6 +35,14 @@ export async function fetchProductos(): Promise<ProductoVitrina[]> {
 /** Ficha completa de un producto, por su enlace, ya en la forma de la vitrina. */
 export async function fetchProducto(slug: string): Promise<ProductoVitrina> {
   return adapt(await getJson<ProductoApi>(`/public/store/products/${encodeURIComponent(slug)}`));
+}
+
+/** Categorías del negocio, en el orden que les dio el panel. */
+export async function fetchCategorias(): Promise<Categoria[]> {
+  const { categories } = await getJson<{ categories: { slug: string; name: string }[] }>(
+    '/public/store/categories',
+  );
+  return categories.map((c) => ({ slug: c.slug, nombre: c.name }));
 }
 
 export function fetchInfo(): Promise<InfoApi> {

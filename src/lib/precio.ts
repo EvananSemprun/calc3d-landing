@@ -48,3 +48,15 @@ export function precioUnitarioItem(
   const base = typeof item.unit === 'number' ? item.unit : (product?.price ?? 0);
   return precioConTramos(base, item.qty, product?.priceTiers ?? []);
 }
+
+/**
+ * Equivalente en la moneda de la tasa vigente ("1.234,5"), o null si el negocio no
+ * publica tasa (solo USD). Es PRESENTACIÓN: la base del sistema es USD.
+ */
+export function equivalenteEnMoneda(
+  usd: number,
+  tasa: { rate: number } | null | undefined,
+): string | null {
+  if (!tasa) return null;
+  return (usd * tasa.rate).toLocaleString('es-VE', { maximumFractionDigits: 2 });
+}
