@@ -1,0 +1,10 @@
+# Cabeceras para Cloudflare Pages (en Pages NO corre nginx.conf). Se copia tal cual a dist/.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# Assets con hash de Astro: cache inmutable.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

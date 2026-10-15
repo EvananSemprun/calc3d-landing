@@ -1,9 +1,8 @@
 # Banano Lab — sitio público
 
-Sitio web de **Banano Lab**, un taller venezolano de fabricación digital con dos
-mitades: **impresión 3D** (piezas bajo pedido) y **software a medida**. El sitio
-muestra los servicios, publica el catálogo de productos y recibe pedidos y
-solicitudes de cotización.
+Sitio web de **Banano Lab**, un taller venezolano de **impresión 3D** (piezas bajo
+pedido). El sitio publica el catálogo de productos, la página del servicio de
+impresión 3D, y recibe pedidos y solicitudes de cotización a medida.
 
 No es un ecommerce con pasarela de pago: el pedido se **registra** en la bandeja
 del panel (`calc3d-web`) y se cierra por WhatsApp. Fue una decisión explícita, no
@@ -24,9 +23,18 @@ git show 925c532:index.html
 
 ## Stack
 
-Vite + HTML + CSS + JavaScript de navegador. **Sin React**, a propósito: es una
-vitrina de solo lectura, el HTML plano se indexa sin trucos y el bundle queda en
-~20 KB (10 KB gzip). Un framework no aportaría nada acá.
+**Astro + islas de React + Tailwind 4 + shadcn/ui** (migrado el 2026-10-15 desde una
+versión vanilla). Astro genera HTML estático por ruta — incluida una página por producto
+— para no perder SEO, y solo hidrata "islas" de React donde hay interacción (filtros,
+carrito, ficha, carrusel). El detalle del stack, la estructura (`src/`) y las reglas
+están en [`CLAUDE.md`](CLAUDE.md).
+
+```bash
+pnpm install
+pnpm dev      # http://localhost:5182
+pnpm build    # dist/  (el build pega a la API: levantá calc3d-api antes)
+pnpm test     # vitest
+```
 
 Tres plugins propios en `vite.config.ts`:
 

@@ -4,14 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "node --test",
-    "dev:astro": "astro dev --port 5182",
-    "build:astro": "astro build",
-    "preview:astro": "astro preview",
-    "test:astro": "vitest run"
+    "dev": "astro dev --port 5182 --strictPort",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

@@ -4,14 +4,7 @@
     {
       "name": "sitio",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "vite", "--port", "5182", "--strictPort"],
-      "port": 5182,
-      "autoPort": false
-    },
-    {
-      "name": "tienda-astro",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "astro", "dev", "--port", "5182"],
+      "runtimeArgs": ["exec", "astro", "dev", "--port", "5182", "--strictPort"],
       "port": 5182,
       "autoPort": false
     }
