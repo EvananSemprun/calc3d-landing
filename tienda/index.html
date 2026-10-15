@@ -66,12 +66,22 @@
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtros
         </button>
         <span class="result-count mono dim" id="resultCount"></span>
-        <select class="select sort-select" id="sortSel" onchange="Shop.apply()" style="width:auto;margin-left:auto" aria-label="Ordenar">
-          <option value="featured">Destacados</option>
-          <option value="price-asc">Precio: menor a mayor</option>
-          <option value="price-desc">Precio: mayor a menor</option>
-          <option value="name">Nombre A-Z</option>
-        </select>
+        <!-- Desplegable de orden PROPIO (el nativo no se puede estilar por dentro).
+             El <select> queda oculto como fuente del valor: apply/clear/restore lo
+             siguen leyendo por .value, y la UI custom lo maneja. -->
+        <div class="bl-select" id="sortDropdown" style="margin-left:auto">
+          <select id="sortSel" class="sr-only" aria-hidden="true" tabindex="-1">
+            <option value="featured">Destacados</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="name">Nombre A-Z</option>
+          </select>
+          <button type="button" class="bl-select-trigger" id="sortTrigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="bl-select-label" id="sortLabel">Destacados</span>
+            <svg class="bl-select-caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <ul class="bl-select-list" id="sortList" role="listbox" aria-label="Ordenar" hidden></ul>
+        </div>
       </div>
 
       <div class="grid shop-grid" id="shopGrid">
@@ -124,6 +134,7 @@ const Shop = {
     }
     this.paintChrome();
     this.paintFilters();
+    this.montarSelectOrden();
     this.apply();
   },
 
@@ -269,6 +280,7 @@ const Shop = {
     document.getElementById('priceRange').value = String(max);
     document.getElementById('priceVal').textContent = `$${max}`;
     document.getElementById('sortSel').value = 'featured';
+    this._syncOrden?.();
     this.paintTabs();
     this.syncUrl();
     this.apply();
@@ -304,6 +316,82 @@ const Shop = {
 
     grid.innerHTML = list.map(blTarjetaProducto).join('');
     blEngancharTarjetas(grid);
+  },
+
+  /**
+   * Desplegable de orden PROPIO sobre el <select> oculto. El nativo no se puede
+   * estilar por dentro; este se arma con el mismo valor y dispara Shop.apply().
+   * Accesible: teclado (flechas/Enter/Esc), aria-expanded y role=option.
+   */
+  montarSelectOrden() {
+    const sel = document.getElementById('sortSel');
+    const trigger = document.getElementById('sortTrigger');
+    const list = document.getElementById('sortList');
+    const label = document.getElementById('sortLabel');
+    const opciones = [...sel.options];
+
+    const pintarLista = () => {
+      list.innerHTML = opciones
+        .map(
+          (o) =>
+            `<li role="option" data-value="${esc(o.value)}" tabindex="-1" aria-selected="${o.value === sel.value}" class="bl-select-opt${o.value === sel.value ? ' on' : ''}">${esc(o.text)}</li>`,
+        )
+        .join('');
+    };
+
+    // Deja la etiqueta diciendo el valor actual (lo usa clear() y el restore).
+    const sincronizar = () => {
+      const op = opciones.find((o) => o.value === sel.value) || opciones[0];
+      label.textContent = op.text;
+      pintarLista();
+    };
+    this._syncOrden = sincronizar;
+
+    const abrir = () => {
+      pintarLista();
+      list.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      const sel0 = list.querySelector('.bl-select-opt.on') || list.firstElementChild;
+      sel0 && sel0.focus();
+    };
+    const cerrar = (devolverFoco) => {
+      list.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      if (devolverFoco) trigger.focus();
+    };
+    const elegir = (value) => {
+      sel.value = value;
+      sincronizar();
+      cerrar(true);
+      this.apply();
+    };
+
+    trigger.addEventListener('click', () => (list.hidden ? abrir() : cerrar(false)));
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        abrir();
+      }
+    });
+    list.addEventListener('click', (e) => {
+      const li = e.target.closest('.bl-select-opt');
+      if (li) elegir(li.dataset.value);
+    });
+    list.addEventListener('keydown', (e) => {
+      const items = [...list.querySelectorAll('.bl-select-opt')];
+      const i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[0]).focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(document.activeElement.dataset.value); }
+      else if (e.key === 'Escape') { e.preventDefault(); cerrar(true); }
+      else if (e.key === 'Tab') cerrar(false);
+    });
+    // Clic afuera cierra.
+    document.addEventListener('click', (e) => {
+      if (!list.hidden && !document.getElementById('sortDropdown').contains(e.target)) cerrar(false);
+    });
+
+    sincronizar();
   },
 };
 
