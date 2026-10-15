@@ -1,0 +1,98 @@
+---
+/**
+ * Ficha de producto, una página estática por producto (SSG). `getStaticPaths` trae
+ * el catálogo en el build y, por cada slug, la ficha completa (opciones, fotos,
+ * descripción). El contenido queda en el HTML (SEO) y la isla `Ficha` lo hidrata.
+ */
+import Base from '../../layouts/Base.astro';
+import Ficha from '../../components/ficha/Ficha';
+import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
+import { fetchProductos, fetchProducto, fetchInfo } from '../../lib/api';
+import type { ProductoVitrina } from '../../lib/producto';
+import type { InfoApi } from '../../lib/api';
+
+export async function getStaticPaths() {
+  const lista = await fetchProductos();
+  const info = await fetchInfo();
+  const fichas = await Promise.all(lista.map((p) => fetchProducto(p.id)));
+
+  return fichas.map((producto) => {
+    let otros = lista.filter((x) => x.id !== producto.id && producto.cat && x.cat === producto.cat);
+    if (!otros.length) otros = lista.filter((x) => x.id !== producto.id);
+    return {
+      params: { slug: producto.id },
+      props: { producto, info, relacionados: otros.slice(0, 3) },
+    };
+  });
+}
+
+interface Props {
+  producto: ProductoVitrina;
+  info: InfoApi;
+  relacionados: ProductoVitrina[];
+}
+
+const { producto: p, info, relacionados } = Astro.props as Props;
+
+const descripcion = p.desc || p.description || `${p.name} — impresión 3D a pedido.`;
+const canonical = `/producto/${p.id}`;
+const imagen = p.image?.url;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: p.name,
+  description: descripcion,
+  ...(imagen ? { image: [imagen] } : {}),
+  offers: {
+    '@type': 'Offer',
+    price: p.price.toFixed(2),
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+  },
+};
+---
+
+<Base
+  title={`${p.name} — ${info.businessName}`}
+  description={descripcion}
+  canonical={canonical}
+  image={imagen}
+  ogType="product"
+  jsonLd={jsonLd}
+>
+  <meta slot="head" property="product:price:amount" content={p.price.toFixed(2)} />
+  <meta slot="head" property="product:price:currency" content="USD" />
+
+  <div class="container">
+    <nav class="crumbs" aria-label="Ruta">
+      <a href="/tienda/">Tienda</a><span>/</span>
+      {p.catLabel && (
+        <>
+          <a href={`/tienda/?cat=${encodeURIComponent(p.cat)}`}>{p.catLabel}</a><span>/</span>
+        </>
+      )}
+      <span class="dim">{p.name}</span>
+    </nav>
+  </div>
+
+  <main class="container">
+    <Ficha producto={p} info={info} client:load />
+  </main>
+
+  {relacionados.length > 0 && (
+    <section class="section pdp-related">
+      <div class="container">
+        <div class="eyebrow-row">
+          <h2 class="h2">También te puede servir</h2>
+          <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">Ver todo el catálogo →</a>
+        </div>
+        <div class="grid shop-grid">
+          {relacionados.map((r) => (
+            <TarjetaProducto producto={r} tasa={info.rate} client:visible />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</Base>

@@ -577,3 +577,221 @@
   .product-actions { display: flex; align-items: center; gap: 8px; }
   .product-actions > * { flex: 1; justify-content: center; }
 }
+
+/* ============================================================
+   Ficha de producto (/producto/[slug]). Portado de assets/styles.css del sitio
+   viejo; los tiers y la personalización se diseñan acá (la vanilla no los estilaba).
+   En @layer components para que las utilidades de Tailwind puedan pisarlas.
+   ============================================================ */
+@layer components {
+  .crumbs {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-block: 22px 0;
+  }
+  .crumbs a:hover { color: var(--yellow); }
+
+  .pdp {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(24px, 4vw, 56px);
+    align-items: start;
+    padding-block: clamp(24px, 3vw, 40px) 0;
+  }
+  .pdp-gallery { display: flex; flex-direction: column; gap: 12px; }
+  .pdp-main {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    background: var(--ink-700);
+  }
+  .pdp-thumbs { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pdp-thumb {
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--ink-700);
+  }
+  .pdp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pdp-thumb.on { border-color: var(--yellow); }
+
+  .pdp-info { display: flex; flex-direction: column; gap: 16px; }
+  .pdp-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pdp-facts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .pdp-price {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(30px, 4vw, 40px);
+    color: var(--yellow);
+    line-height: 1;
+  }
+  .pdp-price small {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .pdp-lead { font-size: 17px; }
+
+  .pdp-opt-group { display: flex; flex-direction: column; gap: 10px; }
+  .pdp-opt-group h4 {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0;
+    font-weight: 500;
+  }
+  .pdp-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pdp-opt {
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 15px;
+    border-radius: 999px;
+    border: 1.5px solid var(--card-line);
+    background: transparent;
+    color: var(--text-dim);
+    transition: all 0.18s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .pdp-opt:hover { border-color: var(--card-line-strong); color: var(--text); }
+  .pdp-opt.on { border-color: var(--yellow); background: rgba(255, 195, 0, 0.1); color: var(--yellow); }
+  .pdp-opt i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .pdp-tiers { width: 100%; border-collapse: collapse; }
+  .pdp-tiers th, .pdp-tiers td {
+    text-align: left;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--card-line);
+    font-size: 14px;
+  }
+  .pdp-tiers th {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .pdp-tiers td { color: var(--text-dim); }
+  .pdp-tiers td.dim { text-align: right; color: var(--yellow); }
+
+  .pdp-custom {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--card-line);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--ink-700) 45%, transparent);
+  }
+  .pdp-custom h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    font-family: var(--font-display);
+  }
+  .pdp-custom textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-line-strong);
+    background: var(--ink-900);
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+  }
+  .pdp-custom textarea:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .pdp-custom-foto { display: inline-flex; cursor: pointer; }
+  .pdp-custom-error { color: #ff9b9b; font-size: 13px; margin: 0; }
+  .pdp-custom-preview { margin-top: 2px; }
+  .pdp-custom-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: var(--ink-900);
+    border: 1px solid var(--card-line);
+    border-radius: 999px;
+    padding: 4px 10px 4px 4px;
+  }
+  .pdp-custom-chip img { width: 36px; height: 36px; object-fit: cover; border-radius: 8px; }
+  .pdp-custom-chip button {
+    background: none;
+    border: none;
+    color: var(--yellow);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+  }
+
+  .pdp-buy { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .qty { display: inline-flex; align-items: center; gap: 8px; }
+  .qty button {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--card-line);
+    background: transparent;
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .qty button:hover { border-color: var(--yellow); color: var(--yellow); }
+  .qty span {
+    min-width: 24px;
+    text-align: center;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  .pdp-desc { color: var(--text-dim); white-space: pre-wrap; }
+  .pdp-specs-title { font-size: 20px; margin-top: 10px; }
+  .pdp-specs { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .pdp-specs th, .pdp-specs td {
+    text-align: left;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--card-line);
+    font-size: 15px;
+  }
+  .pdp-specs th {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-weight: 400;
+    width: 40%;
+  }
+  .pdp-related { padding-top: clamp(40px, 5vw, 64px); }
+
+  @media (max-width: 900px) {
+    .pdp { grid-template-columns: 1fr; }
+  }
+}

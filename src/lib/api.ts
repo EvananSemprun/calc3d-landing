@@ -16,6 +16,9 @@ export interface InfoApi {
   whatsappPhone: string | null;
   currency: string;
   rate: TasaApi | null;
+  /** true si el almacenamiento (R2) está configurado: habilita el cargador de foto
+   *  de la personalización. Si es false, la ficha ofrece solo la nota. */
+  storageReady: boolean;
 }
 
 const BASE = (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');

@@ -26,9 +26,20 @@ interface Props {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
   categorias?: { slug: string; nombre: string }[];
+  /** Tipo de Open Graph ("website" por defecto, "product" en las fichas). */
+  ogType?: string;
 }
 
-const { title, description, canonical, image, jsonLd, noindex = false, categorias } = Astro.props;
+const {
+  title,
+  description,
+  canonical,
+  image,
+  jsonLd,
+  noindex = false,
+  categorias,
+  ogType = 'website',
+} = Astro.props;
 
 const absoluta = (ruta: string): string | undefined => {
   if (/^https?:\/\//i.test(ruta)) return ruta;
@@ -54,7 +65,7 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
     {noindex && <meta name="robots" content="noindex" />}
     <meta name="theme-color" content="#000814" />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:locale" content="es_VE" />
     <meta property="og:site_name" content="Banano Lab" />
     <meta property="og:title" content={title} />
@@ -71,6 +82,7 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
     />
 
     {jsonLd && <script type="application/ld+json" set:html={jsonLdSeguro} />}
+    <slot name="head" />
   </head>
   <body>
     <Header />
