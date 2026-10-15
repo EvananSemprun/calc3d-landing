@@ -309,3 +309,24 @@ diseño, para no separarla del original.
 
 ## Git
 - No hacer commit ni push salvo que se pida.
+
+## Migración a Astro en curso (andamiaje: tarea 1, 2026-10-15)
+
+Se está reescribiendo la tienda a **Astro + React + Tailwind 4 + shadcn** (spec en
+`docs/superpowers/specs/2026-10-15-migracion-astro-react-shadcn-design.md`). Hasta el
+corte conviven las dos cadenas: la vieja (Vite, `assets/`, `partials/`, `*.html`) sigue
+intacta; lo nuevo vive en `src/`.
+
+- Scripts nuevos: `pnpm dev:astro` (5182, `strictPort`), `build:astro`, `preview:astro`.
+  Entrada `tienda-astro` en `.claude/launch.json`. Ambas cadenas escriben en `dist/`.
+- **Tailwind 4 (CSS-first), no 3**: Astro 7 ya no es compatible con `@astrojs/tailwind`;
+  va `@tailwindcss/vite` en `astro.config.mjs` y no hay `tailwind.config.mjs`.
+- Tema de marca: `src/lib/tokens.css` (paleta + tokens de shadcn apuntando a ella) y
+  `src/styles/global.css` (`@theme inline` + utilidades portadas). Sitio oscuro siempre
+  (`<html class="dark">`). `--primary` = amarillo, `--background` = navy, Poppins.
+- Variables de entorno de Astro: `PUBLIC_API_URL`, `PUBLIC_SITE_URL` (sin `site` el sitemap se omite).
+- ⚠️ **`shadcn` con `pnpm dlx` falla en Windows** (falta `@shadcn/registry`): usar
+  `npx --yes shadcn@latest add <componente> --yes`, y después **revisar los imports**: en
+  esta máquina reescribió `@/lib/utils` como `"cn"` (paquete npm equivocado) y lo agregó
+  como dependencia. Hay que dejarlos en `@/lib/utils` y hacer `pnpm remove cn`.
+- Sin `sharp`: no usar `<Image>` de `astro:assets`; las imágenes van con `<img src={import.src}>`.

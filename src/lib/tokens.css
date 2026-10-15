@@ -1,0 +1,54 @@
+/* ============================================================
+   TOKENS DE MARCA — Banano Lab
+   Fuente: CLAUDE.md ("Identidad de marca") y assets/styles.css del sitio viejo.
+   Navy + amarillo, Poppins. El sitio es OSCURO SIEMPRE: no hay tema claro,
+   así que los tokens de shadcn viven solo en :root (sin bloque .dark).
+
+   Capa 1: la paleta de marca (nombres propios).
+   Capa 2: los tokens de shadcn apuntando a esa paleta, para que cualquier
+           componente de shadcn salga navy/amarillo y no slate/violeta.
+   ============================================================ */
+
+:root {
+  /* --- Paleta de marca --- */
+  --ink-900: #000814;   /* fondo principal */
+  --ink-800: #001026;
+  --ink-700: #001D3D;   /* azul profundo */
+  --ink-600: #003566;   /* azul medio */
+  --ink-500: #0a4a87;
+  --yellow:  #FFC300;   /* amarillo principal */
+  --yellow-2: #FFD60A;  /* amarillo brillante */
+  --text: #EAF1FB;
+  --text-dim: #9DB2CC;
+  --text-faint: #5d76a0;
+  --card-line: rgba(157, 178, 204, 0.16);
+  --card-line-strong: rgba(157, 178, 204, 0.30);
+
+  --shadow-yellow: 0 14px 34px -12px rgba(255, 195, 0, 0.45);
+  --maxw: 1240px;
+  --gut: clamp(20px, 5vw, 56px);
+  --ease: cubic-bezier(.22, .61, .36, 1);
+
+  color-scheme: dark;
+
+  /* --- Tokens de shadcn mapeados a la marca --- */
+  --background: var(--ink-900);
+  --foreground: var(--text);
+  --card: var(--ink-800);
+  --card-foreground: var(--text);
+  --popover: var(--ink-700);
+  --popover-foreground: var(--text);
+  --primary: var(--yellow);
+  --primary-foreground: var(--ink-900);
+  --secondary: var(--ink-700);
+  --secondary-foreground: var(--text);
+  --muted: var(--ink-700);
+  --muted-foreground: var(--text-dim);
+  --accent: var(--ink-600);
+  --accent-foreground: var(--text);
+  --destructive: #ff6b6b;
+  --border: var(--card-line);
+  --input: var(--card-line-strong);
+  --ring: var(--yellow);
+  --radius: 0.875rem; /* 14px, igual que --radius del sitio viejo */
+}

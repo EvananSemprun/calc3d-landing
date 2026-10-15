@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../lib/tokens.css";
+
+/* El sitio es oscuro siempre: `dark:` de shadcn se activa con la clase en <html>. */
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens de shadcn -> utilidades de Tailwind (bg-primary, text-muted-foreground...). */
+@theme inline {
+  --font-sans: 'Poppins', system-ui, sans-serif;
+  --font-display: 'Poppins', system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Paleta de marca disponible como utilidades: bg-ink-700, text-yellow... */
+  --color-ink-900: var(--ink-900);
+  --color-ink-800: var(--ink-800);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+  --color-ink-500: var(--ink-500);
+  --color-yellow: var(--yellow);
+  --color-yellow-2: var(--yellow-2);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  /* Títulos display: Poppins Black, como el sitio viejo. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1.03;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: var(--yellow);
+    color: var(--ink-900);
+  }
+  /* Foco visible (el sitio viejo lo añadió a mano; acá es regla global). */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+  }
+  @media (max-width: 560px) {
+    body { font-size: 16px; }
+  }
+}
+
+/* ============================================================
+   Utilidades propias portadas de assets/styles.css (solo lo que usan
+   Base/Header/Footer y la página de humo; el resto se porta con cada página).
+   Van en @layer components para que las utilidades de Tailwind las puedan pisar.
+   ============================================================ */
+@layer components {
+  .container {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: var(--gut);
+  }
+  .section {
+    position: relative;
+    padding-block: clamp(64px, 9vw, 130px);
+  }
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--yellow);
+  }
+  .kicker::before {
+    content: "";
+    display: inline-block;
+    width: 26px;
+    height: 1px;
+    background: var(--yellow);
+  }
+  .h1 { font-size: clamp(36px, 5.2vw, 66px); }
+  .h2 { font-size: clamp(28px, 3.6vw, 46px); }
+  .lead { max-width: 56ch; font-size: clamp(18px, 1.5vw, 21px); color: var(--text-dim); }
+  .text-balance { text-wrap: balance; }
+
+  /* ---------- Nav ---------- */
+  .topbar {
+    background: var(--ink-700);
+    color: var(--text-dim);
+    font-size: 13px;
+    border-bottom: 1px solid var(--card-line);
+  }
+  .topbar-inner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding-block: 8px;
+    text-align: center;
+  }
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(0, 8, 20, 0.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--card-line);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .brand-logo { width: 34px; height: auto; flex: none; }
+  .brand-word { height: 20px; width: auto; }
+  .nav-links { display: flex; align-items: center; gap: 4px; margin-left: 8px; }
+  .nav-links a {
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); background: rgba(255, 255, 255, 0.035); }
+  .nav-links a[aria-current="page"] { color: var(--yellow); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .nav-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    border: 1.5px solid var(--card-line);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    background: var(--ink-800);
+    border-top: 1px solid var(--card-line);
+    padding-block: 64px 32px;
+  }
+  .footer-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 40px; }
+  .footer h4 {
+    margin: 0 0 16px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--yellow);
+  }
+  .footer a { display: block; padding: 5px 0; font-size: 15px; color: var(--text-dim); transition: color 0.2s; }
+  .footer a:hover { color: var(--text); }
+  .footer .brand { display: inline-flex; padding: 0; }
+  .footer .brand-logo { width: 38px; }
+  .footer .brand-word { height: 22px; }
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--card-line);
+    color: var(--text-faint);
+    font-size: 13px;
+  }
+
+  @media (max-width: 1024px) {
+    .nav-links {
+      position: fixed;
+      inset: 72px 0 auto 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 2px;
+      margin-left: 0;
+      padding: 14px var(--gut) 22px;
+      background: var(--ink-800);
+      border-bottom: 1px solid var(--card-line);
+      transform: translateY(-120%);
+      transition: transform 0.35s var(--ease);
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .nav-links.open { transform: none; visibility: visible; pointer-events: auto; }
+    .nav-links a { padding: 14px 12px; font-size: 17px; }
+    .nav-toggle { display: inline-flex; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 560px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  }
+}

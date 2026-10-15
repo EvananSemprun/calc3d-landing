@@ -1,0 +1,31 @@
+---
+/**
+ * Página de humo del andamiaje: comprueba que Astro + React (isla) + Tailwind +
+ * shadcn + tema de marca funcionan juntos. Se reemplaza por el inicio real en
+ * una tarea posterior. No hace llamadas a la API.
+ */
+import Base from '../layouts/Base.astro';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+---
+
+<Base
+  title="Banano Lab — Impresión 3D a pedido en Venezuela"
+  description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS y TPU, desde una unidad."
+  canonical="/"
+>
+  <section class="section">
+    <div class="container">
+      <span class="kicker">Andamiaje</span>
+      <h1 class="h1 text-balance">Astro + React + shadcn, con la marca puesta.</h1>
+      <p class="lead" style="margin-top:20px">
+        Si este botón se ve amarillo sobre fondo navy y la letra es Poppins, el tema anda.
+      </p>
+      <div style="margin-top:32px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <Button client:visible size="lg">Botón de shadcn (isla)</Button>
+        <Button client:visible size="lg" variant="outline">Variante outline</Button>
+        <Badge>Badge estático</Badge>
+      </div>
+    </div>
+  </section>
+</Base>

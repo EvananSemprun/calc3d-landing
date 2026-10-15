@@ -1,0 +1,74 @@
+---
+/**
+ * Layout base de todas las páginas: <head> parametrizable (SEO) + cabecera + pie.
+ *
+ * Props:
+ *  - title        (obligatorio) texto del <title> y de og:title.
+ *  - description  (obligatorio) meta description y og:description.
+ *  - canonical    ruta ("/tienda/") o URL absoluta. Por defecto, la ruta actual.
+ *                 Se vuelve absoluta con `site` (PUBLIC_SITE_URL); sin `site` se omite.
+ *  - image        imagen de og:image (ruta o URL absoluta).
+ *  - jsonLd       objeto (o arreglo) de datos estructurados schema.org.
+ *  - noindex      true para páginas que no deben indexarse.
+ */
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  image?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
+}
+
+const { title, description, canonical, image, jsonLd, noindex = false } = Astro.props;
+
+const absoluta = (ruta: string): string | undefined => {
+  if (/^https?:\/\//i.test(ruta)) return ruta;
+  return Astro.site ? new URL(ruta, Astro.site).href : undefined;
+};
+
+const urlCanonica = absoluta(canonical ?? Astro.url.pathname);
+const urlImagen = image ? absoluta(image) : undefined;
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {urlCanonica && <link rel="canonical" href={urlCanonica} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#000814" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_VE" />
+    <meta property="og:site_name" content="Banano Lab" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {urlCanonica && <meta property="og:url" content={urlCanonica} />}
+    {urlImagen && <meta property="og:image" content={urlImagen} />}
+    <meta name="twitter:card" content={urlImagen ? 'summary_large_image' : 'summary'} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap"
+    />
+
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
