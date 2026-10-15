@@ -318,7 +318,10 @@ html.reveal-on .reveal.in { opacity: 1; transform: none; }
 .product-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 .swatches { display: flex; gap: 5px; }
 .swatch { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.25); }
-.product-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
+/* Pie en COLUMNA (precio arriba, botones abajo a todo el ancho): así mide igual
+   en todas las tarjetas y el espacio sobrante de una tarjeta estirada queda
+   parejo, sin el gap desigual que daba el envolver horizontal. */
+.product-foot { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: auto; padding-top: 10px; }
 .price { font-family: var(--font-display); font-weight: 700; font-size: 22px; }
 .price small { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); font-weight: 400; }
 .add-btn { display: inline-flex; align-items: center; gap: 7px; background: var(--yellow); color: var(--ink-900); font-family: var(--font-display); font-weight: 600; font-size: 14px; padding: 10px 16px; border: none; border-radius: var(--radius-pill); transition: background .2s, transform .2s; }
@@ -429,8 +432,8 @@ html.reveal-on .reveal.in { opacity: 1; transform: none; }
 .product-line { font-size: 12px; color: var(--text-faint); margin: -4px 0 0; letter-spacing: .04em; }
 .product h3 a { transition: color .2s; }
 .product h3 a:hover { color: var(--yellow); }
-.product-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.product-foot { flex-wrap: wrap; }
+.product-actions { display: flex; align-items: center; gap: 8px; }
+.product-actions > * { flex: 1; justify-content: center; }
 
 /* ---------- Pestañas de categoría ----------
    Reemplazan a los chips de categoría del panel lateral: dos controles para el
@@ -770,5 +773,7 @@ html.reveal-on .reveal.in { opacity: 1; transform: none; }
 .bl-select-opt:hover, .bl-select-opt:focus { background: var(--ink-600); }
 .bl-select-opt.on { color: var(--yellow); font-weight: 600; }
 
-/* El select de categoría va donde estaban las pestañas: un respiro abajo. */
-.bl-select--cat { margin-bottom: 16px; }
+/* En la barra lateral los selects ocupan todo el ancho del grupo. */
+.bl-select--block { display: block; }
+.bl-select--block .bl-select-trigger { width: 100%; justify-content: space-between; }
+.bl-select--block .bl-select-list { left: 0; right: 0; min-width: 0; }

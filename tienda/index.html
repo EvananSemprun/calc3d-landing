@@ -32,10 +32,22 @@
         <button class="filters-clear" onclick="Shop.clear()">Limpiar</button>
       </div>
 
-      <!-- La CATEGORÍA ya no vive acá: pasó a las pestañas, arriba de la
-           vitrina. Tenerla en los dos lados serían dos controles del mismo
-           campo, y el primero que se toque deja al otro mintiendo.
-           El material sale de los productos reales, igual que los colores. -->
+      <!-- TODOS los filtros van en la barra lateral, de un solo lado. Categoría
+           y orden son selects propios; material y color salen de los productos
+           reales. Selección única de categoría (no hay dos controles del mismo
+           campo que puedan desincronizarse). -->
+      <div class="filter-group" id="catGroup" hidden>
+        <h4>Categoría</h4>
+        <div class="bl-select bl-select--block" id="catDropdown">
+          <select id="catSel" class="sr-only" aria-hidden="true" tabindex="-1"></select>
+          <button type="button" class="bl-select-trigger" id="catTrigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="bl-select-label" id="catLabel">Todos</span>
+            <svg class="bl-select-caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <ul class="bl-select-list" id="catList" role="listbox" aria-label="Categoría" hidden></ul>
+        </div>
+      </div>
+
       <div class="filter-group" id="materialGroup" hidden>
         <h4>Material</h4>
         <div id="materialFilters" class="chip-row"></div>
@@ -53,30 +65,10 @@
         <input type="range" id="priceRange" min="0" max="120" value="120" step="1" class="range" oninput="Shop.onPrice(this.value)" aria-label="Precio máximo">
         <div class="range-val mono">Hasta <span id="priceVal">$120</span> USD</div>
       </div>
-    </aside>
 
-    <div class="shop-main">
-      <!-- Categoría: selección ÚNICA, como un select propio (no pestañas). El
-           <select> oculto es la fuente del valor; la UI custom lo maneja. Con
-           menos de 2 categorías se oculta: no hay elección que ofrecer. -->
-      <div class="bl-select bl-select--cat" id="catDropdown" hidden>
-        <select id="catSel" class="sr-only" aria-hidden="true" tabindex="-1"></select>
-        <button type="button" class="bl-select-trigger" id="catTrigger" aria-haspopup="listbox" aria-expanded="false">
-          <span class="bl-select-label" id="catLabel">Todos</span>
-          <svg class="bl-select-caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <ul class="bl-select-list" id="catList" role="listbox" aria-label="Categoría" hidden></ul>
-      </div>
-
-      <div class="shop-toolbar">
-        <button class="btn btn-ghost btn-sm filters-toggle" onclick="document.getElementById('filters').classList.toggle('open')">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtros
-        </button>
-        <span class="result-count mono dim" id="resultCount"></span>
-        <!-- Desplegable de orden PROPIO (el nativo no se puede estilar por dentro).
-             El <select> queda oculto como fuente del valor: apply/clear/restore lo
-             siguen leyendo por .value, y la UI custom lo maneja. -->
-        <div class="bl-select" id="sortDropdown" style="margin-left:auto">
+      <div class="filter-group">
+        <h4>Ordenar</h4>
+        <div class="bl-select bl-select--block" id="sortDropdown">
           <select id="sortSel" class="sr-only" aria-hidden="true" tabindex="-1">
             <option value="featured">Destacados</option>
             <option value="price-asc">Precio: menor a mayor</option>
@@ -89,6 +81,15 @@
           </button>
           <ul class="bl-select-list" id="sortList" role="listbox" aria-label="Ordenar" hidden></ul>
         </div>
+      </div>
+    </aside>
+
+    <div class="shop-main">
+      <div class="shop-toolbar">
+        <button class="btn btn-ghost btn-sm filters-toggle" onclick="document.getElementById('filters').classList.toggle('open')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtros
+        </button>
+        <span class="result-count mono dim" id="resultCount"></span>
       </div>
 
       <div class="grid shop-grid" id="shopGrid">
@@ -229,9 +230,10 @@ const Shop = {
    *  "Todos" + cada categoría con su conteo, y refresca el desplegable custom.
    *  Con menos de 2 categorías se oculta: no hay elección que ofrecer. */
   paintCategoria() {
-    const cont = document.getElementById('catDropdown');
-    cont.hidden = this.cats.length < 2;
-    if (cont.hidden) return;
+    // Oculta el GRUPO entero (con su título) si no hay al menos 2 categorías.
+    const grupo = document.getElementById('catGroup');
+    grupo.hidden = this.cats.length < 2;
+    if (grupo.hidden) return;
     const sel = document.getElementById('catSel');
     sel.innerHTML =
       `<option value="">Todos (${BL.products.length})</option>` +
