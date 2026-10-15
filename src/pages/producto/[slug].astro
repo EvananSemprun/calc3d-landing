@@ -35,7 +35,8 @@ interface Props {
 const { producto: p, info, relacionados } = Astro.props as Props;
 
 const descripcion = p.desc || p.description || `${p.name} — impresión 3D a pedido.`;
-const canonical = `/producto/${p.id}`;
+// Con barra final, para que coincida con la URL servida (/producto/slug/) y el sitemap.
+const canonical = `/producto/${p.id}/`;
 const imagen = p.image?.url;
 
 const jsonLd = {
@@ -49,6 +50,7 @@ const jsonLd = {
     price: p.price.toFixed(2),
     priceCurrency: 'USD',
     availability: 'https://schema.org/InStock',
+    ...(Astro.site ? { url: new URL(canonical, Astro.site).href } : {}),
   },
 };
 ---

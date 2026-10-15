@@ -1,0 +1,41 @@
+---
+/**
+ * Página 404 de marca. Astro genera `dist/404.html`; Cloudflare Pages la sirve ante una
+ * ruta inexistente (404 REAL, no "404 blando"). Lleva noindex: no debe aparecer en el buscador.
+ */
+import Base from '../layouts/Base.astro';
+import { buttonVariants } from '../components/ui/button';
+import bananoError from '../assets/brand/banano-error.png';
+---
+
+<Base
+  title="Página no encontrada — Banano Lab"
+  description="La página que buscás no existe o se movió."
+  noindex
+>
+  <section class="section error-404">
+    <div class="container error-404-inner">
+      <img src={bananoError.src} alt="" width={160} height={160} class="error-404-art" />
+      <p class="kicker">Error 404</p>
+      <h1 class="h1 text-balance">Esta página no existe (o se mudó).</h1>
+      <p class="lead">Puede que el enlace esté viejo o que el producto ya no esté publicado.</p>
+      <div class="error-404-acciones">
+        <a href="/" class={buttonVariants({ size: 'lg' })}>Volver al inicio</a>
+        <a href="/tienda/" class={buttonVariants({ variant: 'outline', size: 'lg' })}>Ver el catálogo</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .error-404-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding-block: clamp(32px, 6vw, 72px);
+  }
+  .error-404-art { height: auto; }
+  .error-404-acciones { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; }
+</style>
