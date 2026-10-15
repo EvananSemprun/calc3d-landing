@@ -1,22 +1,33 @@
 ---
 /**
- * Inicio. Página ESTÁTICA: todo el texto está en el HTML del build (es lo que lee un
- * buscador) y el build NO llama a la API. Lo único dinámico es el WhatsApp de los CTA,
- * que se completa en el navegador (ver WhatsappCotizar, montado en Base).
+ * Inicio. El texto fijo (hero fallback, beneficios, proceso, FAQ) está en el HTML del
+ * build (SEO). Los DESTACADOS y los bloques por categoría se traen de la API EN EL BUILD
+ * y quedan como HTML estático (SEO + enlaces internos al catálogo): por eso el build del
+ * inicio ahora SÍ necesita la API arriba (igual que el catálogo). El carrusel y la Flash
+ * Sale son islas que se enriquecen en el navegador (banners/oferta que administra el panel).
  *
- * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad —
- * materiales, proceso, tiempos y beneficios reales.
- *
- * Pendiente de otras tareas (se dejan sin implementar a propósito):
- *  - Tarea 7: carrusel de banners (hoy HeroInicio) y sección Flash Sale (va justo debajo).
- *  - Destacados y bloques por categoría ("Del catálogo"): vienen de la API, con el catálogo.
+ * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad.
  */
 import Base from '../layouts/Base.astro';
-import HeroInicio from '../components/HeroInicio.astro';
+import Carrusel from '../components/inicio/Carrusel';
+import FlashSale from '../components/inicio/FlashSale';
+import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
 import Pasos from '../components/Pasos.astro';
 import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
+import { fetchProductos, fetchCategorias, fetchInfo } from '../lib/api';
+
+const [productos, categorias, info] = await Promise.all([
+  fetchProductos(),
+  fetchCategorias(),
+  fetchInfo(),
+]);
+
+const destacados = productos.slice(0, 4);
+const bloques = categorias
+  .map((c) => ({ ...c, items: productos.filter((p) => p.cat === c.slug).slice(0, 4) }))
+  .filter((c) => c.items.length > 0);
 
 const beneficios = [
   { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargás: sin stock viejo ni sobreproducción.' },
@@ -61,9 +72,52 @@ const preguntas = [
   description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS y TPU, desde una unidad. Cotizá por WhatsApp."
   canonical="/"
 >
-  <HeroInicio />
+  <Carrusel client:load />
 
-  {/* Tarea 7: aquí va la sección Flash Sale (solo visible con una ventana activa). */}
+  <FlashSale tasa={info.rate} client:visible />
+
+  {
+    destacados.length > 0 && (
+      <section class="section">
+        <div class="container">
+          <div class="eyebrow-row">
+            <h2 class="h2">Del catálogo</h2>
+            <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">
+              Ver todo →
+            </a>
+          </div>
+          <div class="grid shop-grid">
+            {destacados.map((p) => (
+              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    bloques.map((c) => (
+      <section class="section cat-block">
+        <div class="container">
+          <div class="eyebrow-row">
+            <h2 class="h2">{c.nombre}</h2>
+            <a
+              href={`/tienda/?cat=${encodeURIComponent(c.slug)}`}
+              class="text-sm font-semibold text-primary hover:underline"
+            >
+              Ver todo →
+            </a>
+          </div>
+          <div class="grid shop-grid">
+            {c.items.map((p) => (
+              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
+            ))}
+          </div>
+        </div>
+      </section>
+    ))
+  }
 
   <Beneficios beneficios={beneficios} />
 

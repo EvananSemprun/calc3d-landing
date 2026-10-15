@@ -975,3 +975,99 @@
   }
   .btn-wa:hover { background: #2bea72; transform: translateY(-2px); }
 }
+
+/* ============================================================
+   Inicio: carrusel del hero, bloques por categoría y Flash Sale.
+   Portado de assets/styles.css. En @layer components.
+   ============================================================ */
+@layer components {
+  .carousel { position: relative; overflow: hidden; background: var(--ink-800); }
+  .carousel-track { position: relative; }
+  .carousel-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s var(--ease);
+  }
+  .carousel-slide.is-active { position: relative; opacity: 1; visibility: visible; }
+  .carousel-content {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: center;
+    gap: 32px;
+    padding-block: clamp(40px, 7vw, 96px);
+  }
+  .carousel-text { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .carousel-art { width: 100%; max-width: 340px; justify-self: center; height: auto; }
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--card-line-strong);
+    background: rgba(0, 8, 20, 0.55);
+    color: var(--text);
+    font-size: 26px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .carousel-nav.prev { left: 14px; }
+  .carousel-nav.next { right: 14px; }
+  .carousel-dots {
+    position: absolute;
+    bottom: 16px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .carousel-dots button {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 0;
+    background: var(--card-line-strong);
+    padding: 0;
+    cursor: pointer;
+  }
+  .carousel-dots button[aria-selected="true"] { background: var(--yellow); }
+  @media (max-width: 760px) {
+    .carousel-content { grid-template-columns: 1fr; text-align: center; }
+    .carousel-text { align-items: center; }
+    .carousel-art { order: -1; max-width: 190px; }
+    .carousel-nav { display: none; }
+  }
+
+  .cat-block { padding-block: clamp(40px, 6vw, 80px); }
+  .cat-block:nth-of-type(even) { background: var(--ink-700); }
+  .cat-block .eyebrow-row { margin-bottom: 22px; }
+
+  .flash-sale .flash-head { margin-bottom: 24px; }
+  .flash-sale .flash-countdown {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-weight: 700;
+    color: var(--yellow);
+    font-variant-numeric: tabular-nums;
+  }
+  .flash-item { position: relative; }
+  .flash-item .flash-off {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    background: var(--yellow);
+    color: var(--ink-900);
+    font-weight: 800;
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+}

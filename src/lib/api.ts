@@ -2,6 +2,7 @@
 // `fetch` sirve en el build (Node) y en el navegador. Las ESCRITURAS (pedidos,
 // piezas a medida, subida de foto) llegan con el carrito, en otra tarea.
 import type { Categoria } from './catalogo';
+import type { Banner } from './banner';
 import { adapt, type ProductoApi, type ProductoVitrina } from './producto';
 
 /** Tasa de presentación publicada por el negocio (null = solo USD). */
@@ -50,4 +51,24 @@ export async function fetchCategorias(): Promise<Categoria[]> {
 
 export function fetchInfo(): Promise<InfoApi> {
   return getJson<InfoApi>('/public/store/info');
+}
+
+/** Banners del carrusel (los administra el panel). [] si no hay. */
+export async function fetchBanners(): Promise<Banner[]> {
+  const { banners } = await getJson<{ banners: Banner[] }>('/public/store/banners');
+  return banners ?? [];
+}
+
+/** Flash Sale: ventana activa con productos EN OFERTA, ya en la forma de la vitrina.
+ *  null si no hay ventana o no hay productos (la sección queda oculta). */
+export interface SaleData {
+  title?: string | null;
+  endsAt: string;
+  products: ProductoVitrina[];
+}
+export async function fetchSale(): Promise<SaleData | null> {
+  const { sale } = await getJson<{
+    sale: { title?: string | null; endsAt: string; products: ProductoApi[] } | null;
+  }>('/public/store/sale');
+  return sale ? { title: sale.title, endsAt: sale.endsAt, products: (sale.products ?? []).map(adapt) } : null;
 }
