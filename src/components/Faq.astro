@@ -1,0 +1,22 @@
+---
+/** Preguntas frecuentes con <details> nativo: se abre sin JavaScript. */
+interface Pregunta {
+  pregunta: string;
+  respuesta: string;
+}
+interface Props {
+  preguntas: Pregunta[];
+}
+const { preguntas } = Astro.props;
+---
+
+<div class="faq">
+  {
+    preguntas.map((q) => (
+      <details>
+        <summary>{q.pregunta}</summary>
+        <p>{q.respuesta}</p>
+      </details>
+    ))
+  }
+</div>

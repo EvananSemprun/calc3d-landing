@@ -238,3 +238,149 @@
     .footer-grid { grid-template-columns: 1fr; gap: 28px; }
   }
 }
+
+/* ============================================================
+   Utilidades de las páginas de contenido (inicio, impresión 3D), portadas de
+   assets/styles.css. Se portan solo las que esas páginas usan.
+   ============================================================ */
+@layer components {
+  .section--blue { background: var(--ink-700); }
+  .dim { color: var(--text-dim); }
+  .h3 { font-size: clamp(21px, 2.2vw, 28px); }
+
+  .grid { display: grid; gap: 22px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .eyebrow-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 44px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; padding-block: clamp(56px, 8vw, 110px) clamp(36px, 5vw, 64px); }
+  .hero--sm { padding-block: clamp(44px, 6vw, 76px) clamp(28px, 4vw, 44px); }
+  .hero .lead { margin-top: 16px; max-width: 58ch; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+  /* Hero con mascota a la derecha (inicio e impresión 3D). */
+  .hero-art-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: center;
+    gap: 32px;
+  }
+  .hero-art { width: 100%; max-width: 320px; justify-self: center; height: auto; }
+  .hero-home { background: var(--ink-800); padding-block: clamp(40px, 7vw, 96px); }
+  .hero-home .lead { margin-top: 16px; }
+  .hero-home .hero-actions { margin-top: 24px; }
+  @media (max-width: 760px) {
+    .hero-art-grid { grid-template-columns: 1fr; text-align: center; }
+    .hero-art-grid .kicker, .hero-art-grid .hero-actions { justify-content: center; }
+    .hero-art-grid .lead { margin-inline: auto; }
+    .hero-art { order: -1; max-width: 200px; }
+  }
+
+  /* ---------- Tarjetas ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: var(--radius-lg);
+    transition: transform 0.3s var(--ease), border-color 0.3s, background 0.3s;
+  }
+  .card:hover { border-color: var(--card-line-strong); }
+  .card.pad { padding: 26px; display: flex; flex-direction: column; gap: 10px; }
+  .card.pad .h3 { margin: 0; }
+  .card.pad p { margin: 0; }
+  .card--soft { background: transparent; border-style: dashed; }
+
+  /* ---------- Beneficios (inicio) ---------- */
+  .benefits { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 22px; }
+  .benefit h3 { color: var(--yellow); margin-bottom: 6px; }
+
+  /* ---------- Lista con palomita ---------- */
+  .ticks { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+  .ticks li { position: relative; padding-left: 26px; color: var(--text-dim); font-size: 15.5px; }
+  .ticks li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 12px;
+    height: 7px;
+    border-left: 2px solid var(--yellow);
+    border-bottom: 2px solid var(--yellow);
+    transform: rotate(-45deg);
+  }
+
+  /* ---------- Pasos numerados ----------
+     Van numerados porque SON una secuencia: el orden es información. auto-fit para
+     que la misma clase sirva con 4 o 5 pasos sin dejar uno solo en una fila. */
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 32px 0 0;
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  }
+  .steps li { display: flex; flex-direction: column; gap: 8px; }
+  .steps h3 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+  .steps p { margin: 0; font-size: 14.5px; }
+  .step-n {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--yellow);
+    border: 1.5px solid var(--yellow);
+    background: rgba(255, 195, 0, 0.08);
+  }
+  @media (max-width: 560px) { .steps { grid-template-columns: 1fr; gap: 20px; } }
+
+  /* ---------- Preguntas frecuentes: <details> nativo (sin JS, accesible) ---------- */
+  .faq { display: flex; flex-direction: column; border-top: 1px solid var(--card-line); }
+  .faq details { border-bottom: 1px solid var(--card-line); }
+  .faq summary {
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+    padding: 20px 40px 20px 0;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+";
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    color: var(--yellow);
+  }
+  .faq details[open] summary::after { content: "−"; }
+  .faq summary:hover { color: var(--yellow); }
+  .faq p { margin: 0 0 22px; color: var(--text-dim); max-width: 70ch; }
+
+  /* ---------- Franja de cierre con CTA ---------- */
+  .shop-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  .shop-cta .lead { max-width: 46ch; }
+}

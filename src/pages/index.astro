@@ -1,31 +1,92 @@
 ---
 /**
- * Página de humo del andamiaje: comprueba que Astro + React (isla) + Tailwind +
- * shadcn + tema de marca funcionan juntos. Se reemplaza por el inicio real en
- * una tarea posterior. No hace llamadas a la API.
+ * Inicio. Página ESTÁTICA: todo el texto está en el HTML del build (es lo que lee un
+ * buscador) y el build NO llama a la API. Lo único dinámico es el WhatsApp de los CTA,
+ * que se completa en el navegador (ver WhatsappCotizar, montado en Base).
+ *
+ * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad —
+ * materiales, proceso, tiempos y beneficios reales.
+ *
+ * Pendiente de otras tareas (se dejan sin implementar a propósito):
+ *  - Tarea 7: carrusel de banners (hoy HeroInicio) y sección Flash Sale (va justo debajo).
+ *  - Destacados y bloques por categoría ("Del catálogo"): vienen de la API, con el catálogo.
  */
 import Base from '../layouts/Base.astro';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import HeroInicio from '../components/HeroInicio.astro';
+import Beneficios from '../components/Beneficios.astro';
+import Pasos from '../components/Pasos.astro';
+import Faq from '../components/Faq.astro';
+import CtaCotizar from '../components/CtaCotizar.astro';
+
+const beneficios = [
+  { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargás: sin stock viejo ni sobreproducción.' },
+  { titulo: 'Atención por WhatsApp', texto: 'Coordinás directo con el taller, sin formularios eternos.' },
+  { titulo: 'Listo en N días', texto: 'Cada ficha dice sus días de producción. Sin promesas vagas.' },
+  { titulo: 'Pagás al coordinar', texto: 'En dólares o en bolívares a la tasa del día, como prefieras.' },
+];
+
+const pasos = [
+  { titulo: 'Nos contás', texto: 'Por WhatsApp o desde acá. Medidas, cantidad, para cuándo — lo que tengas.' },
+  { titulo: 'Cotizamos', texto: 'Precio cerrado antes de empezar. Sin sorpresas a mitad del trabajo.' },
+  { titulo: 'Producimos', texto: 'Arranca la impresora con el alcance ya acordado.' },
+  { titulo: 'Revisás', texto: 'Te mostramos avances. Si algo no va, se corrige antes de terminar.' },
+  { titulo: 'Entregamos', texto: 'Coordinamos entrega y pago por WhatsApp, como prefieras.' },
+];
+
+const preguntas = [
+  {
+    pregunta: '¿Cuánto tarda un pedido?',
+    respuesta:
+      'Depende de la pieza y la cantidad. Cada producto del catálogo dice sus días de producción; para algo a medida te lo confirmamos al cotizar.',
+  },
+  {
+    pregunta: '¿Puedo mandar mi propio archivo?',
+    respuesta:
+      'Sí. Si tenés el modelo en STL, 3MF o STEP, lo imprimimos. Si no lo tenés, lo diseñamos nosotros y se cotiza aparte.',
+  },
+  {
+    pregunta: '¿Cómo se paga?',
+    respuesta: 'Se coordina por WhatsApp. Trabajamos en dólares y también en bolívares a la tasa del día.',
+  },
+  {
+    pregunta: '¿Hay cantidad mínima?',
+    respuesta:
+      'Algunos productos sí, y está indicado en su ficha. Para trabajos a medida no hay mínimo fijo: se cotiza según el caso.',
+  },
+];
 ---
 
 <Base
   title="Banano Lab — Impresión 3D a pedido en Venezuela"
-  description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS y TPU, desde una unidad."
+  description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS y TPU, desde una unidad. Cotizá por WhatsApp."
   canonical="/"
 >
-  <section class="section">
+  <HeroInicio />
+
+  {/* Tarea 7: aquí va la sección Flash Sale (solo visible con una ventana activa). */}
+
+  <Beneficios beneficios={beneficios} />
+
+  <section class="section section--blue">
     <div class="container">
-      <span class="kicker">Andamiaje</span>
-      <h1 class="h1 text-balance">Astro + React + shadcn, con la marca puesta.</h1>
-      <p class="lead" style="margin-top:20px">
-        Si este botón se ve amarillo sobre fondo navy y la letra es Poppins, el tema anda.
+      <h2 class="h2 text-balance" style="margin-bottom:8px">Cómo trabajamos</h2>
+      <p class="lead" style="max-width:52ch">
+        Primero entendemos qué necesitás, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.
       </p>
-      <div style="margin-top:32px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <Button client:visible size="lg">Botón de shadcn (isla)</Button>
-        <Button client:visible size="lg" variant="outline">Variante outline</Button>
-        <Badge>Badge estático</Badge>
-      </div>
+      <Pasos pasos={pasos} />
     </div>
   </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="h2" style="margin-bottom:24px">Preguntas frecuentes</h2>
+      <Faq preguntas={preguntas} />
+    </div>
+  </section>
+
+  <CtaCotizar
+    titulo="¿Tenés una idea? La convertimos en producto."
+    texto="Contanos qué necesitás y te respondemos con un precio."
+    boton="Cotizar ahora"
+  />
 </Base>

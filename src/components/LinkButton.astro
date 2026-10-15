@@ -1,0 +1,35 @@
+---
+/**
+ * Enlace con el aspecto de un botón de shadcn (usa `buttonVariants`, así comparte
+ * variantes y foco con el resto del sitio). Es un <a>, no un <button>: navegar es un
+ * enlace. Estático: no hidrata nada.
+ *
+ * `cotizar` marca el enlace como CTA de WhatsApp: `href="#"` hasta que
+ * `WhatsappCotizar` (en Base) le pone el enlace real, o lo oculta si no hay teléfono.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from './ui/button';
+
+interface Props extends Omit<HTMLAttributes<'a'>, 'class'> {
+  href: string;
+  variant?: 'default' | 'outline';
+  grande?: boolean;
+  cotizar?: boolean;
+  class?: string;
+}
+
+const { href, variant = 'default', grande = true, cotizar = false, class: clase, ...resto } = Astro.props;
+
+// El botón grande del sitio viejo (.btn-lg) es más alto que `size="lg"` de shadcn.
+const tamano = grande ? 'h-[3.4rem] px-8 text-lg' : '';
+---
+
+<a
+  href={href}
+  class={cn(buttonVariants({ variant, size: 'lg' }), tamano, clase)}
+  data-bl={cotizar ? 'cotizar' : undefined}
+  {...resto}
+>
+  <slot />
+</a>

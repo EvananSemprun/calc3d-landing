@@ -1,0 +1,50 @@
+---
+/**
+ * Rellena los CTA de WhatsApp (`[data-bl="cotizar"]`) con el teléfono del negocio.
+ *
+ * Las páginas son ESTÁTICAS y su build NO depende de la API: el teléfono se pide en el
+ * NAVEGADOR (como hacía la tienda vieja). Con la API caída la página sirve igual; solo
+ * los CTA de WhatsApp se ocultan, porque un botón que no lleva a ningún lado es peor
+ * que no tenerlo. Mientras responde (la API gratuita tarda ~50 s en despertar) quedan
+ * visibles con `href="#"`.
+ *
+ * Se monta una sola vez en `Base`, así cubre también el enlace del pie.
+ */
+---
+
+<script>
+  import { fetchInfo } from '../lib/api';
+
+  // Misma regla que el panel y que la tienda vieja: dígitos y "0" inicial -> 58.
+  function telefonoInternacional(crudo: string | null): string {
+    const digitos = (crudo ?? '').replace(/\D/g, '');
+    return digitos.startsWith('0') ? `58${digitos.slice(1)}` : digitos;
+  }
+
+  const enlaces = () =>
+    Array.from(document.querySelectorAll<HTMLAnchorElement>('a[data-bl="cotizar"]'));
+
+  function ocultar() {
+    enlaces().forEach((a) => (a.hidden = true));
+  }
+
+  async function pintar() {
+    if (enlaces().length === 0) return;
+    try {
+      const { whatsappPhone, businessName } = await fetchInfo();
+      const tel = telefonoInternacional(whatsappPhone);
+      if (!tel) return ocultar();
+      const mensaje = encodeURIComponent(`Hola ${businessName}, quiero cotizar un trabajo.`);
+      enlaces().forEach((a) => {
+        a.href = `https://wa.me/${tel}?text=${mensaje}`;
+        a.target = '_blank';
+        a.rel = 'noopener';
+      });
+    } catch (e) {
+      console.warn('Sin datos del negocio (WhatsApp oculto):', e);
+      ocultar();
+    }
+  }
+
+  void pintar();
+</script>

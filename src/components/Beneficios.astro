@@ -1,0 +1,26 @@
+---
+/** Beneficios reales del taller (nada inventado: sin garantías que no damos). */
+interface Beneficio {
+  titulo: string;
+  texto: string;
+}
+interface Props {
+  beneficios: Beneficio[];
+}
+const { beneficios } = Astro.props;
+---
+
+<section class="section">
+  <div class="container">
+    <div class="grid benefits">
+      {
+        beneficios.map((b) => (
+          <div class="benefit">
+            <h3>{b.titulo}</h3>
+            <p class="dim">{b.texto}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

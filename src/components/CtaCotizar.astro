@@ -1,0 +1,21 @@
+---
+/** Franja de cierre con el CTA de WhatsApp (se completa en el navegador, ver WhatsappCotizar). */
+import LinkButton from './LinkButton.astro';
+
+interface Props {
+  titulo: string;
+  texto: string;
+  boton: string;
+}
+const { titulo, texto, boton } = Astro.props;
+---
+
+<section class="section section--blue" style="padding-block:clamp(48px,6vw,80px)">
+  <div class="container shop-cta">
+    <div>
+      <h2 class="h2 text-balance">{titulo}</h2>
+      <p class="lead" style="margin-top:10px">{texto}</p>
+    </div>
+    <LinkButton href="#" cotizar>{boton}</LinkButton>
+  </div>
+</section>

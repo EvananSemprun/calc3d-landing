@@ -1,0 +1,159 @@
+---
+/**
+ * Servicio de impresión 3D. Página ESTÁTICA: todo el contenido está en el HTML del
+ * build y no depende de la API (el WhatsApp de los CTA se completa en el navegador,
+ * ver WhatsappCotizar en Base).
+ *
+ * Los materiales y los usos son los REALES del taller — no una lista genérica copiada
+ * de otro sitio. Si mañana se suma un material, se agrega acá.
+ */
+import Base from '../../layouts/Base.astro';
+import LinkButton from '../../components/LinkButton.astro';
+import Pasos from '../../components/Pasos.astro';
+import CtaCotizar from '../../components/CtaCotizar.astro';
+import impresora from '../../assets/brand/impresora-3d.png';
+
+const materiales = [
+  {
+    nombre: 'PLA',
+    texto:
+      'El más versátil. Buen acabado y detalle fino. Ideal para llaveros, decoración, figuras y prototipos que no van a estar al sol.',
+  },
+  {
+    nombre: 'PETG',
+    texto:
+      'Más resistente y aguanta mejor el calor y la humedad. Para piezas de uso, soportes y cosas que van a la intemperie.',
+  },
+  { nombre: 'ABS', texto: 'Duro y resistente a golpes. Para repuestos y piezas mecánicas que trabajan.' },
+  {
+    nombre: 'TPU',
+    texto: 'Flexible, tipo goma. Para fundas, topes, juntas y todo lo que tenga que doblarse sin romperse.',
+  },
+];
+
+const pasos = [
+  {
+    titulo: 'Mandás lo que tengas',
+    texto: 'Un archivo STL, 3MF o STEP; una foto de la pieza rota; o simplemente la descripción y las medidas.',
+  },
+  {
+    titulo: 'Definimos la pieza',
+    texto: 'Material, color, acabado y cantidad. Acá se decide todo lo que cambia el precio.',
+  },
+  {
+    titulo: 'Cotizamos y producimos',
+    texto: 'Precio cerrado antes de encender la impresora. Recién ahí arranca la producción.',
+  },
+  { titulo: 'Entregamos', texto: 'Coordinamos entrega y pago por WhatsApp.' },
+];
+
+const usos = [
+  {
+    titulo: 'Para tu negocio',
+    items: [
+      'Llaveros y souvenirs con tu logo',
+      'Identificadores y señalética',
+      'Exhibidores y soportes de mostrador',
+      'Regalos corporativos en tanda',
+    ],
+  },
+  {
+    titulo: 'Para vos',
+    items: [
+      'Repuestos de cosas que ya no se consiguen',
+      'Organizadores y soportes a medida',
+      'Decoración y regalos personalizados',
+      'Prototipos de un proyecto propio',
+    ],
+  },
+];
+---
+
+<Base
+  title="Impresión 3D — Banano Lab"
+  description="Impresión 3D por encargo en PLA, PETG, ABS y TPU. Piezas propias, tu archivo o diseño desde cero. Producción bajo pedido, cotización antes de empezar."
+  canonical="/impresion-3d/"
+>
+  <section class="hero hero--sm">
+    <div class="container hero-art-grid">
+      <div>
+        <span class="kicker">El servicio</span>
+        <h1 class="h1 text-balance">Impresión 3D por encargo.</h1>
+        <p class="lead">
+          Desde una pieza suelta hasta una tanda para tu negocio. Producimos bajo pedido: no hay stock que se venza ni
+          mínimos absurdos.
+        </p>
+        <div class="hero-actions">
+          <LinkButton href="#" cotizar>Cotizar una pieza</LinkButton>
+          <LinkButton href="/tienda/" variant="outline">Ver lo que ya hacemos</LinkButton>
+        </div>
+      </div>
+      <img
+        class="hero-art"
+        src={impresora.src}
+        width={impresora.width}
+        height={impresora.height}
+        alt=""
+        loading="eager"
+      />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="h2" style="margin-bottom:8px">Materiales</h2>
+      <p class="lead" style="max-width:56ch;margin-bottom:28px">
+        Cada material sirve para algo distinto. Si no sabés cuál necesitás, contanos para qué es la pieza y lo elegimos
+        nosotros.
+      </p>
+      <div class="grid grid-3">
+        {
+          materiales.map((m) => (
+            <article class="card pad">
+              <h3 class="h3">{m.nombre}</h3>
+              <p class="dim">{m.texto}</p>
+            </article>
+          ))
+        }
+        <article class="card pad card--soft">
+          <h3 class="h3">¿Otro?</h3>
+          <p class="dim">Si tu pieza necesita algo que no está en esta lista, preguntanos. Se consigue casi todo.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--blue">
+    <div class="container">
+      <h2 class="h2" style="margin-bottom:8px">Cómo es el proceso</h2>
+      <p class="lead" style="max-width:52ch">Tengas el archivo o solo la idea.</p>
+      <Pasos pasos={pasos} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="h2" style="margin-bottom:24px">Qué se puede hacer</h2>
+      <div class="grid grid-2">
+        {
+          usos.map((u) => (
+            <article class="card pad">
+              <h3 class="h3">{u.titulo}</h3>
+              <ul class="ticks">
+                {u.items.map((i) => (
+                  <li>{i}</li>
+                ))}
+              </ul>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <CtaCotizar
+    titulo="Contanos qué necesitás imprimir."
+    texto="Con las medidas y la cantidad ya podemos darte un precio."
+    boton="Cotizar una pieza"
+  />
+</Base>

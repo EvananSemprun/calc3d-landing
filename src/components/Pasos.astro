@@ -1,0 +1,23 @@
+---
+/** Lista numerada de pasos (el orden ES información: primero se cotiza, después se produce). */
+interface Paso {
+  titulo: string;
+  texto: string;
+}
+interface Props {
+  pasos: Paso[];
+}
+const { pasos } = Astro.props;
+---
+
+<ol class="steps">
+  {
+    pasos.map((p, i) => (
+      <li>
+        <span class="step-n">{i + 1}</span>
+        <h3>{p.titulo}</h3>
+        <p class="dim">{p.texto}</p>
+      </li>
+    ))
+  }
+</ol>
