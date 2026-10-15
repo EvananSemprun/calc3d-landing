@@ -9,6 +9,9 @@
 // Todo recibe el almacenamiento como parámetro (por defecto, localStorage): así las
 // pruebas corren en node con uno de mentira, y en el servidor (SSR) no revienta.
 
+import type { TramoPrecio } from './precio';
+import type { FotoApi } from './producto';
+
 export const CLAVE_CARRITO = 'bl_cart_v1';
 
 /** Lo mínimo de `Storage` que necesita el carrito. */
@@ -31,6 +34,13 @@ export interface ItemCarrito {
   unit: number;
   customNote?: string;
   customImageKey?: string;
+  /** Datos de display DENORMALIZADOS al agregar, para que el cajón no tenga que
+   *  re-traer el catálogo en cada página. NO viajan al servidor (ver `itemsParaPedido`);
+   *  el precio real lo calcula la API. */
+  nombre?: string;
+  imagen?: FotoApi | null;
+  priceTiers?: TramoPrecio[];
+  minQty?: number;
 }
 
 export interface EntradaCarrito {
@@ -40,6 +50,10 @@ export interface EntradaCarrito {
   unit: number;
   customNote?: string;
   customImageKey?: string;
+  nombre?: string;
+  imagen?: FotoApi | null;
+  priceTiers?: TramoPrecio[];
+  minQty?: number;
 }
 
 /** localStorage si existe y se puede tocar (SSR, modo privado o bloqueado → null). */
@@ -112,6 +126,10 @@ export function agregar(
     const nuevo: ItemCarrito = { id: entrada.id, qty: entrada.qty, opts, unit: entrada.unit };
     if (entrada.customNote) nuevo.customNote = entrada.customNote;
     if (entrada.customImageKey) nuevo.customImageKey = entrada.customImageKey;
+    if (entrada.nombre) nuevo.nombre = entrada.nombre;
+    if (entrada.imagen) nuevo.imagen = entrada.imagen;
+    if (entrada.priceTiers && entrada.priceTiers.length) nuevo.priceTiers = entrada.priceTiers;
+    if (entrada.minQty) nuevo.minQty = entrada.minQty;
     items.push(nuevo);
   }
   escribir(items, almacen);
@@ -125,4 +143,30 @@ export function contar(almacen: Almacen | null = almacenPorDefecto()): number {
 
 export function vaciar(almacen: Almacen | null = almacenPorDefecto()): void {
   escribir([], almacen);
+}
+
+/**
+ * Fija la cantidad del renglón identificado por su `clave` (la de `claveDeItem`).
+ * Si la cantidad baja de 1, el renglón se quita. El mínimo de compra del producto
+ * lo hace respetar quien llama (el cajón, que tiene el producto a mano).
+ */
+export function fijarCantidad(
+  clave: string,
+  qty: number,
+  almacen: Almacen | null = almacenPorDefecto(),
+): ItemCarrito[] {
+  let items = leer(almacen);
+  const item = items.find((i) => claveDe(i) === clave);
+  if (!item) return items;
+  if (qty < 1) items = items.filter((i) => i !== item);
+  else item.qty = qty;
+  escribir(items, almacen);
+  return items;
+}
+
+/** Quita el renglón con esa clave y deja el resto. */
+export function quitar(clave: string, almacen: Almacen | null = almacenPorDefecto()): ItemCarrito[] {
+  const items = leer(almacen).filter((i) => claveDe(i) !== clave);
+  escribir(items, almacen);
+  return items;
 }

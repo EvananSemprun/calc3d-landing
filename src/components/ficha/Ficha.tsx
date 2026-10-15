@@ -77,7 +77,17 @@ export default function Ficha({ producto: p, info }: Props) {
     const opts: Record<string, string> = {};
     for (const [k, v] of Object.entries(elegido)) if (v) opts[k] = v;
 
-    agregarAlCarrito({ id: p.id, qty: cantidad, opts, unit: precioBase, ...extra });
+    agregarAlCarrito({
+      id: p.id,
+      qty: cantidad,
+      opts,
+      unit: precioBase,
+      nombre: p.name,
+      imagen: p.image,
+      priceTiers: p.priceTiers,
+      minQty: p.minQty,
+      ...extra,
+    });
 
     // Agregado: se limpia la personalización para el próximo renglón.
     setNota('');

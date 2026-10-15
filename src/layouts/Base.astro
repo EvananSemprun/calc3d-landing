@@ -17,6 +17,8 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappCotizar from '../components/WhatsappCotizar.astro';
+import Carrito from '../components/carrito/Carrito';
+import PiezaAMedida from '../components/carrito/PiezaAMedida';
 
 interface Props {
   title: string;
@@ -91,5 +93,7 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
     </main>
     <Footer categorias={categorias} />
     <WhatsappCotizar />
+    <Carrito client:load />
+    <PiezaAMedida client:idle />
   </body>
 </html>

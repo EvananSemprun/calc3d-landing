@@ -43,7 +43,15 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
     // El unitario va SIN tramo de mayoreo (igual que la ficha): el carrito aplica el
     // tramo con la cantidad ACTUAL del renglón (`precioUnitarioItem`). Guardarlo ya
     // con descuento lo aplicaría dos veces. Respeta el mínimo de compra.
-    agregar({ id: p.id, qty: p.minQty || 1, unit: p.price });
+    agregar({
+      id: p.id,
+      qty: p.minQty || 1,
+      unit: p.price,
+      nombre: p.name,
+      imagen: p.image,
+      priceTiers: p.priceTiers,
+      minQty: p.minQty,
+    });
     setAgregado(true);
     clearTimeout(temporizador.current);
     temporizador.current = setTimeout(() => setAgregado(false), 1600);
