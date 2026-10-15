@@ -56,10 +56,17 @@
     </aside>
 
     <div class="shop-main">
-      <!-- Selección ÚNICA (una pestaña no es una casilla). Son botones con
-           aria-pressed y no el patrón ARIA de tabs: acá no hay un panel por
-           pestaña, hay UNA vitrina que se filtra. -->
-      <div class="tabs" id="catTabs" role="group" aria-label="Filtrar por categoría" hidden></div>
+      <!-- Categoría: selección ÚNICA, como un select propio (no pestañas). El
+           <select> oculto es la fuente del valor; la UI custom lo maneja. Con
+           menos de 2 categorías se oculta: no hay elección que ofrecer. -->
+      <div class="bl-select bl-select--cat" id="catDropdown" hidden>
+        <select id="catSel" class="sr-only" aria-hidden="true" tabindex="-1"></select>
+        <button type="button" class="bl-select-trigger" id="catTrigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="bl-select-label" id="catLabel">Todos</span>
+          <svg class="bl-select-caret" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <ul class="bl-select-list" id="catList" role="listbox" aria-label="Categoría" hidden></ul>
+      </div>
 
       <div class="shop-toolbar">
         <button class="btn btn-ghost btn-sm filters-toggle" onclick="document.getElementById('filters').classList.toggle('open')">
@@ -134,7 +141,7 @@ const Shop = {
     }
     this.paintChrome();
     this.paintFilters();
-    this.montarSelectOrden();
+    this.montarDropdowns();
     this.apply();
   },
 
@@ -156,7 +163,7 @@ const Shop = {
     // de dejar la vitrina vacía y ninguna pestaña marcada.
     const desdeUrl = new URLSearchParams(location.search).get('cat');
     if (desdeUrl && this.cats.some((c) => c.key === desdeUrl)) this.state.cat = desdeUrl;
-    this.paintTabs();
+    this.paintCategoria();
     // OJO: NO sincronizar la URL acá. El resto de los filtros se restauran más
     // abajo leyendo location.search, y un syncUrl() temprano (con el estado aún
     // vacío) los borraría antes de leerlos. La normalización la hace el
@@ -218,28 +225,23 @@ const Shop = {
       .join('');
   },
 
-  /** Pestañas de categoría. Se repintan enteras al cambiar: son cuatro botones,
-   *  no vale la pena sincronizar clases a mano. */
-  paintTabs() {
-    const cont = document.getElementById('catTabs');
-    // Con una sola categoría no hay elección que ofrecer.
+  /** Categoría como SELECT propio (no pestañas): llena el <select> oculto con
+   *  "Todos" + cada categoría con su conteo, y refresca el desplegable custom.
+   *  Con menos de 2 categorías se oculta: no hay elección que ofrecer. */
+  paintCategoria() {
+    const cont = document.getElementById('catDropdown');
     cont.hidden = this.cats.length < 2;
     if (cont.hidden) return;
-    const tab = (key, label, n) => {
-      const on = this.state.cat === key;
-      return `<button class="tab${on ? ' on' : ''}" data-cat="${esc(key)}" aria-pressed="${on}">${esc(label)}<small>${n}</small></button>`;
-    };
-    cont.innerHTML =
-      tab('', 'Todos', BL.products.length) +
-      this.cats.map((c) => tab(c.key, c.label, c.n)).join('');
-    cont.querySelectorAll('.tab').forEach((b) => {
-      b.addEventListener('click', () => this.setCat(b.dataset.cat));
-    });
+    const sel = document.getElementById('catSel');
+    sel.innerHTML =
+      `<option value="">Todos (${BL.products.length})</option>` +
+      this.cats.map((c) => `<option value="${esc(c.key)}">${esc(c.label)} (${c.n})</option>`).join('');
+    sel.value = this.state.cat;
+    this.catDD?.refresh();
   },
 
   setCat(key) {
     this.state.cat = key;
-    this.paintTabs();
     this.syncUrl();
     this.apply();
   },
@@ -280,8 +282,9 @@ const Shop = {
     document.getElementById('priceRange').value = String(max);
     document.getElementById('priceVal').textContent = `$${max}`;
     document.getElementById('sortSel').value = 'featured';
-    this._syncOrden?.();
-    this.paintTabs();
+    document.getElementById('catSel').value = '';
+    this.sortDD?.refresh();
+    this.catDD?.refresh();
     this.syncUrl();
     this.apply();
   },
@@ -318,82 +321,81 @@ const Shop = {
     blEngancharTarjetas(grid);
   },
 
-  /**
-   * Desplegable de orden PROPIO sobre el <select> oculto. El nativo no se puede
-   * estilar por dentro; este se arma con el mismo valor y dispara Shop.apply().
-   * Accesible: teclado (flechas/Enter/Esc), aria-expanded y role=option.
-   */
-  montarSelectOrden() {
-    const sel = document.getElementById('sortSel');
-    const trigger = document.getElementById('sortTrigger');
-    const list = document.getElementById('sortList');
-    const label = document.getElementById('sortLabel');
-    const opciones = [...sel.options];
-
-    const pintarLista = () => {
-      list.innerHTML = opciones
-        .map(
-          (o) =>
-            `<li role="option" data-value="${esc(o.value)}" tabindex="-1" aria-selected="${o.value === sel.value}" class="bl-select-opt${o.value === sel.value ? ' on' : ''}">${esc(o.text)}</li>`,
-        )
-        .join('');
-    };
-
-    // Deja la etiqueta diciendo el valor actual (lo usa clear() y el restore).
-    const sincronizar = () => {
-      const op = opciones.find((o) => o.value === sel.value) || opciones[0];
-      label.textContent = op.text;
-      pintarLista();
-    };
-    this._syncOrden = sincronizar;
-
-    const abrir = () => {
-      pintarLista();
-      list.hidden = false;
-      trigger.setAttribute('aria-expanded', 'true');
-      const sel0 = list.querySelector('.bl-select-opt.on') || list.firstElementChild;
-      sel0 && sel0.focus();
-    };
-    const cerrar = (devolverFoco) => {
-      list.hidden = true;
-      trigger.setAttribute('aria-expanded', 'false');
-      if (devolverFoco) trigger.focus();
-    };
-    const elegir = (value) => {
-      sel.value = value;
-      sincronizar();
-      cerrar(true);
-      this.apply();
-    };
-
-    trigger.addEventListener('click', () => (list.hidden ? abrir() : cerrar(false)));
-    trigger.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        abrir();
-      }
-    });
-    list.addEventListener('click', (e) => {
-      const li = e.target.closest('.bl-select-opt');
-      if (li) elegir(li.dataset.value);
-    });
-    list.addEventListener('keydown', (e) => {
-      const items = [...list.querySelectorAll('.bl-select-opt')];
-      const i = items.indexOf(document.activeElement);
-      if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[0]).focus(); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
-      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(document.activeElement.dataset.value); }
-      else if (e.key === 'Escape') { e.preventDefault(); cerrar(true); }
-      else if (e.key === 'Tab') cerrar(false);
-    });
-    // Clic afuera cierra.
-    document.addEventListener('click', (e) => {
-      if (!list.hidden && !document.getElementById('sortDropdown').contains(e.target)) cerrar(false);
-    });
-
-    sincronizar();
+  /** Arma los dos desplegables propios (orden y categoría) sobre sus <select>
+   *  ocultos. La categoría ya tiene sus opciones cargadas por paintCategoria. */
+  montarDropdowns() {
+    this.sortDD = enhanceSelect(document.getElementById('sortDropdown'), () => this.apply());
+    this.catDD = enhanceSelect(document.getElementById('catDropdown'), (v) => this.setCat(v));
   },
 };
+
+/**
+ * Convierte un `.bl-select` (con un <select> oculto adentro) en un desplegable
+ * propio con la marca: el <select> es la FUENTE del valor y esta UI lo maneja.
+ * Lee las opciones EN VIVO en cada `refresh()`, así sirve también para un select
+ * que se llena dinámicamente (la categoría). Accesible: teclado (flechas/Enter/
+ * Esc), aria-expanded y role=option; clic afuera cierra. Devuelve { refresh }
+ * para re-sincronizar la etiqueta cuando el valor cambia por código.
+ */
+function enhanceSelect(container, onChange) {
+  const sel = container.querySelector('select');
+  const trigger = container.querySelector('.bl-select-trigger');
+  const list = container.querySelector('.bl-select-list');
+  const label = container.querySelector('.bl-select-label');
+
+  const refresh = () => {
+    const opts = [...sel.options];
+    const cur = opts.find((o) => o.value === sel.value) || opts[0];
+    label.textContent = cur ? cur.text : '';
+    list.innerHTML = opts
+      .map(
+        (o) =>
+          `<li role="option" data-value="${esc(o.value)}" tabindex="-1" aria-selected="${o.value === sel.value}" class="bl-select-opt${o.value === sel.value ? ' on' : ''}">${esc(o.text)}</li>`,
+      )
+      .join('');
+  };
+  const abrir = () => {
+    refresh();
+    list.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    (list.querySelector('.bl-select-opt.on') || list.firstElementChild)?.focus();
+  };
+  const cerrar = (foco) => {
+    list.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    if (foco) trigger.focus();
+  };
+  const elegir = (value) => {
+    sel.value = value;
+    refresh();
+    cerrar(true);
+    onChange(value);
+  };
+
+  trigger.addEventListener('click', () => (list.hidden ? abrir() : cerrar(false)));
+  trigger.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); }
+  });
+  list.addEventListener('click', (e) => {
+    const li = e.target.closest('.bl-select-opt');
+    if (li) elegir(li.dataset.value);
+  });
+  list.addEventListener('keydown', (e) => {
+    const items = [...list.querySelectorAll('.bl-select-opt')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); (items[i + 1] || items[0]).focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(document.activeElement.dataset.value); }
+    else if (e.key === 'Escape') { e.preventDefault(); cerrar(true); }
+    else if (e.key === 'Tab') cerrar(false);
+  });
+  document.addEventListener('click', (e) => {
+    if (!list.hidden && !container.contains(e.target)) cerrar(false);
+  });
+
+  refresh();
+  return { refresh };
+}
 
 window.Shop = Shop;
 window.addEventListener('DOMContentLoaded', () => Shop.init());

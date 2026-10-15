@@ -769,3 +769,6 @@ html.reveal-on .reveal.in { opacity: 1; transform: none; }
 }
 .bl-select-opt:hover, .bl-select-opt:focus { background: var(--ink-600); }
 .bl-select-opt.on { color: var(--yellow); font-weight: 600; }
+
+/* El select de categoría va donde estaban las pestañas: un respiro abajo. */
+.bl-select--cat { margin-bottom: 16px; }
