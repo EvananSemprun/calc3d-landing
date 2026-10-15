@@ -180,3 +180,23 @@ test('renderFichaHtml sin grupo que define la foto usa la galería base', () => 
   assert.ok(html.includes('https://cdn/base.jpg'));
   assert.ok(!html.includes('https://cdn/rojo.jpg'));
 });
+
+test('renderFichaHtml muestra el bloque de personalización en un producto custom', () => {
+  const p = adapt({ slug: 'x', name: 'X', priceUsd: 10, minQty: 1, custom: true });
+  const html = renderFichaHtml(p, { storageReady: true });
+  assert.ok(html.includes('data-bl="custom-note"'));
+  assert.ok(html.includes('data-bl="custom-foto"'));
+});
+
+test('sin custom no hay bloque de personalización', () => {
+  const p = adapt({ slug: 'y', name: 'Y', priceUsd: 10, minQty: 1, custom: false });
+  const html = renderFichaHtml(p, { storageReady: true });
+  assert.ok(!html.includes('data-bl="custom-note"'));
+});
+
+test('custom pero sin storageReady: hay nota, no cargador de foto', () => {
+  const p = adapt({ slug: 'z', name: 'Z', priceUsd: 10, minQty: 1, custom: true });
+  const html = renderFichaHtml(p, { storageReady: false });
+  assert.ok(html.includes('data-bl="custom-note"'));
+  assert.ok(!html.includes('data-bl="custom-foto"'));
+});

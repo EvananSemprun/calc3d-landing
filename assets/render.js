@@ -191,7 +191,14 @@ export function jsonLdProduct(p, { siteUrl, path }) {
  * cada grupo obligatorio), `opts.cantidad` (default minQty||1), `opts.fotoActiva`
  * (default 0), `opts.rate` (tasa para el precio, default null).
  */
-export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = null } = {}) {
+/** Tipos de imagen que acepta la subida de personalización (mismo set que el
+ *  backend; la landing no importa @calc3d/shared, igual que con precioConTramos). */
+export const CUSTOM_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+export function renderFichaHtml(
+  p,
+  { elegido, cantidad, fotoActiva = 0, rate = null, storageReady = false } = {},
+) {
   const elegidas = elegido ?? Object.fromEntries(
     (p.optionGroups ?? [])
       .filter((g) => g.required && g.options.length)
@@ -278,6 +285,24 @@ export function renderFichaHtml(p, { elegido, cantidad, fotoActiva = 0, rate = n
           ${tabla}
           ${p.desc ? `<p class="lead" style="font-size:17px">${escapeHtml(p.desc)}</p>` : ''}
           ${grupos}
+          ${
+            p.custom
+              ? `
+          <div class="pdp-custom">
+            <h4>Personalización <span class="dim">(opcional)</span></h4>
+            <textarea data-bl="custom-note" maxlength="500" rows="2" placeholder="Contanos qué querés (nombre, logo, color…)."></textarea>
+            ${
+              storageReady
+                ? `<label class="pdp-custom-foto">
+                     <input type="file" data-bl="custom-foto" accept="${CUSTOM_IMAGE_MIME_TYPES.join(',')}" hidden>
+                     <span class="btn btn-ghost btn-sm" data-bl="custom-foto-btn">Agregar una foto</span>
+                   </label>
+                   <div class="pdp-custom-preview" data-bl="custom-preview"></div>`
+                : ''
+            }
+          </div>`
+              : ''
+          }
           <div class="pdp-buy">
             <div class="qty">
               <button data-cant="-1" aria-label="menos">–</button>

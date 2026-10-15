@@ -118,6 +118,22 @@ BL.submitCustom = function submitCustom(customer, description) {
   return postJson('/public/store/custom-requests', { customer, description });
 };
 
+/**
+ * Sube la foto de personalización a R2 en dos pasos y devuelve su CLAVE (no la
+ * URL): el servidor la revalida al recibir el pedido. El precio y el pedido NO
+ * viajan acá; esto solo pone el archivo en el bucket.
+ */
+BL.pedirUrlDeFoto = async function pedirUrlDeFoto(file) {
+  const target = await postJson('/public/store/uploads/custom-url', {
+    contentType: file.type,
+    contentLength: file.size,
+  });
+  // `fetch` a pelo: la URL firmada no lleva ni debe llevar nada nuestro.
+  const put = await fetch(target.url, { method: 'PUT', headers: target.headers, body: file });
+  if (!put.ok) throw new Error('No se pudo subir la foto. Probá de nuevo.');
+  return target.key;
+};
+
 /** Ficha completa de un producto, por su enlace. */
 async function fetchProduct(slug) {
   return adapt(await fetchJson(`/public/store/products/${encodeURIComponent(slug)}`));
@@ -148,27 +164,39 @@ const Cart = {
    * Dos renglones del mismo producto con opciones distintas son cosas distintas,
    * así que se agrupan por producto + opciones.
    */
-  add(id, qty, opts, unit) {
+  add(id, qty, opts, unit, extra) {
     const p = BL.find(id);
     if (!p) return;
     const elegidas = opts ?? {};
-    const clave = claveDeItem(id, elegidas);
+    // Personalización (solo productos custom): nota y clave de la foto ya subida.
+    const note = extra?.customNote || undefined;
+    const imageKey = extra?.customImageKey || undefined;
+    const clave = claveDeItem(id, elegidas, note, imageKey);
     const items = this.read();
-    const found = items.find((i) => claveDeItem(i.id, i.opts ?? {}) === clave);
+    const found = items.find(
+      (i) => claveDeItem(i.id, i.opts ?? {}, i.customNote, i.customImageKey) === clave,
+    );
     const paso = qty ?? p.minQty ?? 1;
     // El precio unitario lo manda quien lo sabe: la FICHA, que es la única que
     // tiene los grupos de opciones. `BL.products` viene del listado y no los
     // trae, así que calcularlo acá daría siempre el precio base.
     const precio = unit ?? unitPrice(p, elegidas);
     if (found) found.qty += paso;
-    else items.push({ id, qty: paso, opts: elegidas, unit: precio });
+    else {
+      const item = { id, qty: paso, opts: elegidas, unit: precio };
+      if (note) item.customNote = note;
+      if (imageKey) item.customImageKey = imageKey;
+      items.push(item);
+    }
     this.write(items);
     this.flash();
     this.open();
   },
   setQty(clave, qty) {
     let items = this.read();
-    const item = items.find((i) => claveDeItem(i.id, i.opts ?? {}) === clave);
+    const item = items.find(
+      (i) => claveDeItem(i.id, i.opts ?? {}, i.customNote, i.customImageKey) === clave,
+    );
     if (!item) return;
     const min = BL.find(item.id)?.minQty ?? 1;
     if (qty < min) items = items.filter((i) => i !== item);
@@ -176,7 +204,11 @@ const Cart = {
     this.write(items);
   },
   remove(clave) {
-    this.write(this.read().filter((i) => claveDeItem(i.id, i.opts ?? {}) !== clave));
+    this.write(
+      this.read().filter(
+        (i) => claveDeItem(i.id, i.opts ?? {}, i.customNote, i.customImageKey) !== clave,
+      ),
+    );
   },
   count() {
     return this.read().reduce((n, i) => n + i.qty, 0);
@@ -236,7 +268,7 @@ const Cart = {
         .map((i) => {
           const p = BL.find(i.id);
           if (!p) return '';
-          const clave = claveDeItem(i.id, i.opts ?? {});
+          const clave = claveDeItem(i.id, i.opts ?? {}, i.customNote, i.customImageKey);
           const detalle = describeOpts(i.opts);
           const foto = p.image
             ? `<img src="${escapeAttr(p.image.url)}" alt="" style="width:64px;height:64px;flex:none;border-radius:12px;object-fit:cover">`
@@ -290,8 +322,12 @@ const Cart = {
 };
 
 /** Identidad de un renglón: mismo producto con OTRAS opciones es otro renglón. */
-function claveDeItem(id, opts) {
+function claveDeItem(id, opts, note, imageKey) {
   const partes = Object.keys(opts ?? {}).sort().map((k) => `${k}=${opts[k]}`);
+  // La personalización también distingue: dos "Taza" con notas/fotos distintas
+  // son renglones distintos (si no, el segundo pisaría la nota del primero).
+  if (note) partes.push(`nota=${note}`);
+  if (imageKey) partes.push(`foto=${imageKey}`);
   return partes.length ? `${id}|${partes.join('|')}` : id;
 }
 
@@ -430,7 +466,13 @@ const Checkout = {
     const problema = this.validar(datos);
     if (problema) return mostrarError(error, problema);
 
-    const items = Cart.read().map((i) => ({ slug: i.id, qty: i.qty, options: i.opts ?? {} }));
+    const items = Cart.read().map((i) => ({
+      slug: i.id,
+      qty: i.qty,
+      options: i.opts ?? {},
+      ...(i.customNote ? { customNote: i.customNote } : {}),
+      ...(i.customImageKey ? { customImageKey: i.customImageKey } : {}),
+    }));
     if (!items.length) return mostrarError(error, 'Tu carrito está vacío.');
 
     this.datos = datos;
