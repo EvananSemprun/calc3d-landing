@@ -146,9 +146,10 @@ const Shop = {
     const desdeUrl = new URLSearchParams(location.search).get('cat');
     if (desdeUrl && this.cats.some((c) => c.key === desdeUrl)) this.state.cat = desdeUrl;
     this.paintTabs();
-    // Deja la URL diciendo lo mismo que la pantalla: si el ?cat= venía roto o
-    // apuntaba a una categoría vacía, se limpia en vez de mentir.
-    this.syncUrl();
+    // OJO: NO sincronizar la URL acá. El resto de los filtros se restauran más
+    // abajo leyendo location.search, y un syncUrl() temprano (con el estado aún
+    // vacío) los borraría antes de leerlos. La normalización la hace el
+    // syncUrl() del final de apply(), cuando el estado ya está completo.
 
     const grupoMat = document.getElementById('materialGroup');
     grupoMat.hidden = BL.materials.length === 0;
@@ -176,6 +177,30 @@ const Shop = {
     rango.value = String(max);
     this.state.maxPrice = max;
     document.getElementById('priceVal').textContent = `$${max}`;
+
+    // Restaurar material/color/precio/orden desde la URL (vista compartible). Se
+    // hace acá, con los chips ya pintados, para poder marcarlos "on". Un valor
+    // que ya no existe en el catálogo se ignora, no rompe.
+    const q = new URLSearchParams(location.search);
+    for (const m of (q.get('mat') || '').split(',').filter(Boolean)) {
+      const chip = document.querySelector(`#materialFilters .chip[data-material="${CSS.escape(m)}"]`);
+      if (chip) { this.state.materials.add(m); chip.classList.add('on'); }
+    }
+    for (const c of (q.get('col') || '').split(',').filter(Boolean)) {
+      const pick = document.querySelector(`#colorFilters .color-pick[data-color="${CSS.escape(c)}"]`);
+      if (pick) { this.state.colors.add(c); pick.classList.add('on'); }
+    }
+    const maxQ = Number(q.get('max'));
+    if (Number.isFinite(maxQ) && maxQ > 0 && maxQ <= max) {
+      this.state.maxPrice = maxQ;
+      rango.value = String(maxQ);
+      document.getElementById('priceVal').textContent = `$${maxQ}`;
+    }
+    const sortQ = q.get('sort');
+    if (['price-asc', 'price-desc', 'name'].includes(sortQ)) {
+      this.state.sort = sortQ;
+      document.getElementById('sortSel').value = sortQ;
+    }
 
     document.getElementById('footerCats').innerHTML = this.cats
       .map((c) => `<a href="/tienda/?cat=${encodeURIComponent(c.key)}">${esc(c.label)}</a>`)
@@ -208,12 +233,19 @@ const Shop = {
     this.apply();
   },
 
-  /** La categoría elegida queda en la URL: la vista es compartible y volver
-   *  atrás desde una ficha devuelve la misma pestaña. */
+  /** TODOS los filtros quedan en la URL: la vista es compartible (pasás el link
+   *  y el otro cae en el catálogo filtrado igual) y volver atrás desde una ficha
+   *  devuelve lo mismo. Un valor por defecto no se escribe, para no ensuciar. */
   syncUrl() {
+    const s = this.state;
     const url = new URL(location.href);
-    if (this.state.cat) url.searchParams.set('cat', this.state.cat);
-    else url.searchParams.delete('cat');
+    const set = (k, v) => (v ? url.searchParams.set(k, v) : url.searchParams.delete(k));
+    const maxTope = +document.getElementById('priceRange').max;
+    set('cat', s.cat);
+    set('mat', [...s.materials].join(','));
+    set('col', [...s.colors].join(','));
+    set('max', s.maxPrice < maxTope ? String(s.maxPrice) : '');
+    set('sort', s.sort && s.sort !== 'featured' ? s.sort : '');
     history.replaceState(null, '', url);
   },
 
@@ -261,6 +293,13 @@ const Shop = {
     document.getElementById('resultCount').textContent =
       `${list.length} producto${list.length === 1 ? '' : 's'}`;
     document.getElementById('shopEmpty').hidden = list.length > 0;
+
+    // La URL refleja SIEMPRE lo que se ve (material/color/precio/orden incluidos),
+    // así copiar el link de arriba comparte exactamente este catálogo filtrado.
+    // Va ANTES del corte por "sin resultados": un filtro que no devuelve nada
+    // igual tiene que quedar en el link.
+    this.syncUrl();
+
     if (!list.length) { grid.innerHTML = ''; return; }
 
     grid.innerHTML = list.map(blTarjetaProducto).join('');
