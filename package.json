@@ -10,9 +10,11 @@
     "test": "node --test",
     "dev:astro": "astro dev --port 5182",
     "build:astro": "astro build",
-    "preview:astro": "astro preview"
+    "preview:astro": "astro preview",
+    "test:astro": "vitest run"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@astrojs/react": "^7.0.1",
     "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.3",
@@ -22,7 +24,9 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^6.0.5"
+    "typescript": "^6.0.3",
+    "vite": "^6.0.5",
+    "vitest": "^5.0.4"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
