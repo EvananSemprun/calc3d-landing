@@ -44,6 +44,15 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Contenedor de marca. Tailwind 4 trae su propio .container (max-width por breakpoint)
+   en @layer utilities, que pesa más que components: solo @utility lo sobrescribe. */
+@utility container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gut);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -86,12 +95,6 @@
    Van en @layer components para que las utilidades de Tailwind las puedan pisar.
    ============================================================ */
 @layer components {
-  .container {
-    width: 100%;
-    max-width: var(--maxw);
-    margin-inline: auto;
-    padding-inline: var(--gut);
-  }
   .section {
     position: relative;
     padding-block: clamp(64px, 9vw, 130px);

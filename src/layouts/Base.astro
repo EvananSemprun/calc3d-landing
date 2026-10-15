@@ -33,6 +33,10 @@ const absoluta = (ruta: string): string | undefined => {
 
 const urlCanonica = absoluta(canonical ?? Astro.url.pathname);
 const urlImagen = image ? absoluta(image) : undefined;
+
+// JSON.stringify no escapa "<": un "</script>" dentro de un texto (p.ej. una descripción
+// escrita por el dueño) cerraría la etiqueta e inyectaría HTML. La secuencia u003c (con barra invertida) es JSON válido.
+const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
 ---
 
 <!doctype html>
@@ -62,7 +66,7 @@ const urlImagen = image ? absoluta(image) : undefined;
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap"
     />
 
-    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    {jsonLd && <script type="application/ld+json" set:html={jsonLdSeguro} />}
   </head>
   <body>
     <Header />
