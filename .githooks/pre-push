@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# LOS TESTS, ANTES DE DESPLEGAR.
+#
+# ⚠️ Este repo es la TIENDA (Astro). Todavía no está publicada, pero el día que
+# lo esté el push va a ser un despliegue como en los otros dos: el hook ya está
+# puesto para que ese día no haya que acordarse de nada.
+#
+# El reparto es por VELOCIDAD, y es deliberado: el `pre-commit` es instantáneo
+# (solo mira secretos) y lo que tarda vive acá. Un push tolera 30-60 s; un commit
+# no. Correr la suite en cada commit es lo que entrena el `--no-verify`.
+#
+# Medido el 2026-10-19: **~2 s** (94 tests, lógica pura de precios y producto).
+#
+# ⚠️ Se corre la suite COMPLETA y no solo la de seguridad. La regla general del
+# proyecto dice "solo la de seguridad" porque una suite completa suele tener
+# specs de andamiaje rojos que bloquearían todo; acá **está verde** (shared 831,
+# api 779) y entra en el presupuesto, así que no hay motivo para proteger menos.
+# Si algún día la completa se pone crónicamente roja, lo que hay que arreglar es
+# la suite — recortar el hook es tratar el síntoma.
+
+set -e
+
+# Borrar una rama remota (`git push origin :rama`) no publica código.
+leer_refs() {
+  while read -r _local_ref local_sha _remote_ref _remote_sha; do
+    [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+    return 0
+  done
+  return 1
+}
+leer_refs || exit 0
+
+echo "→ pre-push: corriendo los tests…"
+
+if ! pnpm test; then
+  echo ""
+  echo "✖ La tienda está en roja. Arreglalo antes de publicar."
+  exit 1
+fi
+
+echo "✓ Tests en verde. Publicando."
+exit 0
