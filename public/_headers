@@ -1,5 +1,15 @@
 # Cabeceras para Cloudflare Pages (en Pages NO corre nginx.conf). Se copia tal cual a dist/.
+#
+# ⚠️ HSTS agregado en la auditoría del 2026-11-05, ANTES de comprar el dominio:
+# solo tiene efecto sobre HTTPS, y ponerlo después de publicar significa que la
+# primera gente que entre no lo tiene. Lo demás ya estaba y NO se tocó.
+#
+# ⚠️ **Sigue sin Content-Security-Policy, a propósito.** La tienda carga las
+# fotos desde R2 y le habla a la API; un CSP tiene que listar los dos en
+# `img-src` y `connect-src`, y mal puesto no avisa: deja las fotos en blanco.
+# Merece su propio trabajo, con la tienda abierta y la consola al lado.
 /*
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

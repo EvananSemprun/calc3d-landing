@@ -139,6 +139,11 @@ Navy + amarillo, Poppins, oscuro siempre (`<html class="dark">`). Paleta en
 - La API pública **nunca** devuelve costos ni el origen de costeo (fijado con tests en
   `calc3d-api`).
 - Cabeceras de seguridad: `public/_headers` (Cloudflare Pages) y `nginx.conf` (contenedor).
+  Desde la auditoría del 2026-11-05 incluye **HSTS**, agregado antes de comprar el dominio
+  (solo actúa sobre HTTPS, y ponerlo después deja sin él a la primera gente que entre).
+  ⚠️ **Sigue sin CSP a propósito**: tiene que listar R2 en `img-src` y la API en
+  `connect-src`, y mal puesto no avisa — deja las fotos en blanco. Y el bloque de caché
+  de `/_astro/*` que está debajo **no es decorativo**: al editar ese archivo, conservarlo.
 
 ## Despliegue (Cloudflare Pages)
 - Build: `pnpm install && pnpm build` · salida: `dist/`.
