@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { adapt, type ProductoApi } from './producto';
+import { indiceDeCategoria } from './paginacion';
+import * as catalogo from './catalogo';
 import {
   categoriasConProductos,
   coloresDe,
   filtrar,
   filtrosDesdeUrl,
   filtrosIniciales,
-  materialesDe,
   sincronizarUrl,
   topePrecio,
 } from './catalogo';
@@ -34,13 +35,6 @@ describe('listas que salen de los productos reales', () => {
     ]);
   });
 
-  it('el material se deduplica sin distinguir mayúsculas ni espacios', () => {
-    expect(materialesDe(productos)).toEqual([
-      { key: 'petg', label: 'PETG' },
-      { key: 'pla', label: 'PLA' },
-    ]);
-  });
-
   it('los colores salen una sola vez cada uno', () => {
     expect(coloresDe(productos)).toEqual([
       ['Rojo', '#f00'],
@@ -52,6 +46,15 @@ describe('listas que salen de los productos reales', () => {
     expect(topePrecio([prod('a', { priceUsd: 3 })])).toBe(120);
     expect(topePrecio(productos)).toBe(131);
   });
+
+  it('el tope del precio y los colores salen del índice de la CATEGORÍA, no de la página', () => {
+    const identificadores = productos.filter((p) => p.cat === 'identificadores');
+    const idx = indiceDeCategoria(identificadores);
+    // El tope se calcula sobre la categoría entera, aunque la página 1 no traiga el más caro.
+    expect(topePrecio(idx)).toBe(131);
+    expect(topePrecio(idx.slice(0, 1))).toBe(120);
+    expect(coloresDe(identificadores)).toEqual([['Negro', '#111'], ['Rojo', '#f00']]);
+  });
 });
 
 describe('filtrar', () => {
@@ -61,13 +64,22 @@ describe('filtrar', () => {
     expect(filtrar(productos, base).map((p) => p.id)).toEqual(['copa', 'qr', 'tag', 'ana']);
   });
 
-  it('categoría de selección única', () => {
-    expect(filtrar(productos, { ...base, cat: 'llaveros' }).map((p) => p.id)).toEqual(['copa', 'ana']);
+  it('ya no existe el filtro de categoría: la categoría es la ruta', () => {
+    expect(Object.keys(base)).not.toContain('cat');
+    // Un `cat` colado se ignora: no recorta nada.
+    expect(filtrar(productos, { ...base, cat: 'llaveros' } as never).map((p) => p.id)).toEqual(['copa', 'qr', 'tag', 'ana']);
   });
 
-  it('material compara por la clave normalizada y acumula (PLA o PETG)', () => {
-    expect(filtrar(productos, { ...base, materials: ['pla'] }).map((p) => p.id)).toEqual(['copa', 'qr']);
-    expect(filtrar(productos, { ...base, materials: ['pla', 'petg'] }).map((p) => p.id)).toEqual(['copa', 'qr', 'tag']);
+  it('ya no existe el filtro de material', () => {
+    expect(Object.keys(base)).not.toContain('materials');
+    expect('materialesDe' in catalogo).toBe(false);
+    expect(filtrar(productos, { ...base, materials: ['pla'] } as never).map((p) => p.id)).toEqual(['copa', 'qr', 'tag', 'ana']);
+  });
+
+  it('filtra igual sobre el índice liviano que sobre los productos completos', () => {
+    const idx = indiceDeCategoria(productos);
+    const f = { ...base, colors: ['Rojo'], sort: 'price-desc' as const };
+    expect(filtrar(idx, f).map((e) => e.id)).toEqual(filtrar(productos, f).map((p) => p.id));
   });
 
   it('color: basta con que el producto tenga alguno de los elegidos', () => {
@@ -89,24 +101,26 @@ describe('filtrar', () => {
 
 describe('URL compartible', () => {
   const ctx = {
-    cats: categoriasConProductos(cats, productos),
-    materiales: materialesDe(productos),
     colores: coloresDe(productos),
     tope: 131,
   };
 
   it('restaura todos los filtros', () => {
-    const f = filtrosDesdeUrl('?cat=llaveros&mat=pla,petg&col=Rojo&max=50&sort=price-asc', ctx);
-    expect(f).toEqual({ cat: 'llaveros', materials: ['pla', 'petg'], colors: ['Rojo'], maxPrice: 50, sort: 'price-asc' });
+    const f = filtrosDesdeUrl('?col=Rojo&max=50&sort=price-asc', ctx);
+    expect(f).toEqual({ colors: ['Rojo'], maxPrice: 50, sort: 'price-asc' });
   });
 
   it('acepta las comas escapadas (%2C) que escribe sincronizarUrl', () => {
-    expect(filtrosDesdeUrl('?mat=pla%2Cpetg', ctx).materials).toEqual(['pla', 'petg']);
+    expect(filtrosDesdeUrl('?col=Rojo%2CNegro', ctx).colors).toEqual(['Rojo', 'Negro']);
+  });
+
+  it('cat y mat de enlaces viejos se ignoran, sin romper', () => {
+    expect(filtrosDesdeUrl('?cat=llaveros&mat=pla', ctx)).toEqual(filtrosIniciales(131));
   });
 
   it('ignora lo que ya no existe en el catálogo, sin romper', () => {
-    const f = filtrosDesdeUrl('?cat=vacia&mat=nylon,pla&col=Verde&max=999&sort=raro', ctx);
-    expect(f).toEqual({ ...filtrosIniciales(131), materials: ['pla'] });
+    const f = filtrosDesdeUrl('?col=Verde,Rojo&max=999&sort=raro', ctx);
+    expect(f).toEqual({ ...filtrosIniciales(131), colors: ['Rojo'] });
   });
 
   it('un max inválido (0, negativo, texto) se ignora', () => {
@@ -119,20 +133,21 @@ describe('URL compartible', () => {
     expect(filtrosDesdeUrl('', ctx)).toEqual(filtrosIniciales(131));
   });
 
-  it('sincronizarUrl no escribe los valores por defecto', () => {
-    expect(sincronizarUrl('http://x/tienda/?cat=roto&max=5&sort=name', filtrosIniciales(131), 131)).toBe('http://x/tienda/');
+  it('sincronizarUrl no escribe los valores por defecto, y no toca lo que ya no es suyo', () => {
+    expect(sincronizarUrl('http://x/tienda/llaveros/?col=Rojo&max=5&sort=name', filtrosIniciales(131), 131)).toBe('http://x/tienda/llaveros/');
   });
 
   it('sincronizarUrl escribe lo activo y respeta lo ajeno (hash, otros params)', () => {
     const url = sincronizarUrl(
-      'http://x/tienda/?utm=1#abajo',
-      { cat: 'llaveros', materials: ['pla', 'petg'], colors: ['Rojo'], maxPrice: 50, sort: 'price-asc' },
+      'http://x/tienda/llaveros/?utm=1#abajo',
+      { colors: ['Rojo'], maxPrice: 50, sort: 'price-asc' },
       131,
     );
     const u = new URL(url);
+    expect(u.pathname).toBe('/tienda/llaveros/');
     expect(u.searchParams.get('utm')).toBe('1');
-    expect(u.searchParams.get('cat')).toBe('llaveros');
-    expect(u.searchParams.get('mat')).toBe('pla,petg');
+    expect(u.searchParams.has('cat')).toBe(false);
+    expect(u.searchParams.has('mat')).toBe(false);
     expect(u.searchParams.get('col')).toBe('Rojo');
     expect(u.searchParams.get('max')).toBe('50');
     expect(u.searchParams.get('sort')).toBe('price-asc');
@@ -140,7 +155,7 @@ describe('URL compartible', () => {
   });
 
   it('ida y vuelta: lo que se escribe es lo que se restaura', () => {
-    const f = { cat: 'identificadores', materials: ['petg'], colors: ['Negro'], maxPrice: 20, sort: 'name' as const };
+    const f = { colors: ['Negro'], maxPrice: 20, sort: 'name' as const };
     expect(filtrosDesdeUrl(new URL(sincronizarUrl('http://x/tienda/', f, 131)).search, ctx)).toEqual(f);
   });
 });
