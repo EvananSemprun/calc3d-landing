@@ -1,0 +1,51 @@
+---
+/**
+ * Las tres maneras de encargar una pieza que no está en el catálogo. HTML ESTÁTICO:
+ * recoge el mensaje que antes vivía en los slides 2 y 3 del carrusel («¿No está en el
+ * catálogo? Lo fabricamos» y «Taller propio»), que se fueron con él.
+ *
+ * Deja de ser el centro de la portada —el catálogo lo es— y pasa a ser la salida para
+ * lo que el catálogo no cubre. El detalle completo vive en /impresion-3d/.
+ */
+import LinkButton from '../LinkButton.astro';
+
+const vias = [
+  {
+    titulo: 'Traé tu archivo',
+    texto: 'Si ya tenés el modelo en STL, 3MF o STEP, lo imprimimos tal cual. Revisamos que la pieza salga bien antes de arrancar.',
+  },
+  {
+    titulo: 'Mandá una foto o las medidas',
+    texto: 'Se rompió algo y no se consigue el repuesto: con una foto y las medidas lo reconstruimos.',
+  },
+  {
+    titulo: 'Lo diseñamos desde cero',
+    texto: 'Si solo tenés la idea, la dibujamos nosotros. El diseño se cotiza aparte y lo aprobás antes de imprimir.',
+  },
+];
+---
+
+<section class="section" aria-labelledby="vias-titulo">
+  <div class="container">
+    <h2 class="h2 text-balance" id="vias-titulo" style="margin-bottom:8px">
+      ¿No está en el catálogo? Lo fabricamos.
+    </h2>
+    <p class="lead" style="max-width:56ch;margin-bottom:28px">
+      Taller propio y producción bajo pedido, desde una unidad. Hay tres maneras de empezar y las tres terminan igual:
+      con un precio cerrado antes de imprimir.
+    </p>
+    <div class="grid grid-3">
+      {
+        vias.map((v) => (
+          <article class="card pad">
+            <h3 class="h3">{v.titulo}</h3>
+            <p class="dim">{v.texto}</p>
+          </article>
+        ))
+      }
+    </div>
+    <div class="hero-actions">
+      <LinkButton href="/impresion-3d/" variant="outline" grande={false}>Ver el servicio completo</LinkButton>
+    </div>
+  </div>
+</section>

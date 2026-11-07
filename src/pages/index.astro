@@ -1,16 +1,22 @@
 ---
 /**
- * Inicio. El texto fijo (hero fallback, beneficios, proceso, FAQ) está en el HTML del
- * build (SEO). Los DESTACADOS y los bloques por categoría se traen de la API EN EL BUILD
- * y quedan como HTML estático (SEO + enlaces internos al catálogo): por eso el build del
- * inicio ahora SÍ necesita la API arriba (igual que el catálogo). El carrusel y la Flash
- * Sale son islas que se enriquecen en el navegador (banners/oferta que administra el panel).
+ * Inicio. Un hero fijo, las CATEGORÍAS como puertas al catálogo y UNA franja de
+ * destacados: con mil productos, repetir cuatro tarjetas por cada categoría era elegir
+ * por azar lo que se ve (y costaba 124 islas de React). El carrusel de 3 slides murió
+ * con esto: su mensaje quedó en el hero y en `Vias.astro`.
+ *
+ * Todo lo que se puede escribir en HTML está en HTML (SEO + peso): hero, categorías,
+ * vías del servicio, beneficios, proceso y FAQ. Las únicas islas son el buscador (dentro
+ * del hero), la Flash Sale y las tarjetas de los destacados.
+ *
+ * El build necesita la API arriba (categorías, productos, info); los BANNERS son la
+ * excepción: si fallan, el hero usa su arte propio (ver `cargarTienda`).
  *
  * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad.
  */
 import Base from '../layouts/Base.astro';
-import Buscador from '../components/catalogo/Buscador';
-import Carrusel from '../components/inicio/Carrusel';
+import Hero from '../components/inicio/Hero.astro';
+import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
@@ -19,24 +25,18 @@ import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
 import { cargarTienda } from '../lib/tienda-build';
 import { rutaDeCategoria, rutasDeListados } from '../lib/paginacion';
+import { destacadosDe, TOPE_DESTACADOS } from '../lib/portada';
 
-const { productos, info, listados, raices } = await cargarTienda();
+const { productos, info, listados, raices, banners } = await cargarTienda();
 const rutasDeCategoria = rutasDeListados(listados);
 
-const destacados = productos.slice(0, 4);
-// ⚠️ Mitigación temporal: la portada se rehace en la fase siguiente (rediseño de la tienda).
-// Antes pintaba 4 tarjetas por CADA categoría (31 → 124 islas de React y 616 KB de HTML);
-// ahora solo las primeras 6 raíces reales (sin "Sin categoría"), con los productos de sus hijas.
-const MAX_BLOQUES = 6;
-const bloques = listados
-  .filter((l) => l.sub === null && !l.sinCategoria)
-  .slice(0, MAX_BLOQUES)
-  .map((l) => ({ cat: l.cat, nombre: l.nombre, items: l.productos.slice(0, 4) }));
+// `raices` ya son las categorías raíz con productos ("Sin categoría" afuera): es lo
+// mismo que lleva el pie de todas las páginas, así que no se recalcula acá.
+const destacados = destacadosDe(productos, TOPE_DESTACADOS);
 
 const beneficios = [
   { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargás: sin stock viejo ni sobreproducción.' },
   { titulo: 'Atención por WhatsApp', texto: 'Coordinás directo con el taller, sin formularios eternos.' },
-  { titulo: 'Listo en N días', texto: 'Cada ficha dice sus días de producción. Sin promesas vagas.' },
   { titulo: 'Pagás al coordinar', texto: 'En dólares o en bolívares a la tasa del día, como prefieras.' },
 ];
 
@@ -77,22 +77,45 @@ const preguntas = [
   canonical="/"
   categorias={raices}
 >
-  <section class="bg-[var(--ink-800)] pt-6 pb-2" aria-label="Buscador">
-    <div class="container">
-      <Buscador client:load />
-    </div>
-  </section>
+  <Hero banners={banners} rutasDeCategoria={rutasDeCategoria} />
 
-  <Carrusel client:load rutasDeCategoria={rutasDeCategoria} />
-
-  <FlashSale tasa={info.rate} client:visible />
+  {
+    raices.length > 0 && (
+      <section class="section" aria-labelledby="categorias-titulo">
+        <div class="container">
+          <div class="eyebrow-row" style="margin-bottom:24px">
+            <h2 class="h2" id="categorias-titulo">
+              Mirá por categoría
+            </h2>
+            <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">
+              Ver todo el catálogo →
+            </a>
+          </div>
+          <ul class="grid shop-grid" style="list-style:none;padding:0;margin:0">
+            {raices.map((c) => (
+              <li>
+                <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
+                  <h3 class="text-lg font-semibold">{c.nombre}</h3>
+                  <p class="mono dim mt-1 text-sm">
+                    {c.n} producto{c.n === 1 ? '' : 's'}
+                  </p>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
 
   {
     destacados.length > 0 && (
-      <section class="section">
+      <section class="section" style="padding-top:0" aria-labelledby="destacados-titulo">
         <div class="container">
-          <div class="eyebrow-row">
-            <h2 class="h2">Nuestros más vendidos</h2>
+          <div class="eyebrow-row" style="margin-bottom:24px">
+            <h2 class="h2" id="destacados-titulo">
+              Destacados
+            </h2>
             <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">
               Ver todo →
             </a>
@@ -107,28 +130,9 @@ const preguntas = [
     )
   }
 
-  {
-    bloques.map((c) => (
-      <section class="section cat-block">
-        <div class="container">
-          <div class="eyebrow-row">
-            <h2 class="h2">{c.nombre}</h2>
-            <a
-              href={rutaDeCategoria(c.cat)}
-              class="text-sm font-semibold text-primary hover:underline"
-            >
-              Ver todo →
-            </a>
-          </div>
-          <div class="grid shop-grid">
-            {c.items.map((p) => (
-              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
-            ))}
-          </div>
-        </div>
-      </section>
-    ))
-  }
+  <FlashSale tasa={info.rate} client:visible />
+
+  <Vias />
 
   <Beneficios beneficios={beneficios} />
 

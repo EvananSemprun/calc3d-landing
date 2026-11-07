@@ -2,7 +2,15 @@
 // todas las páginas de categoría (con una petición por página, mil productos en cien
 // listados reventarían el límite público de la API). Si la API falla, el build FALLA a
 // propósito: publicar un catálogo vacío en silencio sería peor que no publicar.
-import { fetchCategorias, fetchInfo, fetchProductos, fetchProductosCompletos, type InfoApi } from './api';
+import {
+  fetchBanners,
+  fetchCategorias,
+  fetchInfo,
+  fetchProductos,
+  fetchProductosCompletos,
+  type InfoApi,
+} from './api';
+import type { Banner } from './banner';
 import type { Categoria } from './catalogo';
 import { categoriasDelIndice, listadosDe, raicesConProductos, type Listado } from './paginacion';
 import type { ProductoVitrina } from './producto';
@@ -13,6 +21,13 @@ export interface DatosTienda {
   completos: ProductoVitrina[];
   categorias: Categoria[];
   info: InfoApi;
+  /**
+   * Banners del panel, ordenados por `position` como los devuelve la API. Los trae el
+   * BUILD (antes los pedía el carrusel desde el navegador): el hero es HTML estático y
+   * no puede hacer un `fetch`. ⚠️ Consecuencia: un banner nuevo no aparece hasta el
+   * próximo build. [] si la API de banners falla — un banner es decoración.
+   */
+  banners: Banner[];
   listados: Listado[];
   /** Raíces con productos: los enlaces del pie en TODAS las páginas de la tienda. */
   raices: { slug: string; nombre: string; n: number }[];
@@ -28,17 +43,24 @@ let pendiente: Promise<DatosTienda> | null = null;
  * las páginas ven la misma foto del catálogo.
  */
 export function cargarTienda(): Promise<DatosTienda> {
-  pendiente ??= Promise.all([fetchProductos(), fetchProductosCompletos(), fetchCategorias(), fetchInfo()]).then(
-    ([productos, completos, categorias, info]) => ({
-      productos,
-      completos,
-      categorias,
-      info,
-      listados: listadosDe(categorias, productos),
-      raices: raicesConProductos(categorias, productos),
-      categoriasDelIndice: categoriasDelIndice(categorias, productos),
-    }),
-  );
+  pendiente ??= Promise.all([
+    fetchProductos(),
+    fetchProductosCompletos(),
+    fetchCategorias(),
+    fetchInfo(),
+    // El catálogo es obligatorio; los banners NO: si fallan, el build sigue sin ellos y
+    // el hero usa su arte propio. Publicar la tienda sin un banner es mejor que no publicar.
+    fetchBanners().catch(() => [] as Banner[]),
+  ]).then(([productos, completos, categorias, info, banners]) => ({
+    productos,
+    completos,
+    categorias,
+    info,
+    banners,
+    listados: listadosDe(categorias, productos),
+    raices: raicesConProductos(categorias, productos),
+    categoriasDelIndice: categoriasDelIndice(categorias, productos),
+  }));
   return pendiente;
 }
 

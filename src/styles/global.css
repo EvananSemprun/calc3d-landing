@@ -280,11 +280,17 @@
   .hero-home { background: var(--ink-800); padding-block: clamp(40px, 7vw, 96px); }
   .hero-home .lead { margin-top: 16px; }
   .hero-home .hero-actions { margin-top: 24px; }
+  /* El buscador vive dentro del hero del inicio. */
+  .hero-search { max-width: 460px; margin-top: 26px; }
+  /* Un banner del panel puede llevar enlace: el arte se envuelve en un <a> (el foco
+     visible lo pone la regla global de :focus-visible). */
+  .hero-art-link { display: block; width: 100%; max-width: 320px; justify-self: center; }
+  .hero-art-link .hero-art { max-width: 100%; }
   @media (max-width: 760px) {
     .hero-art-grid { grid-template-columns: 1fr; text-align: center; }
     .hero-art-grid .kicker, .hero-art-grid .hero-actions { justify-content: center; }
-    .hero-art-grid .lead { margin-inline: auto; }
-    .hero-art { order: -1; max-width: 200px; }
+    .hero-art-grid .lead, .hero-art-grid .hero-search { margin-inline: auto; }
+    .hero-art, .hero-art-link { order: -1; max-width: 200px; }
   }
 
   /* ---------- Tarjetas ---------- */
@@ -977,79 +983,11 @@
 }
 
 /* ============================================================
-   Inicio: carrusel del hero, bloques por categoría y Flash Sale.
-   Portado de assets/styles.css. En @layer components.
+   Inicio: Flash Sale. Portado de assets/styles.css. En @layer components.
+   ⚠️ El carrusel del hero y los bloques por categoría se borraron con la portada
+   nueva (hero estático + categorías): su CSS era peso muerto en todas las páginas.
    ============================================================ */
 @layer components {
-  .carousel { position: relative; overflow: hidden; background: var(--ink-800); }
-  .carousel-track { position: relative; }
-  .carousel-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s var(--ease);
-  }
-  .carousel-slide.is-active { position: relative; opacity: 1; visibility: visible; }
-  .carousel-content {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    align-items: center;
-    gap: 32px;
-    padding-block: clamp(40px, 7vw, 96px);
-  }
-  .carousel-text { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
-  .carousel-art { width: 100%; max-width: 340px; justify-self: center; height: auto; }
-  .carousel-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    border: 1px solid var(--card-line-strong);
-    background: rgba(0, 8, 20, 0.55);
-    color: var(--text);
-    font-size: 26px;
-    line-height: 1;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-  .carousel-nav.prev { left: 14px; }
-  .carousel-nav.next { right: 14px; }
-  .carousel-dots {
-    position: absolute;
-    bottom: 16px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    z-index: 2;
-  }
-  .carousel-dots button {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    border: 0;
-    background: var(--card-line-strong);
-    padding: 0;
-    cursor: pointer;
-  }
-  .carousel-dots button[aria-selected="true"] { background: var(--yellow); }
-  @media (max-width: 760px) {
-    .carousel-content { grid-template-columns: 1fr; text-align: center; }
-    .carousel-text { align-items: center; }
-    .carousel-art { order: -1; max-width: 190px; }
-    .carousel-nav { display: none; }
-  }
-
-  .cat-block { padding-block: clamp(40px, 6vw, 80px); }
-  .cat-block:nth-of-type(even) { background: var(--ink-700); }
-  .cat-block .eyebrow-row { margin-bottom: 22px; }
-
   .flash-sale .flash-head { margin-bottom: 24px; }
   .flash-sale .flash-countdown {
     font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;

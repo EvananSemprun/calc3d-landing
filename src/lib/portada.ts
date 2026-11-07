@@ -1,5 +1,8 @@
 // Qué entra en la portada. Puro (sin DOM ni React) para poder probarlo en node.
-import type { Listado } from './paginacion';
+//
+// ⚠️ Acá NO va el filtro de las categorías de la portada: ya existe
+// `raicesConProductos` (`paginacion.ts`), que `cargarTienda()` llama y sirve como
+// `raices` a todas las páginas. Una segunda definición del mismo filtro se desincroniza.
 import type { ProductoVitrina } from './producto';
 
 /** Lugares de la franja «Destacados». */
@@ -16,15 +19,4 @@ export function destacadosDe(productos: readonly ProductoVitrina[], tope: number
   const conBadge = productos.filter((p) => p.badge);
   const sinBadge = productos.filter((p) => !p.badge);
   return [...conBadge, ...sinBadge].slice(0, tope);
-}
-
-/**
- * Las categorías raíz reales que se muestran como puertas en la portada.
- * ⚠️ Sin tope: con mil productos las categorías son la navegación, no un adorno;
- * recortarlas escondería parte del catálogo. "Sin categoría" queda afuera.
- */
-export function categoriasDePortada(listados: readonly Listado[]): { cat: string; nombre: string; n: number }[] {
-  return listados
-    .filter((l) => l.sub === null && !l.sinCategoria)
-    .map((l) => ({ cat: l.cat, nombre: l.nombre, n: l.productos.length }));
 }
