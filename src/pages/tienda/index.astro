@@ -12,9 +12,11 @@ import CtaCotizar from '../../components/CtaCotizar.astro';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
 import { rutaDeCategoria } from '../../lib/paginacion';
+import { destacadosDe, TOPE_DESTACADOS_TIENDA } from '../../lib/portada';
 
 const { productos, info, listados, raices, categoriasDelIndice } = await cargarTienda();
-const destacados = productos.slice(0, 8);
+// Mismo criterio que la portada (la insignia del panel manda) con otro tope: ver `portada.ts`.
+const destacados = destacadosDe(productos, TOPE_DESTACADOS_TIENDA);
 const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub === null)?.hijas ?? [];
 ---
 

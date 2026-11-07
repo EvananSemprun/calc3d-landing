@@ -5,8 +5,17 @@
 // `raices` a todas las páginas. Una segunda definición del mismo filtro se desincroniza.
 import type { ProductoVitrina } from './producto';
 
-/** Lugares de la franja «Destacados». */
+/** Lugares de la franja «Destacados» de la PORTADA: una sola fila de tarjetas. */
 export const TOPE_DESTACADOS = 4;
+
+/**
+ * Lugares de la franja «Destacados» del índice de la tienda (`/tienda/`): DOS filas.
+ * Ahí la franja es el único producto que se ve (el resto de la página son categorías),
+ * así que muestra el doble que la portada, donde compite con el hero, las vías y el FAQ.
+ * ⚠️ Lo único que cambia entre las dos pantallas es ESTE número: las dos ordenan con
+ * `destacadosDe`, o la insignia que pone el dueño serviría en una y no en la otra.
+ */
+export const TOPE_DESTACADOS_TIENDA = 8;
 
 /**
  * Los productos de la franja «Destacados»: primero los que tienen insignia, después el
