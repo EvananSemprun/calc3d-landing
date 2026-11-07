@@ -24,6 +24,7 @@
   --card-line: rgba(157, 178, 204, 0.16);
   --card-line-strong: rgba(157, 178, 204, 0.30);
 
+  --shadow-tarjeta: 0 12px 28px rgb(0 0 0 / 0.35);
   --shadow-yellow: 0 14px 34px -12px rgba(255, 195, 0, 0.45);
   --maxw: 1240px;
   --gut: clamp(20px, 5vw, 56px);

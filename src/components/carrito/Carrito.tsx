@@ -44,9 +44,9 @@ function sincronizarInsignia() {
   document.querySelectorAll<HTMLElement>('[data-bl="cart-count"]').forEach((el) => {
     el.textContent = String(n);
     el.hidden = n === 0;
-    // Pulso solo cuando el número SUBE; quitar algo no se festeja.
-    el.classList.remove('cart-count--pulso');
+    // Se toca la clase SOLO si el número sube: un evento que no sube no corta el pulso.
     if (sube) {
+      el.classList.remove('cart-count--pulso');
       void el.offsetWidth; // reinicia la animación si se agrega seguido
       el.classList.add('cart-count--pulso');
     }

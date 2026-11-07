@@ -70,6 +70,9 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* El salto de 4px y el zoom existen para sentirse suaves; sin interpolación son
+     solo un salto y un cambio de encuadre. La sombra se queda: comunica sin mover. */
+  .product:hover, .product:hover .product-photo { transform: none; }
 }
 
 @layer base {
@@ -331,7 +334,9 @@
     border-radius: var(--radius-lg);
     transition: transform 0.3s var(--ease), border-color 0.3s, background 0.3s;
   }
-  .card:hover { border-color: var(--card-line-strong); }
+  @media (hover: hover) {
+    .card:hover { border-color: var(--card-line-strong); }
+  }
   .card.pad { padding: 26px; display: flex; flex-direction: column; gap: 10px; }
   .card.pad .h3 { margin: 0; }
   .card.pad p { margin: 0; }
@@ -553,7 +558,7 @@
   .product-photo { transition: transform var(--dur-lenta) var(--ease); }
   /* Solo con puntero real: en un teléfono el :hover se queda pegado tras tocar. */
   @media (hover: hover) {
-    .product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgb(0 0 0 / 0.35); }
+    .product:hover { transform: translateY(-4px); box-shadow: var(--shadow-tarjeta); }
     .product:hover .product-photo { transform: scale(1.05); }
   }
   .product-photo { display: block; aspect-ratio: 4/3; width: 100%; object-fit: cover; background: var(--ink-700); }
