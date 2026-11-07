@@ -1,5 +1,6 @@
-// Lógica pura del carrusel de banners y la Flash Sale: el destino de un banner, el
+// Lógica pura de los banners del hero y de la Flash Sale: el destino de un banner, el
 // % de descuento y el contador regresivo. Sin DOM.
+// (El carrusel de 3 slides que los mostraba ya no existe: ahora es el arte del hero.)
 import { rutaFicha } from './producto';
 
 /** Banner tal como lo administra el panel. */

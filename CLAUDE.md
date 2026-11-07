@@ -60,13 +60,15 @@ saltar a otro.
   pieza a medida, WhatsApp).
 - `src/components/` — `.astro` para lo estático (Header, Footer, secciones del inicio) y
   `.tsx` para las **islas**: `catalogo/` (filtros + tarjeta), `ficha/` (galería, opciones,
-  personalización), `carrito/` (cajón + checkout + pieza a medida), `inicio/` (carrusel +
-  flash sale). `components/ui/` son los primitivos de shadcn.
+  personalización), `carrito/` (cajón + checkout + pieza a medida), `inicio/` (hero
+  estático + flash sale). `components/ui/` son los primitivos de shadcn.
 - `src/lib/` — **lógica pura con tests** (vitest): `precio`, `producto` (`adapt` + tipos),
   `galeria`, `ficha`, `carrito` (estado localStorage), `pedido`, `telefono`, `banner`,
   `escape`, `subir-foto`, `api` (lectura), `api-escritura` (las 2 escrituras).
   - `tienda-build.ts` → **`cargarTienda()`**: trae productos (ligeros y completos),
-    categorías e info **una sola vez** y los reparte a todas las páginas. Con una petición
+    categorías, info **y los `banners` del hero** **una sola vez** y los reparte a todas
+    las páginas (los banners son la única pieza tolerante: si fallan, el hero usa su arte
+    propio en vez de romper el build). Con una petición
     por página, mil productos en cien listados reventarían el límite público (120/min).
     Si la API falla, el build **falla** (publicar un catálogo vacío sería peor).
     ⚠️ **Memoiza PARA SIEMPRE**: en `pnpm dev` un producto nuevo no aparece hasta
@@ -77,7 +79,18 @@ saltar a otro.
     el camino para reintroducir el N+1.
   - `paginacion.ts` — `POR_PAGINA` (24), `listadosDe`, `rutaDeCategoria`/`rutaDePagina`,
     `indiceDeCategoria`. `producto.ts` — `rutaFicha(slug)` (con barra final: es la URL
-    servida, la del sitemap y la canónica; todo enlace a una ficha sale de ahí).
+    servida, la del sitemap y la canónica; todo enlace a una ficha sale de ahí),
+    `lineaDeTarjeta`, y **`textoDeEntrega`/`textoDeMinimo`**: los textos «Listo en N» y
+    «Mínimo N». ⚠️ Esos dos los pintan la tarjeta del catálogo **y** los hechos de la
+    ficha; estuvieron escritos a mano en los dos lados y solo uno tenía test, así que
+    cambiar el probado dejaba todas las tarjetas diciendo lo viejo con la suite en verde.
+    Hay **una** definición: si hace falta un tercer consumidor, sale de ahí.
+  - `portada.ts` — qué entra en la franja «Destacados»: `destacadosDe` (primero los que
+    tienen insignia, después el resto; sin `sort`) + los dos topes, `TOPE_DESTACADOS` (4,
+    la portada: una fila) y `TOPE_DESTACADOS_TIENDA` (8, el índice de `/tienda/`: dos
+    filas). ⚠️ **Las dos pantallas usan `destacadosDe`**; lo único que cambia es el tope.
+    Una de las dos con `slice` hacía que la insignia del panel sirviera en una y no en la
+    otra, con el mismo rótulo «Destacados» en pantalla.
   - `indice-busqueda.ts` — el buscador (`components/catalogo/Buscador.tsx`, en el
     inicio): pide `/indice-busqueda.json` la primera vez que se enfoca el campo y filtra
     en el navegador. Si el JS falla, el campo no hace nada y el resto anda.
@@ -149,6 +162,13 @@ dueño): **Color = chips** multi-selección, **Precio = slider (tope)**, **Orden
 comentario viejo, está desactualizado. La URL compartible es **`?col&max&sort&p`**
 (`p` = página del lado del cliente; la 1 no se escribe) y se restaura al recargar.
 
+**El panel de filtros no siempre se dibuja**: hace falta un mínimo de productos en la
+categoría (`MINIMO_PARA_FILTRAR` = 6, borde inclusivo, en `catalogo.ts`), medido sobre el
+índice de TODA la categoría y nunca sobre la página de 24 (`valeLaPenaFiltrar`). Por
+debajo de eso, el visitante abarca la categoría de un vistazo y el panel solo agrega
+ruido. ⚠️ 6 **no** es «una fila»: `.shop-grid` son 3 columnas en escritorio, 2 a ≤900px y
+1 a ≤560px — son dos filas anchas, y hasta seis en un teléfono.
+
 **Sin filtro activo** se muestra la página estática de 24 (HTML del build, SEO). **Con un
 filtro u orden** la isla trabaja sobre el **índice liviano** de TODA la categoría
 (`EntradaIndice`) y pinta `TarjetaIndice`. ⚠️ Ese índice viaja entero a la isla, así que
@@ -163,10 +183,34 @@ Nota opcional + foto opcional. La foto **solo** si la API reporta `storageReady`
 configurado): se sube en dos pasos (`subir-foto.ts` → `/uploads/custom-url` → PUT firmado)
 y viaja solo la **clave**. Sin R2, el cargador no aparece y el pedido entra con la nota.
 
-## Carrusel y Flash Sale
-- **Carrusel**: 3 slides FIJOS en el build (SEO + instantáneo) que una isla reemplaza con
-  los banners del panel (`/public/store/banners`) si hay. Autoplay con pausa al hover,
-  respeta `prefers-reduced-motion`, un solo `h1` por página.
+## Hero de la portada y Flash Sale
+
+⚠️ **El carrusel de 3 slides YA NO EXISTE.** Era una isla de React con autoplay; se
+reemplazó por `components/inicio/Hero.astro`, **HTML estático**: el `h1`, el subtítulo y
+las dos acciones están en el HTML del build (SEO, sin salto de maquetación y sin JS para
+leer el mensaje principal). Si en un comentario viejo aparece «carrusel», está
+desactualizado. Lo único interactivo que vive dentro del hero es el **buscador**.
+
+- **Los banners del panel** (`/public/store/banners`) siguen usándose, pero reemplazan
+  **solo el ARTE** del hero: se toma el primero que tenga imagen (la API los devuelve por
+  `position`). Sin banners, o si el banner no trae imagen, va el arte propio
+  (`banano-hola.png`): nunca un hueco.
+- ⚠️ **DOS cambios de comportamiento que el dueño va a notar**, y que no se pueden
+  deducir del código del panel:
+  1. **Los banners se traen en el BUILD** (`cargarTienda`), no desde el navegador: el hero
+     es estático y no puede hacer `fetch`. **Un banner cargado en el panel ya no aparece
+     solo — necesita un despliegue** (un push a `main`, o un `pnpm build`). Antes el
+     carrusel lo levantaba al recargar la página.
+  2. **El título y el subtítulo que el dueño escriba en un banner dejan de verse**: el
+     mensaje de la portada es uno y es fijo, está en el `h1`/`lead` del hero. El `title`
+     se recicla como `alt` de la imagen (es lo único que lo hace llegar a un lector de
+     pantalla) y el `subtitle` no se usa en ningún lado.
+- Si los banners fallan, el build **NO** se cae (`fetchBanners().catch(() => [])`): un
+  banner es decoración. El catálogo, en cambio, sí es obligatorio.
+- El arte de un banner es remoto y sus medidas no se conocen en el build, así que no puede
+  llevar `width`/`height`: la reserva de espacio la hace `.hero-art--banner` con
+  `aspect-ratio: 1 / 1` (el cuadrado del arte propio) + `object-fit: contain`. Sin eso el
+  hero salta cuando la imagen carga.
 - **Flash Sale**: isla que consume `/public/store/sale`; `{ sale: null }` → oculta. Contador
   regresivo; el precio cobrado NO cambia (solo tacha + badge `-XX%`).
 

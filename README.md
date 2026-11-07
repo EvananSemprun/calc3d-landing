@@ -26,7 +26,7 @@ git show 925c532:index.html
 **Astro + islas de React + Tailwind 4 + shadcn/ui** (migrado el 2026-10-15 desde una
 versión vanilla). Astro genera HTML estático por ruta — incluida una página por producto
 — para no perder SEO, y solo hidrata "islas" de React donde hay interacción (filtros,
-carrito, ficha, carrusel). El detalle del stack, la estructura (`src/`) y las reglas
+carrito, ficha, buscador). El detalle del stack, la estructura (`src/`) y las reglas
 están en [`CLAUDE.md`](CLAUDE.md).
 
 ```bash

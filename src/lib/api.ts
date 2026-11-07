@@ -57,7 +57,10 @@ export function fetchInfo(): Promise<InfoApi> {
   return getJson<InfoApi>('/public/store/info');
 }
 
-/** Banners del carrusel (los administra el panel). [] si no hay. */
+/**
+ * Banners del hero de la portada (los administra el panel). [] si no hay.
+ * ⚠️ Se leen en el BUILD (`cargarTienda`), no en el navegador: ya no hay carrusel.
+ */
 export async function fetchBanners(): Promise<Banner[]> {
   const { banners } = await getJson<{ banners: Banner[] }>('/public/store/banners');
   return banners ?? [];
