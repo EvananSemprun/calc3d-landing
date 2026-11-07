@@ -151,6 +151,10 @@ describe('URL compartible', () => {
 });
 
 describe('valeLaPenaFiltrar', () => {
+  it('el mínimo es el que decidió el dueño: una fila de tarjetas', () => {
+    expect(MINIMO_PARA_FILTRAR).toBe(6);
+  });
+
   const n = (cuantos: number) =>
     Array.from({ length: cuantos }, (_, i) => ({ id: `p${i}` }) as EntradaIndice);
 

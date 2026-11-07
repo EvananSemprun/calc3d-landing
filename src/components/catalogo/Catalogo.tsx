@@ -67,15 +67,20 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
   const [listo, setListo] = useState(false);
   const [panelAbierto, setPanelAbierto] = useState(false);
 
+  // Sobre el índice de TODA la categoría, nunca sobre `productos` (la página de 24).
+  const conFiltros = valeLaPenaFiltrar(indice);
+
   const activo = hayFiltros(filtros, tope);
 
   // Restaurar desde la URL (vista compartible). Un valor que ya no existe se ignora.
+  // Sin panel no hay con qué limpiar: un enlace viejo con `?col&max` NO se aplica (la URL
+  // se limpia sola en el efecto de abajo). Igual se marca `listo`, o la URL nunca se sincroniza.
   useEffect(() => {
-    const restaurados = filtrosDesdeUrl(window.location.search, datos);
+    const restaurados = conFiltros ? filtrosDesdeUrl(window.location.search, datos) : filtrosIniciales(datos.tope);
     setFiltros(restaurados);
     setPag(hayFiltros(restaurados, datos.tope) ? paginaDesdeUrl(window.location.search) : 1);
     setListo(true);
-  }, [datos]);
+  }, [datos, conFiltros]);
 
   const filtrados = useMemo(() => (activo ? filtrar(indice, filtros) : []), [activo, indice, filtros]);
   const totalFiltrado = totalDePaginas(filtrados.length);
@@ -105,12 +110,12 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
     document.getElementById('shopGrid')?.scrollIntoView({ block: 'start' });
   }, []);
 
-  // Sobre el índice de TODA la categoría, nunca sobre `productos` (la página de 24).
-  const conFiltros = valeLaPenaFiltrar(indice);
   const total = activo ? filtrados.length : indice.length;
   const visiblesCliente = activo ? paginaDe(filtrados, pagCliente) : [];
 
   return (
+    // `grid-cols-1` anula la columna de 250px de `.shop-layout`: esa clase vive en
+    // `@layer components` y las utilidades de Tailwind le ganan por orden de capas.
     <div className={`container shop-layout${conFiltros ? '' : ' grid-cols-1'}`}>
       {conFiltros && (
         <aside className={`filters${panelAbierto ? ' open' : ''}`} id="filters" aria-label="Filtros del catálogo">
