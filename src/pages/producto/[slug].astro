@@ -9,7 +9,7 @@ import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { fetchProductosCompletos, fetchInfo, fetchCategorias } from '../../lib/api';
 import { raicesConProductos, rutaDeSlug } from '../../lib/paginacion';
-import type { ProductoVitrina } from '../../lib/producto';
+import { rutaFicha, type ProductoVitrina } from '../../lib/producto';
 import type { InfoApi } from '../../lib/api';
 import type { Categoria } from '../../lib/catalogo';
 
@@ -43,7 +43,7 @@ const { producto: p, info, relacionados, categorias, raices } = Astro.props as P
 
 const descripcion = p.desc || p.description || `${p.name} — impresión 3D a pedido.`;
 // Con barra final, para que coincida con la URL servida (/producto/slug/) y el sitemap.
-const canonical = `/producto/${p.id}/`;
+const canonical = rutaFicha(p.id);
 const imagen = p.image?.url;
 
 const jsonLd = {

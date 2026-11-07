@@ -12,8 +12,8 @@ describe('enlaceBanner', () => {
     expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'constructor' }, rutas)).toBe('/tienda/');
     expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'llaveros' })).toBe('/tienda/');
   });
-  it('PRODUCT → /producto/slug', () => {
-    expect(enlaceBanner({ linkType: 'PRODUCT', linkValue: 'taza-feliz' })).toBe('/producto/taza-feliz');
+  it('PRODUCT → /producto/slug/', () => {
+    expect(enlaceBanner({ linkType: 'PRODUCT', linkValue: 'taza-feliz' })).toBe('/producto/taza-feliz/');
   });
   it('URL http(s) → la URL; otro protocolo → null (defensa anti-javascript:)', () => {
     expect(enlaceBanner({ linkType: 'URL', linkValue: 'https://ej.com/x' })).toBe('https://ej.com/x');

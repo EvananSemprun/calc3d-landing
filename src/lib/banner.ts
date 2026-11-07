@@ -1,5 +1,6 @@
 // Lógica pura del carrusel de banners y la Flash Sale: el destino de un banner, el
 // % de descuento y el contador regresivo. Sin DOM.
+import { rutaFicha } from './producto';
 
 /** Banner tal como lo administra el panel. */
 export interface Banner {
@@ -36,7 +37,7 @@ export function enlaceBanner(
     case 'CATEGORY':
       return Object.hasOwn(rutasDeCategoria, v) ? rutasDeCategoria[v] : '/tienda/';
     case 'PRODUCT':
-      return `/producto/${encodeURIComponent(v)}`;
+      return rutaFicha(v);
     case 'URL':
       return urlSegura(v);
     default:

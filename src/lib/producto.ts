@@ -140,3 +140,12 @@ export function adapt(p: ProductoApi): ProductoVitrina {
     colors: colorList.map((c) => c.value),
   };
 }
+
+/**
+ * Ruta canónica de la ficha. CON barra final: es la URL que sirve el sitio (Astro genera
+ * `producto/<slug>/index.html`), la que declara la canónica y la del sitemap. Sin la barra,
+ * cada clic pasa por una redirección. Todo enlace a una ficha debe salir de aquí.
+ */
+export function rutaFicha(slug: string): string {
+  return `/producto/${encodeURIComponent(slug)}/`;
+}

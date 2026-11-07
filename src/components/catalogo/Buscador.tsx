@@ -4,6 +4,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { buscar, type EntradaBusqueda } from '@/lib/indice-busqueda';
+import { rutaFicha } from '@/lib/producto';
 
 type Estado = 'sin-pedir' | 'cargando' | 'listo' | 'error';
 
@@ -55,7 +56,7 @@ export default function Buscador() {
       setActivo((a) => (a <= 0 ? resultados.length - 1 : a - 1));
     } else if (e.key === 'Enter' && resultados.length) {
       e.preventDefault();
-      window.location.href = `/producto/${resultados[Math.max(activo, 0)].id}/`;
+      window.location.href = rutaFicha(resultados[Math.max(activo, 0)].id);
     }
   };
 
@@ -107,7 +108,7 @@ export default function Buscador() {
           {resultados.map((r, i) => (
             <li key={r.id} id={`${idLista}-${i}`} role="option" aria-selected={i === activo}>
               <a
-                href={`/producto/${r.id}/`}
+                href={rutaFicha(r.id)}
                 className={`flex flex-col rounded-sm px-3 py-2 outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${i === activo ? 'bg-accent' : ''}`}
               >
                 <span className="text-sm font-semibold">{r.name}</span>

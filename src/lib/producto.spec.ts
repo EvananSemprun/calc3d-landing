@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adapt } from './producto';
+import { adapt, rutaFicha } from './producto';
 
 describe('adapt', () => {
   it('mapea la forma de la API a la de la vitrina', () => {
@@ -137,5 +137,15 @@ describe('adapt', () => {
     });
     expect(p.colorList.map((c) => c.hex)).toEqual(['#f00', '#00f']);
     expect(p.colors).toEqual(['Rojo', 'Azul']);
+  });
+});
+
+describe('rutaFicha', () => {
+  it('termina en barra: es la URL canónica y evita una redirección por clic', () => {
+    expect(rutaFicha('llavero')).toBe('/producto/llavero/');
+    expect(rutaFicha('llavero').endsWith('/')).toBe(true);
+  });
+  it('escapa el slug', () => {
+    expect(rutaFicha('a b')).toBe('/producto/a%20b/');
   });
 });

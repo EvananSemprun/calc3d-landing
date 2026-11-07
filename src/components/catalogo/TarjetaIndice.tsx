@@ -4,11 +4,12 @@
 // Comparte clases con <TarjetaProducto>, la completa del paginado estático.
 import type { TasaApi } from '@/lib/api';
 import { equivalenteEnMoneda } from '@/lib/precio';
+import { rutaFicha } from '@/lib/producto';
 import type { EntradaIndice } from '@/lib/paginacion';
 import AccionesProducto from './AccionesProducto';
 
 export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIndice; tasa: TasaApi | null }) {
-  const ficha = `/producto/${e.id}`;
+  const ficha = rutaFicha(e.id);
   const equivalente = equivalenteEnMoneda(e.price, tasa);
   return (
     <article className="card product">

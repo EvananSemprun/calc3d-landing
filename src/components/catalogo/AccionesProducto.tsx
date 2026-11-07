@@ -6,7 +6,7 @@ import { Check, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { agregar } from '@/lib/carrito';
 import type { TramoPrecio } from '@/lib/precio';
-import type { FotoApi } from '@/lib/producto';
+import { rutaFicha, type FotoApi } from '@/lib/producto';
 
 const BOTON_FANTASMA =
   'h-10 px-[18px] border-[var(--card-line-strong)] bg-transparent text-foreground shadow-none hover:border-primary hover:bg-transparent hover:text-primary dark:border-[var(--card-line-strong)] dark:bg-transparent dark:hover:bg-transparent';
@@ -27,7 +27,7 @@ export default function AccionesProducto({ id, nombre, precio, imagen, priceTier
   const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(temporizador.current), []);
 
-  const ficha = `/producto/${id}`;
+  const ficha = rutaFicha(id);
 
   const agregarAlPedido = () => {
     // El unitario va SIN tramo de mayoreo (igual que la ficha): el carrito aplica el
