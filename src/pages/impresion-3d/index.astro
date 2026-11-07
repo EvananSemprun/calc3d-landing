@@ -106,11 +106,27 @@ const usos = [
     </div>
   </section>
 
-  <section class="section section--blue">
+  {/*
+    Contenido PROPIO de esta página (es la que posiciona en buscadores): qué decisiones
+    mueven el precio. NO repite los cinco pasos del proceso, que viven en un solo lugar
+    —la portada— y acá entran como enlace al final, de complemento.
+  */}
+  <section class="section section--blue" aria-labelledby="precio-titulo">
     <div class="container">
-      <h2 class="h2" style="margin-bottom:8px">Cómo trabajamos</h2>
-      <p class="lead" style="max-width:52ch">Tengas el archivo o solo la idea, los pasos son los mismos.</p>
-      <div class="hero-actions" style="margin-top:16px">
+      <h2 class="h2 text-balance" id="precio-titulo" style="margin-bottom:8px">Qué define el precio de tu pieza</h2>
+      <p class="lead" style="max-width:56ch">
+        Acá se decide todo lo que cambia el precio: el tamaño de la pieza, la cantidad que necesitás, el color y el
+        acabado con el que la querés.
+      </p>
+      <p class="dim" style="max-width:56ch;margin-top:14px">
+        Lo que no vas a tener que elegir es el nombre de un material. Qué plástico entra en tu pieza lo resolvemos
+        nosotros según para qué la vas a usar, y no cambia lo que pagás.
+      </p>
+      <p class="dim" style="max-width:56ch;margin-top:14px">
+        Con esas cuatro cosas te damos un precio cerrado antes de que arranque la impresora: no se mueve a mitad del
+        trabajo.
+      </p>
+      <div class="acciones" style="margin-top:20px">
         <LinkButton href="/#como-trabajamos" variant="outline">Ver cómo trabajamos</LinkButton>
       </div>
     </div>
