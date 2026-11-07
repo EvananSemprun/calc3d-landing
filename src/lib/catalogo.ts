@@ -109,10 +109,13 @@ export function sincronizarUrl(href: string, f: Filtros, tope: number): string {
 }
 
 /**
- * Mínimo de productos de la categoría para dibujar el panel de filtros: una fila de
- * tarjetas. Por debajo, el visitante ve la categoría entera de un vistazo y filtrarla no
- * le ahorra nada; el panel solo agrega ruido y hace leer la categoría como un filtro
- * encendido. El borde es inclusivo (con 6 se dibujan).
+ * Mínimo de productos de la categoría para dibujar el panel de filtros. Por debajo, el
+ * visitante ve la categoría entera de un vistazo y filtrarla no le ahorra nada; el panel
+ * solo agrega ruido y hace leer la categoría como un filtro encendido. El borde es
+ * inclusivo (con 6 se dibujan).
+ * ⚠️ 6 NO es «una fila»: `.shop-grid` son 3 columnas en escritorio, 2 a ≤900px y 1 a
+ * ≤560px, así que son dos filas anchas y hasta seis en un teléfono. El número está
+ * elegido por eso: dos filas completas es lo mínimo que ya no se abarca de un vistazo.
  */
 export const MINIMO_PARA_FILTRAR = 6;
 

@@ -9,10 +9,13 @@
  */
 import LinkButton from '../LinkButton.astro';
 
+// ⚠️ Los formatos de archivo (STL/3MF/STEP) y que el diseño se cotice aparte los dice el
+// FAQ de esta misma portada: acá se omiten a propósito. Dos bloques de la misma página
+// repitiendo los mismos dos hechos con otras palabras solo hacen leer el doble.
 const vias = [
   {
     titulo: 'Traé tu archivo',
-    texto: 'Si ya tenés el modelo en STL, 3MF o STEP, lo imprimimos tal cual. Revisamos que la pieza salga bien antes de arrancar.',
+    texto: 'Si ya tenés el modelo hecho, lo imprimimos tal cual. Revisamos que la pieza salga bien antes de arrancar.',
   },
   {
     titulo: 'Mandá una foto o las medidas',
@@ -20,7 +23,7 @@ const vias = [
   },
   {
     titulo: 'Lo diseñamos desde cero',
-    texto: 'Si solo tenés la idea, la dibujamos nosotros. El diseño se cotiza aparte y lo aprobás antes de imprimir.',
+    texto: 'Si solo tenés la idea, la dibujamos nosotros y la aprobás antes de que se imprima.',
   },
 ];
 ---
@@ -44,7 +47,7 @@ const vias = [
         ))
       }
     </div>
-    <div class="hero-actions">
+    <div class="acciones">
       <LinkButton href="/impresion-3d/" variant="outline" grande={false}>Ver el servicio completo</LinkButton>
     </div>
   </div>

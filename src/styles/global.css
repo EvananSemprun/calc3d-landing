@@ -269,6 +269,12 @@
   .hero .lead { margin-top: 16px; max-width: 58ch; }
   .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 
+  /* Fila de botones FUERA de un hero (cierre de una sección de texto). Misma forma que
+     `.hero-actions`, pero sin su regla de centrado en móvil: acá el texto de alrededor
+     está alineado a la izquierda, así que centrar solo el botón lo dejaría descolgado.
+     Usar `.hero-actions` en una sección común prometía un comportamiento que no llegaba. */
+  .acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
   /* Hero con mascota a la derecha (inicio e impresión 3D). */
   .hero-art-grid {
     display: grid;
@@ -277,6 +283,12 @@
     gap: 32px;
   }
   .hero-art { width: 100%; max-width: 320px; justify-self: center; height: auto; }
+  /* El arte de un BANNER del panel es remoto: sus medidas no se conocen en el build, así
+     que no puede llevar `width`/`height` y sin ellos el hero salta cuando la imagen carga.
+     Se le reserva el cuadrado del arte propio (680×680) y `contain` evita que un banner
+     de otra proporción salga estirado. El arte propio NO pasa por acá: sus atributos ya
+     dan la proporción, y un `aspect-ratio` en CSS se los pisaría. */
+  .hero-art--banner { aspect-ratio: 1 / 1; object-fit: contain; }
   .hero-home { background: var(--ink-800); padding-block: clamp(40px, 7vw, 96px); }
   .hero-home .lead { margin-top: 16px; }
   .hero-home .hero-actions { margin-top: 24px; }

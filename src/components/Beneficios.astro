@@ -10,8 +10,14 @@ interface Props {
 const { beneficios } = Astro.props;
 ---
 
-<section class="section">
+<!--
+  ⚠️ El `h2` no es decorativo: sin él, los tres `h3` de abajo colgaban del `h2` de la
+  sección anterior (las vías), y un lector de pantalla los leía como si fueran maneras
+  de encargar una pieza. Cada grupo de `h3` necesita su propio `h2`.
+-->
+<section class="section" aria-labelledby="beneficios-titulo">
   <div class="container">
+    <h2 class="h2" id="beneficios-titulo" style="margin-bottom:24px">Por qué con nosotros</h2>
     <div class="grid benefits">
       {
         beneficios.map((b) => (
