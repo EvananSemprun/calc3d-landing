@@ -623,9 +623,19 @@ grep -o "Traé tu archivo" dist/index.html | wc -l              # 1
 
 ⚠️ **El de los materiales NO puede dar 0, y eso está bien.** Lo que tiene que
 desaparecer es el texto que escribe **el sitio**. Lo que queda son dos cosas ajenas a
-esta tarea: el campo `material` serializado en los props de las tarjetas de Destacados
-(`ProductoVitrina` lo conserva a propósito para el JSON-LD de la ficha) y el `summary`
-que escribió el dueño. Ninguno se lee en pantalla.
+esta tarea:
+
+1. El campo `material` serializado en los props de las tarjetas de Destacados.
+   `ProductoVitrina` lo conserva a propósito para el JSON-LD de la ficha. **Este no se
+   lee en pantalla**: viaja en un atributo.
+2. El `summary` que escribió el dueño. **Este SÍ SE LEE EN PANTALLA**, y en tres
+   lugares: `<p class="product-desc">` en la portada y en el catálogo, y
+   `<p class="lead pdp-lead">` en la ficha.
+
+⚠️ **Corregido el 2026-11-07, tras la revisión de la rama. La versión anterior de este
+párrafo decía «ninguno se lee en pantalla» y era FALSO** sobre el punto 2. Es
+exactamente la clase de afirmación que hace que alguien dé por cerrado algo que sigue
+abierto.
 
 ⚠️ **El número de islas tiene que BAJAR, no subir.** La portada medida antes del plan
 anterior tenía 127 islas y 616 KB; la mitigación la dejó en 27 y 133 KB. Una sección de
@@ -660,9 +670,25 @@ Con las seis tareas en verde, el dueño tiene que poder:
 
 - entrar a una categoría y **salir de ella** con un botón visible;
 - no ver un panel de filtros en una categoría que no tiene qué filtrar;
-- recorrer portada, catálogo, categoría y ficha **sin leer la palabra PLA** — salvo en el
-  `summary` que él mismo escribió en el panel, que ningún código va a tocar;
+- que ningún texto escrito por **el sitio** nombre un material;
 - y que Google siga viendo el material, en el JSON-LD de cada ficha.
+
+⚠️ **LO QUE ESTE PLAN NO PUEDE LOGRAR SOLO, y hay que decirlo sin maquillarlo.**
+Recorrer la tienda «sin leer la palabra PLA» **no se cumple al terminar estas seis
+tareas**, y no es un defecto de la implementación: el `summary` del producto lo escribe
+el dueño y hoy dice *«Impreso en PLA, listo en 5 días»*. Ese texto se pinta en la
+tarjeta de la portada, en la del catálogo y en el encabezado de la ficha.
+
+El código **no lo va a filtrar**: hacerlo sería editar en silencio lo que escribió una
+persona, que es justo lo que la restricción global prohíbe. **Falta una edición del
+dueño en el panel**, y con 500-1000 productos por delante es una **convención de
+redacción**, no un arreglo de una línea. Lo mismo vale para dos cosas más que son dato
+suyo y se ven:
+
+- una **especificación** cuyo `label` diga «Material»;
+- una **insignia** que diga «Más vendido» — que además, con `destacadosDe`, queda
+  **garantizada** en la franja más visible del sitio, y choca con el anti-objetivo de no
+  inventar confianza sin dato de ventas.
 
 ⚠️ **Queda fuera, para el plan siguiente:** el movimiento (§7) y el pulido (§5).
 ⚠️ **Nada se pushea.** El dueño decide cuándo se despliega.
