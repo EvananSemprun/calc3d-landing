@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adapt, rutaFicha } from './producto';
+import { adapt, lineaDeTarjeta, rutaFicha } from './producto';
 
 describe('adapt', () => {
   it('mapea la forma de la API a la de la vitrina', () => {
@@ -40,7 +40,6 @@ describe('adapt', () => {
     expect(p.priceTiers).toEqual([]);
     expect(p.desc).toBe('');
     expect(p.material).toBeNull();
-    expect(p.materialKey).toBe('');
     expect(p.badge).toBeNull();
     expect(p.custom).toBe(false);
     expect(p.requiresOptions).toBe(false);
@@ -66,9 +65,8 @@ describe('adapt', () => {
     expect(adapt({ slug: 'd', name: 'D', priceUsd: 1, minQty: 1, custom: false }).custom).toBe(false);
   });
 
-  it('materialKey normaliza mayúsculas y espacios; material conserva el original', () => {
+  it('material conserva el original (lo usa el JSON-LD de la ficha)', () => {
     const p = adapt({ slug: 'm', name: 'M', priceUsd: 1, minQty: 1, material: ' PLA ' });
-    expect(p.materialKey).toBe('pla');
     expect(p.material).toBe(' PLA ');
   });
 
@@ -148,4 +146,24 @@ describe('rutaFicha', () => {
   it('escapa el slug', () => {
     expect(rutaFicha('a b')).toBe('/producto/a%20b/');
   });
+});
+
+describe('lineaDeTarjeta', () => {
+  it('es la categoría, y el material no aparece', () => {
+    const p = adapt({
+      slug: 'a', name: 'A', priceUsd: 1, minQty: 1,
+      material: 'PLA', category: { slug: 'llaveros', name: 'Llaveros' },
+    });
+    expect(lineaDeTarjeta(p)).toBe('Llaveros');
+  });
+
+  it('un producto sin categoría no deja un separador huérfano', () => {
+    const p = adapt({ slug: 'b', name: 'B', priceUsd: 1, minQty: 1, material: 'PETG' });
+    expect(lineaDeTarjeta(p)).toBe('');
+  });
+});
+
+it('materialKey ya no existe', () => {
+  const p = adapt({ slug: 'c', name: 'C', priceUsd: 1, minQty: 1, material: ' PLA ' });
+  expect('materialKey' in p).toBe(false);
 });

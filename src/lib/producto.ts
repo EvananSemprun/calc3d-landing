@@ -88,8 +88,6 @@ export interface ProductoVitrina {
   kind: TipoProducto | undefined;
   minQty: number;
   material: string | null;
-  /** Clave para comparar en el filtro (minúsculas, sin espacios al borde). */
-  materialKey: string;
   badge: string | null;
   custom: boolean;
   requiresOptions: boolean;
@@ -103,6 +101,11 @@ export interface ProductoVitrina {
   optionGroups: GrupoOpcionesApi[];
   colorList: ColorVitrina[];
   colors: string[];
+}
+
+/** La línea gris de la tarjeta: la categoría y nada más (el material no se muestra). */
+export function lineaDeTarjeta(p: ProductoVitrina): string {
+  return p.catLabel ?? '';
 }
 
 /**
@@ -126,7 +129,6 @@ export function adapt(p: ProductoApi): ProductoVitrina {
     kind: p.kind,
     minQty: p.minQty,
     material: p.material ?? null,
-    materialKey: (p.material ?? '').trim().toLowerCase(),
     badge: p.badge ?? null,
     custom: !!p.custom,
     requiresOptions: !!p.requiresOptions,

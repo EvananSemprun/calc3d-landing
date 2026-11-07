@@ -16,7 +16,6 @@ function prod(parcial: Partial<ProductoVitrina>): ProductoVitrina {
     kind: 'PHYSICAL',
     minQty: 1,
     material: null,
-    materialKey: '',
     badge: null,
     custom: false,
     requiresOptions: false,

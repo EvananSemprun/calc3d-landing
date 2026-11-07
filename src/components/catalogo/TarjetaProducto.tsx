@@ -7,7 +7,7 @@
 // mida distinto. Los estilos (`.product*`) viven en global.css.
 import { Badge } from '@/components/ui/badge';
 import { equivalenteEnMoneda } from '@/lib/precio';
-import { rutaFicha, type ProductoVitrina } from '@/lib/producto';
+import { lineaDeTarjeta, rutaFicha, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
 import AccionesProducto from './AccionesProducto';
 
@@ -25,7 +25,7 @@ interface Props {
 export default function TarjetaProducto({ producto: p, tasa }: Props) {
   const ficha = rutaFicha(p.id);
   const enOferta = !!p.compareAt && p.compareAt > p.price;
-  const linea = [p.catLabel, p.material].filter(Boolean).join(' • ');
+  const linea = lineaDeTarjeta(p);
   const equivalente = equivalenteEnMoneda(p.price, tasa);
 
   return (
