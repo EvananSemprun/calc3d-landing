@@ -145,12 +145,49 @@ Navy + amarillo, Poppins, oscuro siempre (`<html class="dark">`). Paleta en
   `connect-src`, y mal puesto no avisa — deja las fotos en blanco. Y el bloque de caché
   de `/_astro/*` que está debajo **no es decorativo**: al editar ese archivo, conservarlo.
 
-## Despliegue (Cloudflare Pages)
-- Build: `pnpm install && pnpm build` · salida: `dist/`.
-- Variables: `PUBLIC_API_URL` (API de Render), `PUBLIC_SITE_URL` (dominio), `NODE_VERSION`
-  (**22** — Astro 7 pide >=22.12), `PNPM_VERSION`.
-- ⚠️ El build prerenderiza pegándole a la API → la API tiene que estar arriba en el build
-  (con Render free dormido, el primer build puede tardar en despertarla).
+## Despliegue (Cloudflare Pages) — dominio `bananolab-3d.com`
+
+El dominio se compró el 2026-11-07 (sin `www`, decisión del dueño). El panel se
+quedó en `calc3d-web.pages.dev`; este repo es el que lleva dominio propio.
+
+| Configuración de compilación | Valor |
+|---|---|
+| Valor preestablecido del marco | Ninguno |
+| Comando de compilación | `pnpm install --frozen-lockfile && pnpm build` |
+| Directorio de salida | `dist` |
+| Directorio raíz | vacío |
+| Rama de producción | `main` |
+
+| Variable (tipo **Texto**, no Secreto) | Valor |
+|---|---|
+| `PUBLIC_API_URL` | `https://calc3d-api-production.up.railway.app/api` |
+| `PUBLIC_SITE_URL` | `https://bananolab-3d.com` |
+| `NODE_VERSION` | `22.18.0` (Astro 7 pide >=22.12; pnpm 11 pide >=22.13) |
+| `PNPM_VERSION` | `11.6.0` |
+
+- ⚠️ **`PUBLIC_`, NO `VITE_`.** Astro solo expone al navegador lo que empieza con
+  `PUBLIC_`. Con `VITE_` el build sale **verde** y la tienda publicada le habla a
+  `http://localhost:3001/api` (hay respaldo en `api.ts`): fichas vacías, sin un solo
+  error. El `.env.example` documentó los nombres equivocados hasta el 2026-11-07; ahora
+  lo vigila **`src/env.spec.ts`**, que falla si el archivo y el código divergen.
+- ⚠️ **`PUBLIC_API_URL` TIENE que terminar en `/api`** (`setGlobalPrefix('api')`), o todo
+  da 404 — y el síntoma parece CORS.
+- ⚠️ **Cloudflare ahora empuja a crear un WORKER, no un Pages.** Al "Crear", hay que
+  entrar explícitamente a la pestaña **Pages → Conectar a Git**. Un Worker se reconoce
+  porque su configuración muestra «Implementar comando: `npx wrangler deploy`» y **no
+  tiene campo "Directorio de salida"**; falla porque espera un `wrangler.jsonc` en el
+  repo, que este proyecto no tiene. Pasó el 2026-11-07: el primer intento se creó como
+  Worker y se borró.
+- ⚠️ El build prerenderiza pegándole a la API → **la API tiene que estar arriba en el
+  build**; si cae, el build falla fuerte (no publica un catálogo vacío).
+- **Del lado de la API (Railway), `STORE_ORIGIN`** tiene que incluir
+  `https://bananolab-3d.com` o la tienda muere en CORS.
+- **Del lado de R2, la política CORS del bucket** tiene que incluir ese mismo origen: la
+  tienda sube la foto que el cliente adjunta y ese `PUT` va del navegador **directo al
+  bucket** (ver `calc3d-api/CLAUDE.md`, «LA POLÍTICA CORS DEL BUCKET ES OBLIGATORIA»).
+- Verificar el despliegue **por CONTENIDO**, no por el ✅ de Cloudflare: que el bundle
+  tenga la URL de Railway, que no quede ningún `localhost`, y que `sitemap-0.xml` y
+  `robots.txt` digan `bananolab-3d.com`.
 - El `Dockerfile` + `nginx.conf` son una opción de contenedor; **producción va en Pages**,
   no en el Dockerfile.
 
