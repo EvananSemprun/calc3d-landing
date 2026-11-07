@@ -9,6 +9,10 @@
  * visibles con `href="#"`.
  *
  * Se monta una sola vez en `Base`, así cubre también el enlace del pie.
+ *
+ * ⚠️ Con transiciones de vista hay que REPINTAR en cada navegación: los enlaces nuevos
+ * llegan con `href="#"` y un botón de venta muerto es lo peor que puede dejar esta
+ * pantalla. El teléfono se pide UNA vez y queda memoizado en el módulo.
  */
 ---
 
@@ -28,10 +32,25 @@
     enlaces().forEach((a) => (a.hidden = true));
   }
 
+  // La info del negocio no cambia entre páginas: se pide UNA vez y se reparte. Sin esto,
+  // con transiciones de vista el sitio le pegaría a la API en cada clic de navegación.
+  // Si la petición falla se borra la memoria para que una navegación posterior pueda
+  // reintentar (si no, la API caída un segundo dejaría el botón oculto toda la sesión).
+  let infoMemo: ReturnType<typeof fetchInfo> | null = null;
+  function info() {
+    if (!infoMemo) {
+      infoMemo = fetchInfo();
+      infoMemo.catch(() => {
+        infoMemo = null;
+      });
+    }
+    return infoMemo;
+  }
+
   async function pintar() {
     if (enlaces().length === 0) return;
     try {
-      const { whatsappPhone, businessName } = await fetchInfo();
+      const { whatsappPhone, businessName } = await info();
       const tel = telefonoInternacional(whatsappPhone);
       if (!tel) return ocultar();
       const mensaje = encodeURIComponent(`Hola ${businessName}, quiero cotizar un trabajo.`);
@@ -46,5 +65,8 @@
     }
   }
 
+  // Los dos momentos, igual que el menú del Header: `astro:page-load` solo existe con el
+  // router de `astro:transitions` montado, y sin él el botón se quedaría en `href="#"`.
   void pintar();
+  document.addEventListener('astro:page-load', () => void pintar());
 </script>

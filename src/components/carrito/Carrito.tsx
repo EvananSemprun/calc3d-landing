@@ -84,10 +84,16 @@ export default function Carrito() {
     window.addEventListener('cart:change', onChange);
     document.addEventListener('click', onClickDoc);
     document.addEventListener('keydown', onKey);
+    // ⚠️ La insignia es HTML ESTÁTICO del Header (`[data-bl="cart-count"]`), no parte de
+    // esta isla. Con transiciones de vista el <body> se reemplaza y ese <span> vuelve a
+    // llegar oculto y en cero: el pedido sigue intacto en localStorage, pero la pantalla
+    // miente y el cliente cree que perdió lo que eligió. Se repinta en cada navegación.
+    document.addEventListener('astro:page-load', sincronizarInsignia);
     return () => {
       window.removeEventListener('cart:change', onChange);
       document.removeEventListener('click', onClickDoc);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('astro:page-load', sincronizarInsignia);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

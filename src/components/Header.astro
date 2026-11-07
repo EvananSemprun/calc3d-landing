@@ -70,10 +70,30 @@ function activo(href: string): boolean {
 
 <script>
   // Menú móvil: mejora progresiva. Sin JS los enlaces siguen en el HTML.
-  const boton = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
-  const menu = document.getElementById('navLinks');
-  boton?.addEventListener('click', () => {
-    const abierto = menu?.classList.toggle('open') ?? false;
-    boton.setAttribute('aria-expanded', String(abierto));
-  });
+  //
+  // ⚠️ Se cablea TAMBIÉN en `astro:page-load`. Con las transiciones de vista el <body>
+  // se reemplaza sin recargar la página: el botón pasa a ser OTRO elemento y un listener
+  // enganchado una sola vez queda colgado de uno que ya no está en el DOM — el menú deja
+  // de abrir, sin error y sin que nada avise.
+  //
+  // Se cablea en los DOS momentos a propósito: `astro:page-load` lo dispara el router de
+  // `astro:transitions`, así que sin router montado ese evento NO existe y el menú
+  // quedaría muerto. Correr también al cargar el módulo lo deja andando con router y sin
+  // él (y en la carga inicial cablea antes, sin esperar al evento `load`).
+  function cablearMenu() {
+    const boton = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+    const menu = document.getElementById('navLinks');
+    if (!boton) return;
+    // Seguro contra el doble cableado: dos listeners en el mismo botón se anulan entre
+    // sí (toggle dos veces = el menú no abre), que es justo el fallo que esto evita.
+    if (boton.dataset.blCableado === '1') return;
+    boton.dataset.blCableado = '1';
+    boton.addEventListener('click', () => {
+      const abierto = menu?.classList.toggle('open') ?? false;
+      boton.setAttribute('aria-expanded', String(abierto));
+    });
+  }
+
+  cablearMenu();
+  document.addEventListener('astro:page-load', cablearMenu);
 </script>
