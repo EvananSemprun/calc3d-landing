@@ -1,10 +1,15 @@
-// Isla del catálogo: filtra, ordena y pinta. Los datos llegan como props, traídos en
-// el BUILD por tienda/index.astro; Astro renderiza esta isla en el servidor (el HTML
-// del catálogo completo queda en la página, para el buscador) y la hidrata en el
-// navegador para filtrar. Es el porte de `Shop` en tienda/index.html del sitio viejo.
+// Isla del catálogo de UNA categoría: filtra, ordena y pinta. Recibe los productos de
+// SU página (24, completos, ya renderizados en el HTML) y el ÍNDICE de la categoría
+// entera (lo mínimo de cada producto). Dos modos:
+//  - SIN filtros: manda el paginado estático (la página 2 es un archivo propio).
+//  - CON un filtro activo: la isla filtra el ÍNDICE completo y pagina del lado del
+//    cliente (`?p=`), porque un filtro sobre 24 productos mentiría sobre los otros 976.
 //
-// La URL refleja los filtros (?cat&mat&col&max&sort) y se restauran al cargar. Dos
-// reglas que costaron bugs en el sitio viejo, no reintroducir:
+// El dominio de los controles (tope de precio, colores) sale SIEMPRE de la categoría
+// entera, nunca de la página: si no, el slider y los chips cambiarían de página en página.
+//
+// La URL refleja los filtros (?col&max&sort&p) y se restauran al cargar. Dos reglas que
+// costaron bugs en el sitio viejo, no reintroducir:
 //  1. NO sincronizar la URL antes de haber restaurado: con el estado aún vacío borraría
 //     los parámetros antes de leerlos. (`listo` lo impide.)
 //  2. Sincronizar SIEMPRE, también cuando no hay resultados: un filtro que no devuelve
@@ -14,79 +19,101 @@ import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { InfoApi } from '@/lib/api';
 import {
-  categoriasConProductos,
-  coloresDe,
   filtrar,
   filtrosDesdeUrl,
   filtrosIniciales,
   hayFiltros,
-  materialesDe,
   sincronizarUrl,
   topePrecio,
-  type Categoria,
+  type ColorFiltro,
   type Filtros as EstadoFiltros,
 } from '@/lib/catalogo';
+import {
+  conPagina,
+  paginaDe,
+  paginaDesdeUrl,
+  totalDePaginas,
+  type EntradaIndice,
+} from '@/lib/paginacion';
 import type { ProductoVitrina } from '@/lib/producto';
 import Filtros from './Filtros';
+import Paginacion from './Paginacion';
+import TarjetaIndice from './TarjetaIndice';
 import TarjetaProducto from './TarjetaProducto';
 
 interface Props {
+  /** Los productos de ESTA página (completos). */
   productos: ProductoVitrina[];
+  /** Lo mínimo de TODOS los productos de la categoría. */
+  indice: EntradaIndice[];
+  /** Colores de la categoría entera como [nombre, hex] (el índice solo trae nombres). */
+  colores: ColorFiltro[];
   info: InfoApi;
-  /** Todas las categorías del negocio, en su orden; acá se quedan las que tienen productos. */
-  categorias: Categoria[];
+  cat: string;
+  sub: string | null;
+  pagina: number;
+  paginas: number;
 }
 
-export default function Catalogo({ productos, info, categorias }: Props) {
-  const datos = useMemo(
-    () => ({
-      cats: categoriasConProductos(categorias, productos),
-      materiales: materialesDe(productos),
-      colores: coloresDe(productos),
-      tope: topePrecio(productos),
-    }),
-    [categorias, productos],
-  );
+export default function Catalogo({ productos, indice, colores, info, cat, sub, pagina, paginas }: Props) {
+  const tope = useMemo(() => topePrecio(indice), [indice]);
+  const datos = useMemo(() => ({ colores, tope }), [colores, tope]);
 
   // El primer render (servidor Y cliente) usa los filtros por defecto: así el HTML
   // hidrata sin discrepancias. La URL se aplica justo después, en el efecto.
-  const [filtros, setFiltros] = useState<EstadoFiltros>(() => filtrosIniciales(datos.tope));
+  const [filtros, setFiltros] = useState<EstadoFiltros>(() => filtrosIniciales(tope));
+  const [pag, setPag] = useState(1);
   const [listo, setListo] = useState(false);
   const [panelAbierto, setPanelAbierto] = useState(false);
 
+  const activo = hayFiltros(filtros, tope);
+
   // Restaurar desde la URL (vista compartible). Un valor que ya no existe se ignora.
   useEffect(() => {
-    setFiltros(filtrosDesdeUrl(window.location.search, datos));
+    const restaurados = filtrosDesdeUrl(window.location.search, datos);
+    setFiltros(restaurados);
+    setPag(hayFiltros(restaurados, datos.tope) ? paginaDesdeUrl(window.location.search) : 1);
     setListo(true);
   }, [datos]);
+
+  const filtrados = useMemo(() => (activo ? filtrar(indice, filtros) : []), [activo, indice, filtros]);
+  const totalFiltrado = totalDePaginas(filtrados.length);
+  // Si la página guardada en el enlace ya no existe (el catálogo cambió), se acota.
+  const pagCliente = Math.min(pag, totalFiltrado);
 
   // La URL refleja SIEMPRE lo que se ve. Solo después de restaurar (regla 1).
   useEffect(() => {
     if (!listo) return;
-    const nueva = sincronizarUrl(window.location.href, filtros, datos.tope);
+    const nueva = conPagina(sincronizarUrl(window.location.href, filtros, tope), activo ? pagCliente : 1);
     if (nueva !== window.location.href) window.history.replaceState(null, '', nueva);
-  }, [filtros, listo, datos.tope]);
+  }, [filtros, listo, tope, activo, pagCliente]);
 
   const cambiar = useCallback(
     (cambio: Partial<EstadoFiltros> | ((actual: EstadoFiltros) => Partial<EstadoFiltros>)) => {
       setFiltros((f) => ({ ...f, ...(typeof cambio === 'function' ? cambio(f) : cambio) }));
+      setPag(1); // otro filtro, otro resultado: se vuelve a la primera
     },
     [],
   );
-  const limpiar = useCallback(() => setFiltros(filtrosIniciales(datos.tope)), [datos.tope]);
+  const limpiar = useCallback(() => {
+    setFiltros(filtrosIniciales(tope));
+    setPag(1);
+  }, [tope]);
+  const irAPagina = useCallback((n: number) => {
+    setPag(n);
+    document.getElementById('shopGrid')?.scrollIntoView({ block: 'start' });
+  }, []);
 
-  const visibles = useMemo(() => filtrar(productos, filtros), [productos, filtros]);
+  const total = activo ? filtrados.length : indice.length;
+  const visiblesCliente = activo ? paginaDe(filtrados, pagCliente) : [];
 
   return (
     <div className="container shop-layout">
       <aside className={`filters${panelAbierto ? ' open' : ''}`} id="filters" aria-label="Filtros del catálogo">
         <Filtros
           filtros={filtros}
-          totalProductos={productos.length}
-          categorias={datos.cats}
-          materiales={datos.materiales}
-          colores={datos.colores}
-          tope={datos.tope}
+          colores={colores}
+          tope={tope}
           onCambio={cambiar}
           onLimpiar={limpiar}
           onCerrar={() => setPanelAbierto(false)}
@@ -107,29 +134,34 @@ export default function Catalogo({ productos, info, categorias }: Props) {
             <SlidersHorizontal aria-hidden="true" /> Filtros
           </Button>
           <span className="result-count mono dim" role="status" aria-live="polite">
-            {visibles.length} producto{visibles.length === 1 ? '' : 's'}
+            {total} producto{total === 1 ? '' : 's'}
           </span>
         </div>
 
-        {visibles.length > 0 ? (
-          <div className="grid shop-grid" id="shopGrid">
-            {visibles.map((p) => (
-              <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
-            ))}
-          </div>
-        ) : productos.length === 0 ? (
-          <div className="shop-state">
-            <strong>Todavía no hay productos publicados.</strong>
-            <p className="dim">Estamos preparando el catálogo. Mientras tanto, escribinos y cotizamos tu pieza.</p>
-          </div>
+        {!activo ? (
+          <>
+            <div className="grid shop-grid" id="shopGrid">
+              {productos.map((p) => (
+                <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
+              ))}
+            </div>
+            <Paginacion actual={pagina} total={paginas} cat={cat} sub={sub} />
+          </>
+        ) : filtrados.length > 0 ? (
+          <>
+            <div className="grid shop-grid" id="shopGrid">
+              {visiblesCliente.map((e) => (
+                <TarjetaIndice key={e.id} entrada={e} tasa={info.rate} />
+              ))}
+            </div>
+            <Paginacion actual={pagCliente} total={totalFiltrado} cat={cat} sub={sub} onIr={irAPagina} />
+          </>
         ) : (
-          <div className="shop-state">
+          <div className="shop-state" id="shopGrid">
             <strong>No hay productos con esos filtros.</strong>
-            {hayFiltros(filtros, datos.tope) && (
-              <Button type="button" className="mt-3.5 h-10 px-[18px]" onClick={limpiar}>
-                Limpiar filtros
-              </Button>
-            )}
+            <Button type="button" className="mt-3.5 h-10 px-[18px]" onClick={limpiar}>
+              Limpiar filtros
+            </Button>
           </div>
         )}
       </div>

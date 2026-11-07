@@ -1,7 +1,7 @@
 ---
 /**
  * Pie ÚNICO del sitio (porte de partials/footer.html).
- * `categorias` (opcional) llena `#footerCats` con enlaces a `/tienda/?cat=…`: se pasan
+ * `categorias` (opcional) llena `#footerCats` con enlaces a `/tienda/<categoria>/`: se pasan
  * en el build desde las páginas que ya tienen las categorías reales (el catálogo). El
  * año se fija al construir.
  */
@@ -38,7 +38,7 @@ const anio = new Date().getFullYear();
         <h4>Catálogo</h4>
         <a href="/tienda/">Ver catálogo</a>
         <div id="footerCats">
-          {categorias.map((c) => <a href={`/tienda/?cat=${encodeURIComponent(c.slug)}`}>{c.nombre}</a>)}
+          {categorias.map((c) => <a href={`/tienda/${c.slug}/`}>{c.nombre}</a>)}
         </div>
       </div>
       <div>

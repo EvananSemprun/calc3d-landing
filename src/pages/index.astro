@@ -16,15 +16,13 @@ import Beneficios from '../components/Beneficios.astro';
 import Pasos from '../components/Pasos.astro';
 import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
-import { fetchProductos, fetchCategorias, fetchInfo } from '../lib/api';
+import { cargarTienda } from '../lib/tienda-build';
+import { raicesConProductos, rutaDeSlug } from '../lib/paginacion';
 
-const [productos, categorias, info] = await Promise.all([
-  fetchProductos(),
-  fetchCategorias(),
-  fetchInfo(),
-]);
+const { productos, categorias, info } = await cargarTienda();
 
 const destacados = productos.slice(0, 4);
+const raices = raicesConProductos(categorias, productos);
 const bloques = categorias
   .map((c) => ({ ...c, items: productos.filter((p) => p.cat === c.slug).slice(0, 4) }))
   .filter((c) => c.items.length > 0);
@@ -71,6 +69,7 @@ const preguntas = [
   title="Banano Lab — Impresión 3D a pedido en Venezuela"
   description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo en PLA, PETG, ABS y TPU, desde una unidad. Cotizá por WhatsApp."
   canonical="/"
+  categorias={raices}
 >
   <Carrusel client:load />
 
@@ -103,7 +102,7 @@ const preguntas = [
           <div class="eyebrow-row">
             <h2 class="h2">{c.nombre}</h2>
             <a
-              href={`/tienda/?cat=${encodeURIComponent(c.slug)}`}
+              href={rutaDeSlug(c.slug, categorias)}
               class="text-sm font-semibold text-primary hover:underline"
             >
               Ver todo →

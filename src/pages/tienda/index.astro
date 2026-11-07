@@ -1,28 +1,28 @@
 ---
 /**
- * Catálogo (`/tienda/`). Los productos, las categorías y la ficha del negocio se traen
- * en el BUILD: el HTML ya trae el catálogo completo (es lo que lee un buscador, con o
- * sin JavaScript) y la isla <Catalogo> se hidrata encima para filtrar, ordenar y
- * restaurar los filtros del enlace compartido (?cat&mat&col&max&sort).
+ * Índice de la tienda (`/tienda/`): las categorías y unos destacados. Ya NO lista el
+ * catálogo entero (con mil productos eran 4,4 MB en una sola página): cada categoría
+ * tiene sus páginas en `/tienda/<categoria>/`.
  *
  * Si la API falla durante el build, el build FALLA a propósito (sin try/catch): publicar
  * un catálogo vacío en silencio sería peor que no publicar.
  */
 import Base from '../../layouts/Base.astro';
-import Catalogo from '../../components/catalogo/Catalogo';
 import CtaCotizar from '../../components/CtaCotizar.astro';
-import { fetchCategorias, fetchInfo, fetchProductos } from '../../lib/api';
-import { categoriasConProductos } from '../../lib/catalogo';
+import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
+import { cargarTienda } from '../../lib/tienda-build';
+import { rutaDeCategoria } from '../../lib/paginacion';
 
-const [productos, categorias, info] = await Promise.all([fetchProductos(), fetchCategorias(), fetchInfo()]);
-const categoriasDelPie = categoriasConProductos(categorias, productos);
+const { productos, info, listados, raices } = await cargarTienda();
+const destacados = productos.slice(0, 8);
+const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub === null)?.hijas ?? [];
 ---
 
 <Base
   title={`Catálogo — ${info.businessName}`}
   description="Llaveros, identificadores, soportes, decoración y regalos personalizados, fabricados en impresión 3D en nuestro taller."
   canonical="/tienda/"
-  categorias={categoriasDelPie}
+  categorias={raices}
 >
   <section class="shop-head">
     <div class="container">
@@ -34,9 +34,56 @@ const categoriasDelPie = categoriasConProductos(categorias, productos);
     </div>
   </section>
 
-  <section class="section" style="padding-top:0">
-    <Catalogo client:load productos={productos} info={info} categorias={categorias} />
-  </section>
+  {
+    raices.length > 0 && (
+      <section class="section" style="padding-top:0">
+        <div class="container">
+          <h2 class="h2" style="margin-bottom:24px">Categorías</h2>
+          <ul class="grid shop-grid" style="list-style:none;padding:0;margin:0">
+            {raices.map((c) => (
+              <li>
+                <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
+                  <h3 class="text-lg font-semibold">{c.nombre}</h3>
+                  <p class="mono dim mt-1 text-sm">
+                    {c.n} producto{c.n === 1 ? '' : 's'}
+                  </p>
+                  {hijasDe(c.slug).length > 0 && (
+                    <p class="dim mt-2 text-sm">{hijasDe(c.slug).map((h) => h.nombre).join(' · ')}</p>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    destacados.length > 0 && (
+      <section class="section" style="padding-top:0">
+        <div class="container">
+          <h2 class="h2" style="margin-bottom:24px">Destacados</h2>
+          <div class="grid shop-grid">
+            {destacados.map((p) => (
+              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    productos.length === 0 && (
+      <section class="section" style="padding-top:0">
+        <div class="container shop-state">
+          <strong>Todavía no hay productos publicados.</strong>
+          <p class="dim">Estamos preparando el catálogo. Mientras tanto, escribinos y cotizamos tu pieza.</p>
+        </div>
+      </section>
+    )
+  }
 
   <CtaCotizar
     titulo="¿No encontrás lo que buscás?"

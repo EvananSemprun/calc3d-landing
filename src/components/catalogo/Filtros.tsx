@@ -1,20 +1,11 @@
 // Barra lateral de filtros. TODOS los filtros van de un solo lado (decisión del dueño):
-// Categoría (select, selección única), Material y Color (multi-selección), Precio
-// máximo (slider) y Orden (select). La barra superior solo trae el botón "Filtros" del
-// móvil y el conteo. Es controlada: el estado vive en <Catalogo>.
+// Color (multi-selección), Precio máximo (slider) y Orden (select). La categoría ya no es
+// un filtro: es la RUTA (/tienda/<categoria>/). La barra superior solo trae el botón
+// "Filtros" del móvil y el conteo. Es controlada: el estado vive en <Catalogo>.
 import { X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import type {
-  CategoriaConConteo,
-  ColorFiltro,
-  Filtros as EstadoFiltros,
-  MaterialFiltro,
-  Orden,
-} from '@/lib/catalogo';
-
-/** Radix no admite value="" en un item (está reservado para limpiar): "Todos" usa este. */
-const TODOS = 'todos';
+import type { ColorFiltro, Filtros as EstadoFiltros, Orden } from '@/lib/catalogo';
 
 const ORDENES: { value: Orden; label: string }[] = [
   { value: 'featured', label: 'Destacados' },
@@ -25,9 +16,6 @@ const ORDENES: { value: Orden; label: string }[] = [
 
 interface Props {
   filtros: EstadoFiltros;
-  totalProductos: number;
-  categorias: CategoriaConConteo[];
-  materiales: MaterialFiltro[];
   colores: ColorFiltro[];
   tope: number;
   /** Acepta una función para derivar el cambio del estado MÁS RECIENTE (evita cierres viejos). */
@@ -50,19 +38,12 @@ const ITEM = 'rounded-lg focus:bg-ink-600 data-[state=checked]:font-semibold dat
 
 export default function Filtros({
   filtros,
-  totalProductos,
-  categorias,
-  materiales,
   colores,
   tope,
   onCambio,
   onLimpiar,
   onCerrar,
 }: Props) {
-  const categoriaElegida = categorias.find((c) => c.slug === filtros.cat);
-  const etiquetaCategoria = categoriaElegida
-    ? `${categoriaElegida.nombre} (${categoriaElegida.n})`
-    : `Todos (${totalProductos})`;
   const etiquetaOrden = ORDENES.find((o) => o.value === filtros.sort)?.label ?? 'Destacados';
 
   return (
@@ -78,48 +59,6 @@ export default function Filtros({
           </button>
         </span>
       </div>
-
-      {/* Con menos de 2 categorías no hay elección que ofrecer: se oculta el grupo
-          entero (con su título). */}
-      {categorias.length >= 2 && (
-        <div className="filter-group">
-          <h4 id="filtro-categoria">Categoría</h4>
-          <Select value={filtros.cat || TODOS} onValueChange={(v) => onCambio({ cat: v === TODOS ? '' : v })}>
-            <SelectTrigger className={DISPARADOR} aria-labelledby="filtro-categoria">
-              <SelectValue>{etiquetaCategoria}</SelectValue>
-            </SelectTrigger>
-            <SelectContent position="popper" className={LISTA}>
-              <SelectItem value={TODOS} className={ITEM}>
-                Todos ({totalProductos})
-              </SelectItem>
-              {categorias.map((c) => (
-                <SelectItem key={c.slug} value={c.slug} className={ITEM}>
-                  {c.nombre} ({c.n})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {materiales.length > 0 && (
-        <div className="filter-group">
-          <h4>Material</h4>
-          <div className="chip-row">
-            {materiales.map((m) => (
-              <button
-                key={m.key}
-                type="button"
-                className="chip"
-                aria-pressed={filtros.materials.includes(m.key)}
-                onClick={() => onCambio((f) => ({ materials: alternar(f.materials, m.key) }))}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Los colores salen de los productos reales. Sin colores, el grupo se oculta. */}
       {colores.length > 0 && (

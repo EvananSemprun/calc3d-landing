@@ -1,0 +1,94 @@
+---
+/**
+ * Una página de listado (categoría o subcategoría, página N). La comparten las cuatro
+ * rutas de /tienda/<categoria>/…: solo cambia qué `pagina` les toca.
+ *
+ * Una categoría con subcategorías muestra las subcategorías PRIMERO y después sus
+ * productos paginados. Cada página lleva su <title>, descripción y canónica propios
+ * (la 2 no es copia de la 1).
+ */
+import Base from '../../layouts/Base.astro';
+import Catalogo from './Catalogo';
+import CtaCotizar from '../CtaCotizar.astro';
+import { Badge } from '../ui/badge';
+import type { InfoApi } from '../../lib/api';
+import { coloresDe } from '../../lib/catalogo';
+import { indiceDeCategoria, paginaDe, rutaDeCategoria, rutaDePagina, type Listado } from '../../lib/paginacion';
+
+interface Props {
+  listado: Listado;
+  pagina: number;
+  info: InfoApi;
+  raices: { slug: string; nombre: string }[];
+}
+const { listado, pagina, info, raices } = Astro.props;
+
+const { cat, sub, nombre, nombreMadre, productos, hijas, paginas } = listado;
+const deLaPagina = paginaDe(productos, pagina);
+const indice = indiceDeCategoria(productos);
+const colores = coloresDe(productos);
+
+const sufijo = pagina > 1 ? ` — página ${pagina}` : '';
+const titulo = `${nombre}${nombreMadre ? ` · ${nombreMadre}` : ''}${sufijo} — ${info.businessName}`;
+const descripcion =
+  `${nombre}${nombreMadre ? ` (${nombreMadre})` : ''}: ${productos.length} producto${productos.length === 1 ? '' : 's'} ` +
+  `de impresión 3D hechos a pedido en nuestro taller${pagina > 1 ? `. Página ${pagina} de ${paginas}` : ''}.`;
+---
+
+<Base title={titulo} description={descripcion} canonical={rutaDePagina(cat, sub, pagina)} categorias={raices}>
+  <section class="shop-head">
+    <div class="container">
+      <nav class="crumbs" aria-label="Ruta">
+        <a href="/tienda/">Tienda</a><span>/</span>
+        {
+          sub ? (
+            <>
+              <a href={rutaDeCategoria(cat)}>{nombreMadre}</a>
+              <span>/</span>
+              <span class="dim">{nombre}</span>
+            </>
+          ) : (
+            <span class="dim">{nombre}</span>
+          )
+        }
+      </nav>
+      <span class="kicker">Catálogo · Impresión 3D</span>
+      <h1 class="h1 text-balance">{nombre}</h1>
+      {
+        hijas.length > 0 && pagina === 1 && (
+          <ul class="mt-6 flex flex-wrap gap-2.5" aria-label={`Subcategorías de ${nombre}`}>
+            {hijas.map((h) => (
+              <li>
+                <a href={rutaDeCategoria(cat, h.slug)}>
+                  <Badge className="border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:border-primary hover:text-primary">
+                    {h.nombre} · {h.n}
+                  </Badge>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <Catalogo
+      client:load
+      productos={deLaPagina}
+      indice={indice}
+      colores={colores}
+      info={info}
+      cat={cat}
+      sub={sub}
+      pagina={pagina}
+      paginas={paginas}
+    />
+  </section>
+
+  <CtaCotizar
+    titulo="¿No encontrás lo que buscás?"
+    texto="Fabricamos cualquier pieza a tu medida. Escribinos y te cotizamos."
+    boton="Cotizar pieza personalizada"
+  />
+</Base>

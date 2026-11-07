@@ -52,10 +52,10 @@ export async function fetchProducto(slug: string): Promise<ProductoVitrina> {
 
 /** Categorías del negocio, en el orden que les dio el panel. */
 export async function fetchCategorias(): Promise<Categoria[]> {
-  const { categories } = await getJson<{ categories: { slug: string; name: string }[] }>(
+  const { categories } = await getJson<{ categories: { slug: string; name: string; parentSlug?: string | null }[] }>(
     '/public/store/categories',
   );
-  return categories.map((c) => ({ slug: c.slug, nombre: c.name }));
+  return categories.map((c) => ({ slug: c.slug, nombre: c.name, parentSlug: c.parentSlug ?? null }));
 }
 
 export function fetchInfo(): Promise<InfoApi> {

@@ -1,0 +1,19 @@
+---
+/** `/tienda/<categoria>/`: la página 1 de una categoría raíz. Las demás: `pagina/[page]`. */
+import ListadoCategoria from '../../../components/catalogo/ListadoCategoria.astro';
+import { cargarTienda } from '../../../lib/tienda-build';
+
+export async function getStaticPaths() {
+  const { listados, info, raices } = await cargarTienda();
+  return listados
+    .filter((l) => l.sub === null)
+    .map((listado) => ({
+      params: { categoria: listado.cat },
+      props: { listado, info, raices },
+    }));
+}
+
+const { listado, info, raices } = Astro.props;
+---
+
+<ListadoCategoria listado={listado} pagina={1} info={info} raices={raices} />

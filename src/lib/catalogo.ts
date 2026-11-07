@@ -16,6 +16,8 @@ export interface Filtros {
 export interface Categoria {
   slug: string;
   nombre: string;
+  /** Slug de la categoría madre; null/ausente en las raíces. */
+  parentSlug?: string | null;
 }
 
 export interface CategoriaConConteo extends Categoria {
