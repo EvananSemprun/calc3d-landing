@@ -23,7 +23,7 @@ interface Props {
 }
 const { listado, pagina, info, raices } = Astro.props;
 
-const { cat, sub, nombre, nombreMadre, productos, hijas, paginas } = listado;
+const { cat, sub, nombre, nombreMadre, productos, hijas, paginas, sinCategoria } = listado;
 const deLaPagina = paginaDe(productos, pagina);
 const indice = indiceDeCategoria(productos);
 const colores = coloresDe(productos);
@@ -35,7 +35,7 @@ const descripcion =
   `de impresión 3D hechos a pedido en nuestro taller${pagina > 1 ? `. Página ${pagina} de ${paginas}` : ''}.`;
 ---
 
-<Base title={titulo} description={descripcion} canonical={rutaDePagina(cat, sub, pagina)} categorias={raices}>
+<Base title={titulo} description={descripcion} canonical={rutaDePagina(cat, sub, pagina)} categorias={raices} noindex={sinCategoria}>
   <section class="shop-head">
     <div class="container">
       <nav class="crumbs" aria-label="Ruta">

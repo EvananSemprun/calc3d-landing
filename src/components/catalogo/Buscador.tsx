@@ -44,6 +44,10 @@ export default function Buscador() {
   const hayConsulta = consulta.trim().length > 0;
   const resultados = estado === 'listo' ? buscar(indice, consulta) : [];
 
+  const irAFicha = (id: string) => {
+    window.location.href = rutaFicha(id);
+  };
+
   const alTeclear = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setAbierto(false);
@@ -56,7 +60,7 @@ export default function Buscador() {
       setActivo((a) => (a <= 0 ? resultados.length - 1 : a - 1));
     } else if (e.key === 'Enter' && resultados.length) {
       e.preventDefault();
-      window.location.href = rutaFicha(resultados[Math.max(activo, 0)].id);
+      irAFicha(resultados[Math.max(activo, 0)].id);
     }
   };
 
@@ -69,9 +73,9 @@ export default function Buscador() {
         aria-label="Buscar productos"
         role="combobox"
         aria-expanded={abierto && hayConsulta}
-        aria-controls={idLista}
+        aria-controls={abierto && hayConsulta ? idLista : undefined}
         aria-autocomplete="list"
-        aria-activedescendant={activo >= 0 ? `${idLista}-${activo}` : undefined}
+        aria-activedescendant={abierto && hayConsulta && activo >= 0 ? `${idLista}-${activo}` : undefined}
         autoComplete="off"
         className="h-12 bg-card px-4 text-base"
         onFocus={() => {
@@ -106,14 +110,19 @@ export default function Buscador() {
             </li>
           )}
           {resultados.map((r, i) => (
-            <li key={r.id} id={`${idLista}-${i}`} role="option" aria-selected={i === activo}>
-              <a
-                href={rutaFicha(r.id)}
-                className={`flex flex-col rounded-sm px-3 py-2 outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring ${i === activo ? 'bg-accent' : ''}`}
-              >
-                <span className="text-sm font-semibold">{r.name}</span>
-                {r.catLabel && <span className="text-xs text-muted-foreground">{r.catLabel}</span>}
-              </a>
+            // La navegación va en el propio <li role="option">: un <a> adentro sería un
+            // interactivo anidado en una opción. El ratón y el teclado (Enter) llegan al mismo lugar.
+            <li
+              key={r.id}
+              id={`${idLista}-${i}`}
+              role="option"
+              aria-selected={i === activo}
+              onClick={() => irAFicha(r.id)}
+              onMouseEnter={() => setActivo(i)}
+              className={`flex cursor-pointer flex-col rounded-sm px-3 py-2 hover:bg-accent ${i === activo ? 'bg-accent' : ''}`}
+            >
+              <span className="text-sm font-semibold">{r.name}</span>
+              {r.catLabel && <span className="text-xs text-muted-foreground">{r.catLabel}</span>}
             </li>
           ))}
         </ul>

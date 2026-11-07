@@ -18,15 +18,21 @@ describe('índice de categoría', () => {
   it('trae lo que los controles y el carrito necesitan, y nada más', () => {
     const [e] = indiceDeCategoria([completo]);
     expect(Object.keys(e).sort()).toEqual([
-      'colors', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers', 'requiresOptions',
+      'badge', 'colors', 'compareAt', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers', 'requiresOptions',
     ]);
     for (const prohibido of ['desc', 'description', 'specs', 'optionGroups', 'images', 'summary']) {
       expect(e).not.toHaveProperty(prohibido);
     }
     expect(e).toEqual({
       id: 'copa', name: 'copa', price: 24, colors: ['Rojo'], image: completo.image,
-      priceTiers: [], minQty: 1, requiresOptions: false,
+      priceTiers: [], minQty: 1, requiresOptions: false, badge: null, compareAt: null,
     });
+  });
+
+  it('la insignia y el precio de lista viajan en el índice (ordenar no las quita)', () => {
+    const [e] = indiceDeCategoria([prod('oferta', { priceUsd: 8, compareAtUsd: 10, badge: 'Nuevo' })]);
+    expect(e.badge).toBe('Nuevo');
+    expect(e.compareAt).toBe(10);
   });
 
   it('un producto sin foto queda con image null, no undefined', () => {
@@ -65,7 +71,7 @@ describe('rutas', () => {
   });
 });
 
-import { SLUG_SIN_CATEGORIA, conPagina, listadosDe, rutasDeListados, paginaDe, paginaDesdeUrl, rutaDeSlug, ventanaDePaginas } from './paginacion';
+import { SLUG_SIN_CATEGORIA, categoriasDelIndice, raicesConProductos, conPagina, listadosDe, rutasDeListados, paginaDe, paginaDesdeUrl, rutaDeSlug, ventanaDePaginas } from './paginacion';
 
 describe('listados por categoría', () => {
   const cats = [
@@ -127,6 +133,26 @@ describe('productos sin categoría', () => {
 
   it('si no hay huérfanos, el listado no existe', () => {
     expect(listadosDe(cats, [en('a', 'llaveros')]).map((x) => x.cat)).toEqual(['llaveros']);
+  });
+
+  it('el listado de huérfanos está marcado y NO entra en las raíces del pie', () => {
+    const productos = [en('a', 'llaveros'), en('b')];
+    const l = listadosDe(cats, productos);
+    expect(l.map((x) => [x.cat, x.sinCategoria])).toEqual([['llaveros', false], [SLUG_SIN_CATEGORIA, true]]);
+    expect(raicesConProductos(cats, productos).map((r) => r.slug)).toEqual(['llaveros']);
+  });
+
+  it('pero SÍ aparece en el índice de /tienda/, al final', () => {
+    expect(categoriasDelIndice(cats, [en('a', 'llaveros'), en('b')]).map((r) => [r.slug, r.n])).toEqual([
+      ['llaveros', 1],
+      [SLUG_SIN_CATEGORIA, 1],
+    ]);
+  });
+
+  it('sin huérfanos, ni el pie ni el índice tienen "Sin categoría"', () => {
+    const productos = [en('a', 'llaveros')];
+    expect(raicesConProductos(cats, productos)).toHaveLength(1);
+    expect(categoriasDelIndice(cats, productos)).toHaveLength(1);
   });
 
   it('una categoría real con ese slug ROMPE el build, con un mensaje que dice qué hacer', () => {

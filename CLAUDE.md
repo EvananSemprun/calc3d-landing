@@ -35,9 +35,26 @@ el error no menciona el puerto. `--strictPort` hace fallar si está ocupado en v
 saltar a otro.
 
 ### Estructura (`src/`)
-- `src/pages/` — las rutas. `index.astro` (inicio), `tienda/index.astro` (catálogo),
-  `producto/[slug].astro` (ficha, **una página por producto** vía `getStaticPaths`),
-  `impresion-3d/index.astro`, `404.astro`, `robots.txt.ts` (robots dinámico).
+- `src/pages/` — las rutas. `index.astro` (inicio), `tienda/index.astro` (índice de
+  categorías + destacados; **ya no lista el catálogo entero**), `producto/[slug].astro`
+  (ficha, **una página por producto** vía `getStaticPaths`), `impresion-3d/index.astro`,
+  `404.astro`, `robots.txt.ts` (robots dinámico) e `indice-busqueda.json.ts` (el índice
+  del buscador, generado en el build).
+  - **Listados por categoría** (todos pintan `components/catalogo/ListadoCategoria.astro`):
+    `/tienda/<cat>/`, `/tienda/<cat>/<sub>/` y, de la página 2 en adelante,
+    `/tienda/<cat>/pagina/<n>/` y `/tienda/<cat>/<sub>/pagina/<n>/`. `pagina` va en el
+    MEDIO: con `/tienda/<cat>/2/` el número chocaría con una subcategoría. La página 1 es
+    la ruta sin `pagina` (dos URLs para el mismo contenido sería contenido duplicado).
+    Solo existen los listados que tienen productos (una ruta vacía sería una página en
+    blanco indexable). Los `getStaticPaths` de las cuatro salen de `rutasDeListado`.
+  - **`/tienda/sin-categoria/`**: el listado de los productos sin categoría (o con una
+    que ya no existe), para que no queden invisibles. ⚠️ **NO es una categoría**:
+    (`Listado.sinCategoria`) queda fuera de `raices` —es decir, del pie de TODAS las
+    páginas—, lleva `noindex` (también sus páginas de paginado) y está filtrado del
+    sitemap en `astro.config.mjs`. Solo aparece en el índice de `/tienda/`
+    (`categoriasDelIndice`). Antes un solo producto sin asignar ponía un enlace
+    "Sin categoría" en el pie del sitio entero. Una categoría real con ese slug
+    **rompe el build** a propósito.
 - `src/layouts/Base.astro` — `<head>` parametrizable (title/description/canonical/OG/
   jsonLd/ogType + slot `head`), cabecera, pie, y monta las islas globales (carrito,
   pieza a medida, WhatsApp).
@@ -48,6 +65,22 @@ saltar a otro.
 - `src/lib/` — **lógica pura con tests** (vitest): `precio`, `producto` (`adapt` + tipos),
   `galeria`, `ficha`, `carrito` (estado localStorage), `pedido`, `telefono`, `banner`,
   `escape`, `subir-foto`, `api` (lectura), `api-escritura` (las 2 escrituras).
+  - `tienda-build.ts` → **`cargarTienda()`**: trae productos (ligeros y completos),
+    categorías e info **una sola vez** y los reparte a todas las páginas. Con una petición
+    por página, mil productos en cien listados reventarían el límite público (120/min).
+    Si la API falla, el build **falla** (publicar un catálogo vacío sería peor).
+    ⚠️ **Memoiza PARA SIEMPRE**: en `pnpm dev` un producto nuevo no aparece hasta
+    **reiniciar** el servidor. Toda página que necesite catálogo, categorías o info
+    tiene que pedirlo ahí, no con su propio `fetch`: `producto/[slug].astro` tenía los
+    suyos y el pie de las 1.002 fichas podía salir distinto del resto si el dueño editaba
+    una categoría a mitad del build. Por eso `fetchProducto` (uno por uno) se borró: era
+    el camino para reintroducir el N+1.
+  - `paginacion.ts` — `POR_PAGINA` (24), `listadosDe`, `rutaDeCategoria`/`rutaDePagina`,
+    `indiceDeCategoria`. `producto.ts` — `rutaFicha(slug)` (con barra final: es la URL
+    servida, la del sitemap y la canónica; todo enlace a una ficha sale de ahí).
+  - `indice-busqueda.ts` — el buscador (`components/catalogo/Buscador.tsx`, en el
+    inicio): pide `/indice-busqueda.json` la primera vez que se enfoca el campo y filtra
+    en el navegador. Si el JS falla, el campo no hace nada y el resto anda.
 - `src/styles/global.css` — Tailwind 4 **CSS-first** (`@theme inline`) + utilidades
   propias portadas, en `@layer components`. `src/lib/tokens.css` = paleta de marca →
   tokens de shadcn.
@@ -109,11 +142,21 @@ delegación con `preventDefault`; si el JS falla, el enlace a WhatsApp (que pone
 `WhatsappCotizar`) sigue andando.
 
 ## Filtros del catálogo
-Todos los filtros en la **barra lateral** (decisión del dueño): **Categoría = SELECT**
-(selección única, oculto con <2 categorías — revirtió las pestañas), **Material/Color =
-chips** multi-selección, **Precio = slider**, **Orden = select**. Las listas salen de los
-productos reales. La vista es **compartible por URL** (`?cat&mat&col&max&sort`) y se
-restaura al recargar.
+Viven en `Catalogo.tsx` (isla de cada listado), en la **barra lateral** (decisión del
+dueño): **Color = chips** multi-selección, **Precio = slider (tope)**, **Orden = select**.
+⚠️ **Ya NO hay filtro de Categoría ni de Material**: la categoría es la propia página
+(`/tienda/<cat>/`), y el material se quitó con ella. Si alguien ve `?cat&mat` en un
+comentario viejo, está desactualizado. La URL compartible es **`?col&max&sort&p`**
+(`p` = página del lado del cliente; la 1 no se escribe) y se restaura al recargar.
+
+**Sin filtro activo** se muestra la página estática de 24 (HTML del build, SEO). **Con un
+filtro u orden** la isla trabaja sobre el **índice liviano** de TODA la categoría
+(`EntradaIndice`) y pinta `TarjetaIndice`. ⚠️ Ese índice viaja entero a la isla, así que
+cada campo que se le agregue se multiplica por el tamaño de la categoría: lleva lo mínimo
+(nombre, precio, foto, colores, tramos, `badge`, `compareAt`) y **tiene prohibido** `desc`,
+`description`, `specs`, `optionGroups`, `images` y `summary` — su test exige las claves
+exactas. `badge` y `compareAt` están para que ordenar por precio no le quite a la tarjeta
+su insignia ni su tachado de oferta.
 
 ## Personalización (productos `custom`)
 Nota opcional + foto opcional. La foto **solo** si la API reporta `storageReady` (R2

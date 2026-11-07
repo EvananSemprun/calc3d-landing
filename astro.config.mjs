@@ -12,7 +12,7 @@ const env = { ...loadEnv(process.env.NODE_ENV ?? 'development', process.cwd(), '
 export default defineConfig({
   output: 'static',
   site: env.PUBLIC_SITE_URL || undefined,
-  integrations: [react(), sitemap()],
+  integrations: [react(), sitemap({ filter: (pagina) => !pagina.includes('/tienda/sin-categoria/') })],
   server: { port: 5182 },
   vite: {
     // Tailwind 4 se engancha como plugin de Vite (@astrojs/tailwind es solo para Tailwind 3).

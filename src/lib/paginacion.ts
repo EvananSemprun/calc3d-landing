@@ -22,6 +22,10 @@ export interface EntradaIndice {
   priceTiers: TramoPrecio[];
   minQty: number;
   requiresOptions: boolean;
+  /** Insignia de la esquina ("Nuevo"…). Sin ella, ordenar por precio le quitaría la insignia a la tarjeta. */
+  badge: string | null;
+  /** Precio de lista, para el tachado de la oferta. */
+  compareAt: number | null;
 }
 
 export function indiceDeCategoria(productos: readonly ProductoVitrina[]): EntradaIndice[] {
@@ -34,6 +38,8 @@ export function indiceDeCategoria(productos: readonly ProductoVitrina[]): Entrad
     priceTiers: p.priceTiers,
     minQty: p.minQty,
     requiresOptions: p.requiresOptions,
+    badge: p.badge ?? null,
+    compareAt: p.compareAt ?? null,
   }));
 }
 
@@ -71,6 +77,8 @@ export interface Listado {
   /** Subcategorías con productos (solo en una raíz). */
   hijas: { slug: string; nombre: string; n: number }[];
   paginas: number;
+  /** true solo en el listado de los productos sin categoría: NO es una categoría del negocio. */
+  sinCategoria: boolean;
 }
 
 export function totalDePaginas(n: number): number {
@@ -112,6 +120,7 @@ export function listadosDe(categorias: readonly Categoria[], productos: readonly
       productos: deLaRaiz,
       hijas: hijasConN,
       paginas: totalDePaginas(deLaRaiz.length),
+      sinCategoria: false,
     });
     for (const h of hijas) {
       const lista = delas(h.slug);
@@ -124,6 +133,7 @@ export function listadosDe(categorias: readonly Categoria[], productos: readonly
         productos: lista,
         hijas: [],
         paginas: totalDePaginas(lista.length),
+        sinCategoria: false,
       });
     }
   }
@@ -140,6 +150,7 @@ export function listadosDe(categorias: readonly Categoria[], productos: readonly
       productos: huerfanos,
       hijas: [],
       paginas: totalDePaginas(huerfanos.length),
+      sinCategoria: true,
     });
   }
   return listados;
@@ -152,8 +163,23 @@ export function rutasDeListados(listados: readonly Listado[]): Record<string, st
   return rutas;
 }
 
-/** Las categorías raíz que tienen listado, para el pie y el índice de la tienda. */
+/**
+ * Las categorías raíz REALES que tienen listado: es lo que va al pie de TODAS las páginas.
+ * ⚠️ "Sin categoría" queda afuera a propósito: un solo producto sin asignar le pondría
+ * un enlace de relleno al pie del sitio entero. Ese listado aparece solo en el índice de
+ * /tienda/ (ver `categoriasDelIndice`).
+ */
 export function raicesConProductos(
+  categorias: readonly Categoria[],
+  productos: readonly ProductoVitrina[],
+): { slug: string; nombre: string; n: number }[] {
+  return listadosDe(categorias, productos)
+    .filter((l) => l.sub === null && !l.sinCategoria)
+    .map((l) => ({ slug: l.cat, nombre: l.nombre, n: l.productos.length }));
+}
+
+/** Lo que lista el índice de /tienda/: las raíces y, si hay, "Sin categoría" al final. */
+export function categoriasDelIndice(
   categorias: readonly Categoria[],
   productos: readonly ProductoVitrina[],
 ): { slug: string; nombre: string; n: number }[] {

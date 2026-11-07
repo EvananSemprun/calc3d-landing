@@ -7,19 +7,18 @@
 import Base from '../../layouts/Base.astro';
 import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
-import { fetchProductosCompletos, fetchInfo, fetchCategorias } from '../../lib/api';
-import { raicesConProductos, rutaDeSlug } from '../../lib/paginacion';
+import { cargarTienda } from '../../lib/tienda-build';
+import { rutaDeSlug } from '../../lib/paginacion';
 import { rutaFicha, type ProductoVitrina } from '../../lib/producto';
 import type { InfoApi } from '../../lib/api';
 import type { Categoria } from '../../lib/catalogo';
 
 export async function getStaticPaths() {
-  // Una sola petición trae el catálogo con todo lo de la ficha (antes: una por producto,
-  // que con ~1.000 productos topaba el límite público de la API y rompía el build).
-  const lista = await fetchProductosCompletos();
-  const info = await fetchInfo();
-  const categorias = await fetchCategorias();
-  const raices = raicesConProductos(categorias, lista);
+  // Todo sale de la MISMA carga que el resto del sitio (`cargarTienda`): una petición con
+  // las fichas completas (antes: una por producto, que con ~1.000 topaba el límite público)
+  // y, sobre todo, el mismo pie y las mismas categorías que las demás páginas aunque el
+  // dueño edite una categoría a mitad del build.
+  const { completos: lista, info, categorias, raices } = await cargarTienda();
 
   return lista.map((producto) => {
     let otros = lista.filter((x) => x.id !== producto.id && producto.cat && x.cat === producto.cat);

@@ -13,7 +13,7 @@ import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
 import { rutaDeCategoria } from '../../lib/paginacion';
 
-const { productos, info, listados, raices } = await cargarTienda();
+const { productos, info, listados, raices, categoriasDelIndice } = await cargarTienda();
 const destacados = productos.slice(0, 8);
 const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub === null)?.hijas ?? [];
 ---
@@ -35,12 +35,12 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
   </section>
 
   {
-    raices.length > 0 && (
+    categoriasDelIndice.length > 0 && (
       <section class="section" style="padding-top:0">
         <div class="container">
           <h2 class="h2" style="margin-bottom:24px">Categorías</h2>
           <ul class="grid shop-grid" style="list-style:none;padding:0;margin:0">
-            {raices.map((c) => (
+            {categoriasDelIndice.map((c) => (
               <li>
                 <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
                   <h3 class="text-lg font-semibold">{c.nombre}</h3>

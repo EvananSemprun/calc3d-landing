@@ -3,14 +3,19 @@
 // toda la categoría. Sin descripción ni etiquetas, pero CON "Agregar".
 // Comparte clases con <TarjetaProducto>, la completa del paginado estático.
 import type { TasaApi } from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import { rutaFicha } from '@/lib/producto';
 import type { EntradaIndice } from '@/lib/paginacion';
 import AccionesProducto from './AccionesProducto';
 
+const INSIGNIA_AMARILLA =
+  'px-[11px] py-[5px] text-[11.5px] font-semibold tracking-[.08em] uppercase border-primary/30 bg-primary/12 text-primary';
+
 export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIndice; tasa: TasaApi | null }) {
   const ficha = rutaFicha(e.id);
   const equivalente = equivalenteEnMoneda(e.price, tasa);
+  const enOferta = !!e.compareAt && e.compareAt > e.price;
   return (
     <article className="card product">
       <a className="product-media" href={ficha} aria-label={`Ver ${e.name}`}>
@@ -24,6 +29,11 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
           />
         ) : (
           <div className="ph" data-label="sin foto" />
+        )}
+        {e.badge && (
+          <div className="product-badges">
+            <Badge className={INSIGNIA_AMARILLA}>{e.badge}</Badge>
+          </div>
         )}
       </a>
       <div className="product-body">
@@ -40,6 +50,9 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
               <span className="price-alt">
                 ≈ {equivalente} {tasa?.currencyCode}
               </span>
+            )}
+            {enOferta && e.compareAt != null && (
+              <s className="dim mono ml-1.5 text-[13px]">${e.compareAt.toFixed(2)}</s>
             )}
           </span>
           <AccionesProducto

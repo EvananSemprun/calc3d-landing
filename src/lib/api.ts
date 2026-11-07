@@ -45,11 +45,6 @@ export async function fetchProductosCompletos(): Promise<ProductoVitrina[]> {
   return products.map(adapt);
 }
 
-/** Ficha completa de un producto, por su enlace, ya en la forma de la vitrina. */
-export async function fetchProducto(slug: string): Promise<ProductoVitrina> {
-  return adapt(await getJson<ProductoApi>(`/public/store/products/${encodeURIComponent(slug)}`));
-}
-
 /** Categorías del negocio, en el orden que les dio el panel. */
 export async function fetchCategorias(): Promise<Categoria[]> {
   const { categories } = await getJson<{ categories: { slug: string; name: string; parentSlug?: string | null }[] }>(
