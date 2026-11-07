@@ -14,7 +14,7 @@
 //     los parámetros antes de leerlos. (`listo` lo impide.)
 //  2. Sincronizar SIEMPRE, también cuando no hay resultados: un filtro que no devuelve
 //     nada igual tiene que quedar en el link. (No hay `return` temprano entre medio.)
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { InfoApi } from '@/lib/api';
@@ -66,6 +66,14 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
   const [pag, setPag] = useState(1);
   const [listo, setListo] = useState(false);
   const [panelAbierto, setPanelAbierto] = useState(false);
+  // La entrada escalonada es UN momento por página: solo la primera grilla estática la
+  // lleva. Al activar un filtro ese <div> se desmonta (el ref recibe null) y, si se
+  // limpia, vuelve a montarse SIN la clase. Mientras viva el primero la conserva, para
+  // no cortar la animación en un re-render.
+  const yaEntro = useRef(false);
+  const marcarSalida = useCallback((nodo: HTMLDivElement | null) => {
+    if (nodo === null) yaEntro.current = true;
+  }, []);
 
   // Sobre el índice de TODA la categoría, nunca sobre `productos` (la página de 24).
   const conFiltros = valeLaPenaFiltrar(indice);
@@ -152,7 +160,11 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
 
         {!activo ? (
           <>
-            <div className="grid shop-grid entrada-grid" id="shopGrid">
+            <div
+              ref={marcarSalida}
+              className={`grid shop-grid${yaEntro.current ? '' : ' entrada-grid'}`}
+              id="shopGrid"
+            >
               {productos.map((p) => (
                 <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
               ))}

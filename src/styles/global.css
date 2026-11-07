@@ -1058,7 +1058,9 @@
   .hero-home .hero-art-grid > div > .lead,
   .hero-home .hero-art-grid > div > :is(.hero-actions, .hero-search),
   .hero-home .hero-art-grid > :is(img, a),
-  /* Página de categoría: migas, kicker, título y salida. */
+  /* Página de categoría: migas, kicker, título y salida. ⚠️ `> *` abarca CUALQUIER hijo
+     futuro del encabezado (del 4º en adelante, a 180 ms): agregar un elemento ahí le suma
+     la entrada; si no debe entrar, hay que excluirlo a propósito. */
   .shop-head .container > *,
   /* Primera grilla (solo la estática: no se repite al filtrar ni en «Destacados»). */
   .entrada-grid > * {
