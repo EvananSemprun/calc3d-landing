@@ -25,6 +25,7 @@ import {
   hayFiltros,
   sincronizarUrl,
   topePrecio,
+  valeLaPenaFiltrar,
   type ColorFiltro,
   type Filtros as EstadoFiltros,
 } from '@/lib/catalogo';
@@ -104,35 +105,41 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
     document.getElementById('shopGrid')?.scrollIntoView({ block: 'start' });
   }, []);
 
+  // Sobre el índice de TODA la categoría, nunca sobre `productos` (la página de 24).
+  const conFiltros = valeLaPenaFiltrar(indice);
   const total = activo ? filtrados.length : indice.length;
   const visiblesCliente = activo ? paginaDe(filtrados, pagCliente) : [];
 
   return (
-    <div className="container shop-layout">
-      <aside className={`filters${panelAbierto ? ' open' : ''}`} id="filters" aria-label="Filtros del catálogo">
-        <Filtros
-          filtros={filtros}
-          colores={colores}
-          tope={tope}
-          onCambio={cambiar}
-          onLimpiar={limpiar}
-          onCerrar={() => setPanelAbierto(false)}
-        />
-      </aside>
+    <div className={`container shop-layout${conFiltros ? '' : ' grid-cols-1'}`}>
+      {conFiltros && (
+        <aside className={`filters${panelAbierto ? ' open' : ''}`} id="filters" aria-label="Filtros del catálogo">
+          <Filtros
+            filtros={filtros}
+            colores={colores}
+            tope={tope}
+            onCambio={cambiar}
+            onLimpiar={limpiar}
+            onCerrar={() => setPanelAbierto(false)}
+          />
+        </aside>
+      )}
 
       <div className="shop-main">
         <div className="shop-toolbar">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="filters-toggle h-10 border-[var(--card-line-strong)] bg-transparent px-[18px] shadow-none dark:bg-transparent"
-            aria-expanded={panelAbierto}
-            aria-controls="filters"
-            onClick={() => setPanelAbierto((a) => !a)}
-          >
-            <SlidersHorizontal aria-hidden="true" /> Filtros
-          </Button>
+          {conFiltros && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="filters-toggle h-10 border-[var(--card-line-strong)] bg-transparent px-[18px] shadow-none dark:bg-transparent"
+              aria-expanded={panelAbierto}
+              aria-controls="filters"
+              onClick={() => setPanelAbierto((a) => !a)}
+            >
+              <SlidersHorizontal aria-hidden="true" /> Filtros
+            </Button>
+          )}
           <span className="result-count mono dim" role="status" aria-live="polite">
             {total} producto{total === 1 ? '' : 's'}
           </span>

@@ -2,6 +2,7 @@
 // poder probarla en node. Es el porte de `Shop` en tienda/index.html del sitio viejo;
 // ante la duda, manda ese comportamiento.
 import type { ProductoVitrina } from './producto';
+import type { EntradaIndice } from './paginacion';
 
 export type Orden = 'featured' | 'price-asc' | 'price-desc' | 'name';
 
@@ -105,4 +106,17 @@ export function sincronizarUrl(href: string, f: Filtros, tope: number): string {
   poner('max', f.maxPrice < tope ? String(f.maxPrice) : '');
   poner('sort', f.sort !== 'featured' ? f.sort : '');
   return url.toString();
+}
+
+/**
+ * Mínimo de productos de la categoría para dibujar el panel de filtros: una fila de
+ * tarjetas. Por debajo, el visitante ve la categoría entera de un vistazo y filtrarla no
+ * le ahorra nada; el panel solo agrega ruido y hace leer la categoría como un filtro
+ * encendido. El borde es inclusivo (con 6 se dibujan).
+ */
+export const MINIMO_PARA_FILTRAR = 6;
+
+/** ¿Vale la pena mostrar filtros? Se decide sobre el índice de TODA la categoría, nunca sobre la página de 24. */
+export function valeLaPenaFiltrar(indice: readonly EntradaIndice[]): boolean {
+  return indice.length >= MINIMO_PARA_FILTRAR;
 }

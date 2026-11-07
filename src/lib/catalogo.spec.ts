@@ -9,7 +9,10 @@ import {
   filtrosIniciales,
   sincronizarUrl,
   topePrecio,
+  MINIMO_PARA_FILTRAR,
+  valeLaPenaFiltrar,
 } from './catalogo';
+import type { EntradaIndice } from './paginacion';
 
 const prod = (slug: string, extra: Partial<ProductoApi> = {}) =>
   adapt({ slug, name: slug, priceUsd: 10, minQty: 1, ...extra });
@@ -144,5 +147,22 @@ describe('URL compartible', () => {
   it('ida y vuelta: lo que se escribe es lo que se restaura', () => {
     const f = { colors: ['Negro'], maxPrice: 20, sort: 'name' as const };
     expect(filtrosDesdeUrl(new URL(sincronizarUrl('http://x/tienda/', f, 131)).search, ctx)).toEqual(f);
+  });
+});
+
+describe('valeLaPenaFiltrar', () => {
+  const n = (cuantos: number) =>
+    Array.from({ length: cuantos }, (_, i) => ({ id: `p${i}` }) as EntradaIndice);
+
+  it('con menos del mínimo no se dibujan los filtros', () => {
+    expect(valeLaPenaFiltrar(n(MINIMO_PARA_FILTRAR - 1))).toBe(false);
+  });
+
+  it('con EXACTAMENTE el mínimo sí se dibujan', () => {
+    expect(valeLaPenaFiltrar(n(MINIMO_PARA_FILTRAR))).toBe(true);
+  });
+
+  it('una categoría vacía no dibuja filtros', () => {
+    expect(valeLaPenaFiltrar([])).toBe(false);
   });
 });

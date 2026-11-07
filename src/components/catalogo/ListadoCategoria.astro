@@ -10,6 +10,7 @@
 import Base from '../../layouts/Base.astro';
 import Catalogo from './Catalogo';
 import CtaCotizar from '../CtaCotizar.astro';
+import LinkButton from '../LinkButton.astro';
 import { Badge } from '../ui/badge';
 import type { InfoApi } from '../../lib/api';
 import { coloresDe } from '../../lib/catalogo';
@@ -54,6 +55,9 @@ const descripcion =
       </nav>
       <span class="kicker">Catálogo · Impresión 3D</span>
       <h1 class="h1 text-balance">{nombre}</h1>
+      <div class="mt-5">
+        <LinkButton href="/tienda/" variant="outline" grande={false}>← Todas las categorías</LinkButton>
+      </div>
       {
         hijas.length > 0 && pagina === 1 && (
           <ul class="mt-6 flex flex-wrap gap-2.5" aria-label={`Subcategorías de ${nombre}`}>
