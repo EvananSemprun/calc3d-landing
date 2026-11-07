@@ -36,6 +36,15 @@ export async function fetchProductos(): Promise<ProductoVitrina[]> {
   return products.map(adapt);
 }
 
+/** Catálogo CON todo lo de la ficha (descripción, specs, galería, opciones con recargo),
+ *  en UNA sola petición. Es lo que usa el build de las fichas: pedir una por producto
+ *  agota el límite público (120 por minuto) con un catálogo grande. No trae `image`;
+ *  `adapt` la saca de `images[0]`. */
+export async function fetchProductosCompletos(): Promise<ProductoVitrina[]> {
+  const { products } = await getJson<{ products: ProductoApi[] }>('/public/store/products?detail=full');
+  return products.map(adapt);
+}
+
 /** Ficha completa de un producto, por su enlace, ya en la forma de la vitrina. */
 export async function fetchProducto(slug: string): Promise<ProductoVitrina> {
   return adapt(await getJson<ProductoApi>(`/public/store/products/${encodeURIComponent(slug)}`));
