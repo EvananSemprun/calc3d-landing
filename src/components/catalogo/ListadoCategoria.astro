@@ -55,8 +55,21 @@ const descripcion =
       </nav>
       <span class="kicker">Catálogo · Impresión 3D</span>
       <h1 class="h1 text-balance">{nombre}</h1>
+      {/*
+        La salida sube UN nivel, no dos: desde una subcategoría vuelve a su madre (el
+        dueño pidió este botón porque la salida no se veía; mandarlo a `/tienda/` se
+        saltea la madre, que es justo la pantalla que se estaba buscando).
+      */}
       <div class="mt-5">
-        <LinkButton href="/tienda/" variant="outline" grande={false}>← Todas las categorías</LinkButton>
+        {
+          sub ? (
+            <LinkButton href={rutaDeCategoria(cat)} variant="outline" grande={false}>
+              ← {nombreMadre}
+            </LinkButton>
+          ) : (
+            <LinkButton href="/tienda/" variant="outline" grande={false}>← Todas las categorías</LinkButton>
+          )
+        }
       </div>
       {
         hijas.length > 0 && pagina === 1 && (
