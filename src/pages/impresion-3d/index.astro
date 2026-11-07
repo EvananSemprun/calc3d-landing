@@ -4,47 +4,31 @@
  * build y no depende de la API (el WhatsApp de los CTA se completa en el navegador,
  * ver WhatsappCotizar en Base).
  *
- * Los materiales y los usos son los REALES del taller — no una lista genérica copiada
- * de otro sitio. Si mañana se suma un material, se agrega acá.
+ * Se habla de para qué sirve cada pieza, no de siglas: el cliente no es experto y el
+ * experto pregunta por privado. Los usos son los REALES del taller — no una lista
+ * genérica copiada de otro sitio. Si mañana se suma uno, se agrega acá.
  */
 import Base from '../../layouts/Base.astro';
 import LinkButton from '../../components/LinkButton.astro';
-import Pasos from '../../components/Pasos.astro';
 import CtaCotizar from '../../components/CtaCotizar.astro';
 import impresora from '../../assets/brand/impresora-3d.png';
 
-const materiales = [
+const usosPorPieza = [
   {
-    nombre: 'PLA',
+    nombre: 'Decoración y detalle fino',
     texto:
       'El más versátil. Buen acabado y detalle fino. Ideal para llaveros, decoración, figuras y prototipos que no van a estar al sol.',
   },
   {
-    nombre: 'PETG',
+    nombre: 'Uso diario e intemperie',
     texto:
       'Más resistente y aguanta mejor el calor y la humedad. Para piezas de uso, soportes y cosas que van a la intemperie.',
   },
-  { nombre: 'ABS', texto: 'Duro y resistente a golpes. Para repuestos y piezas mecánicas que trabajan.' },
+  { nombre: 'Golpes y repuestos', texto: 'Duro y resistente a golpes. Para repuestos y piezas mecánicas que trabajan.' },
   {
-    nombre: 'TPU',
+    nombre: 'Flexible, tipo goma',
     texto: 'Flexible, tipo goma. Para fundas, topes, juntas y todo lo que tenga que doblarse sin romperse.',
   },
-];
-
-const pasos = [
-  {
-    titulo: 'Mandás lo que tengas',
-    texto: 'Un archivo STL, 3MF o STEP; una foto de la pieza rota; o simplemente la descripción y las medidas.',
-  },
-  {
-    titulo: 'Definimos la pieza',
-    texto: 'Material, color, acabado y cantidad. Acá se decide todo lo que cambia el precio.',
-  },
-  {
-    titulo: 'Cotizamos y producimos',
-    texto: 'Precio cerrado antes de encender la impresora. Recién ahí arranca la producción.',
-  },
-  { titulo: 'Entregamos', texto: 'Coordinamos entrega y pago por WhatsApp.' },
 ];
 
 const usos = [
@@ -71,7 +55,7 @@ const usos = [
 
 <Base
   title="Impresión 3D — Banano Lab"
-  description="Impresión 3D por encargo en PLA, PETG, ABS y TPU. Piezas propias, tu archivo o diseño desde cero. Producción bajo pedido, cotización antes de empezar."
+  description="Impresión 3D por encargo en Venezuela. Piezas desde una unidad, con tu archivo o diseño desde cero. Producción bajo pedido; cotizá por WhatsApp antes de empezar."
   canonical="/impresion-3d/"
 >
   <section class="hero hero--sm">
@@ -101,14 +85,13 @@ const usos = [
 
   <section class="section">
     <div class="container">
-      <h2 class="h2" style="margin-bottom:8px">Materiales</h2>
+      <h2 class="h2" style="margin-bottom:8px">Según para qué sea la pieza</h2>
       <p class="lead" style="max-width:56ch;margin-bottom:28px">
-        Cada material sirve para algo distinto. Si no sabés cuál necesitás, contanos para qué es la pieza y lo elegimos
-        nosotros.
+        Cada pieza pide algo distinto. Contanos para qué es y nosotros resolvemos cómo hacerla.
       </p>
       <div class="grid grid-3">
         {
-          materiales.map((m) => (
+          usosPorPieza.map((m) => (
             <article class="card pad">
               <h3 class="h3">{m.nombre}</h3>
               <p class="dim">{m.texto}</p>
@@ -125,9 +108,11 @@ const usos = [
 
   <section class="section section--blue">
     <div class="container">
-      <h2 class="h2" style="margin-bottom:8px">Cómo es el proceso</h2>
+      <h2 class="h2" style="margin-bottom:8px">¿Cómo trabajamos?</h2>
       <p class="lead" style="max-width:52ch">Tengas el archivo o solo la idea.</p>
-      <Pasos pasos={pasos} />
+      <div class="hero-actions" style="margin-top:16px">
+        <LinkButton href="/#como-trabajamos" variant="outline">Mirá los pasos, de tu mensaje a la entrega</LinkButton>
+      </div>
     </div>
   </section>
 
