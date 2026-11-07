@@ -105,7 +105,27 @@ export interface ProductoVitrina {
 
 /** La línea gris de la tarjeta: la categoría y nada más (el material no se muestra). */
 export function lineaDeTarjeta(p: ProductoVitrina): string {
-  return p.catLabel ?? '';
+  return p.catLabel || '';
+}
+
+/**
+ * «Listo en 5 días» — el plazo de producción, o null si el negocio no lo cargó.
+ * ⚠️ ÚNICA definición de este texto: lo pintan la tarjeta del catálogo
+ * (`TarjetaProducto`) y los hechos de la ficha (`hechosDeFicha`). Estaba escrito a mano
+ * en los dos lados y solo uno tenía test: cambiar el probado dejaba todas las tarjetas
+ * diciendo lo viejo con la suite en verde.
+ */
+export function textoDeEntrega(p: Pick<ProductoVitrina, 'ship'>): string | null {
+  return p.ship ? `Listo en ${p.ship}` : null;
+}
+
+/**
+ * «Mínimo 2» — la cantidad mínima, SOLO si es mayor que 1: «Mínimo 1» no informa nada
+ * (es el piso de cualquier pedido) y ocupa un renglón.
+ * ⚠️ Misma regla que `textoDeEntrega`: una sola definición para tarjeta y ficha.
+ */
+export function textoDeMinimo(p: Pick<ProductoVitrina, 'minQty'>): string | null {
+  return p.minQty > 1 ? `Mínimo ${p.minQty}` : null;
 }
 
 /**

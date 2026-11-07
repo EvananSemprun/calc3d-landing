@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adapt, lineaDeTarjeta, rutaFicha } from './producto';
+import { adapt, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo } from './producto';
 
 describe('adapt', () => {
   it('mapea la forma de la API a la de la vitrina', () => {
@@ -160,6 +160,36 @@ describe('lineaDeTarjeta', () => {
   it('un producto sin categoría no deja un separador huérfano', () => {
     const p = adapt({ slug: 'b', name: 'B', priceUsd: 1, minQty: 1, material: 'PETG' });
     expect(lineaDeTarjeta(p)).toBe('');
+  });
+});
+
+// Estos dos textos los pintan la tarjeta del catálogo Y los hechos de la ficha. Estaban
+// escritos a mano en los dos lados y solo uno tenía test: esta red cubre ambos.
+describe('textoDeEntrega', () => {
+  it('con plazo cargado dice «Listo en N»', () => {
+    expect(textoDeEntrega({ ship: '5 días' })).toBe('Listo en 5 días');
+  });
+
+  it('sin plazo devuelve null (no se pinta el renglón)', () => {
+    expect(textoDeEntrega({ ship: null })).toBeNull();
+  });
+
+  it('un plazo de «0 días» SÍ es un dato y se muestra', () => {
+    expect(textoDeEntrega({ ship: '0 días' })).toBe('Listo en 0 días');
+  });
+});
+
+describe('textoDeMinimo', () => {
+  it('con mínimo 2 dice «Mínimo 2»', () => {
+    expect(textoDeMinimo({ minQty: 2 })).toBe('Mínimo 2');
+  });
+
+  it('el borde: mínimo 1 NO se muestra (es el piso de cualquier pedido)', () => {
+    expect(textoDeMinimo({ minQty: 1 })).toBeNull();
+  });
+
+  it('un mínimo raro (0) tampoco se muestra', () => {
+    expect(textoDeMinimo({ minQty: 0 })).toBeNull();
   });
 });
 

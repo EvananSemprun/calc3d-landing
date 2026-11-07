@@ -1,6 +1,6 @@
 // Lógica pura de la ficha (sin DOM, sin React): la selección inicial de opciones y
 // el precio base con recargos. El tramo por cantidad lo aplica `precioConTramos`.
-import type { ProductoVitrina } from './producto';
+import { textoDeEntrega, textoDeMinimo, type ProductoVitrina } from './producto';
 
 /** Opción elegida por grupo: { [nombre del grupo]: valor }. */
 export type Seleccion = Record<string, string>;
@@ -39,13 +39,11 @@ export function precioBaseConOpciones(
 /**
  * Los hechos que se ven bajo el título de la ficha. El material NO está: no se muestra
  * al cliente, viaja al JSON-LD (`jsonLdDeProducto`) para que Google lo lea.
+ * El plazo y el mínimo salen de `producto.ts` — son los MISMOS textos que pinta la
+ * tarjeta del catálogo, y por eso viven en un solo lugar.
  */
 export function hechosDeFicha(p: ProductoVitrina): string[] {
-  return [
-    p.catLabel || '',
-    p.ship ? `Listo en ${p.ship}` : '',
-    p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
-  ].filter(Boolean);
+  return [p.catLabel || '', textoDeEntrega(p) ?? '', textoDeMinimo(p) ?? ''].filter(Boolean);
 }
 
 /**

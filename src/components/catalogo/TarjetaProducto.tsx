@@ -7,7 +7,7 @@
 // mida distinto. Los estilos (`.product*`) viven en global.css.
 import { Badge } from '@/components/ui/badge';
 import { equivalenteEnMoneda } from '@/lib/precio';
-import { lineaDeTarjeta, rutaFicha, type ProductoVitrina } from '@/lib/producto';
+import { lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
 import AccionesProducto from './AccionesProducto';
 
@@ -26,6 +26,9 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
   const ficha = rutaFicha(p.id);
   const enOferta = !!p.compareAt && p.compareAt > p.price;
   const linea = lineaDeTarjeta(p);
+  // Mismos textos que los hechos de la ficha: una sola definición en `producto.ts`.
+  const entrega = textoDeEntrega(p);
+  const minimo = textoDeMinimo(p);
   const equivalente = equivalenteEnMoneda(p.price, tasa);
 
   return (
@@ -67,8 +70,8 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
               ))}
             </div>
           )}
-          {p.ship && <span className="mono dim text-xs">Listo en {p.ship}</span>}
-          {p.minQty > 1 && <span className="mono dim text-xs">Mínimo {p.minQty}</span>}
+          {entrega && <span className="mono dim text-xs">{entrega}</span>}
+          {minimo && <span className="mono dim text-xs">{minimo}</span>}
         </div>
 
         <div className="product-foot">
