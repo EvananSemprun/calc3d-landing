@@ -221,6 +221,23 @@ quedó en `calc3d-web.pages.dev`; este repo es el que lleva dominio propio.
   tiene campo "Directorio de salida"**; falla porque espera un `wrangler.jsonc` en el
   repo, que este proyecto no tiene. Pasó el 2026-11-07: el primer intento se creó como
   Worker y se borró.
+- ⚠️ **UN PROYECTO DESCONECTADO DE GIT NO DESPLIEGA, Y NO AVISA POR NINGUNA PARTE.**
+  Pasó el 2026-11-07: Pages mostró el cartel *«Este proyecto está desconectado de tu
+  cuenta de Git»* y el push a `main` **nunca disparó un build**. No hay despliegue en
+  rojo que mirar — no hay despliegue — y «Implementaciones automáticas habilitadas»
+  sigue diciendo que sí. Del lado de acá todo sale bien: el push entra, el hook de
+  pre-push pasa en verde, y el sitio sigue sirviendo el build viejo con 200 en todas
+  sus rutas. El síntoma es que **las rutas NUEVAS dan 404** mientras las viejas andan.
+  - **Cómo distinguirlo de un build roto, sin entrar al panel**: si las rutas nuevas
+    dan 404 **y** el build exacto de producción (`PUBLIC_API_URL` + `PUBLIC_SITE_URL`,
+    Node 22.18) sale verde en local, el código está descartado. Y si además
+    `cf-cache-status` dice `DYNAMIC` y el `.pages.dev` del proyecto da el mismo 404,
+    tampoco es caché: es que el build no corrió.
+  - **Reconectar NO reconstruye el push que se perdió**: el último despliegue sigue
+    siendo el commit viejo. Después de reconectar hay que disparar el build a mano
+    («Volver a intentar» / «Crear implementación»), o el siguiente push.
+  - **Vale para los tres proyectos de Pages** (`calc3d-landing`, `calc3d-web`): el
+    cartel es por proyecto, así que uno puede estar desconectado y el otro no.
 - ⚠️ El build prerenderiza pegándole a la API → **la API tiene que estar arriba en el
   build**; si cae, el build falla fuerte (no publica un catálogo vacío).
 - **Del lado de la API (Railway), `STORE_ORIGIN`** tiene que incluir
