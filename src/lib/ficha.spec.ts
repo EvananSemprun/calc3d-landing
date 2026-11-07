@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { precioBaseConOpciones, seleccionInicial } from './ficha';
+import { hechosDeFicha, jsonLdDeProducto, precioBaseConOpciones, seleccionInicial } from './ficha';
 import type { ProductoVitrina } from './producto';
 
 // Producto mínimo para las pruebas (solo lo que miran estas funciones).
@@ -76,5 +76,24 @@ describe('precioBaseConOpciones', () => {
       optionGroups: [{ name: 'Color', required: true, options: [{ value: 'Rojo', priceDeltaUsd: 2 }] }],
     });
     expect(precioBaseConOpciones(p, { Color: 'Inexistente' })).toBe(10);
+  });
+});
+
+describe('hechosDeFicha', () => {
+  it('no incluye el material', () => {
+    const p = prod({ catLabel: 'Llaveros', material: 'PLA', ship: '5 días', minQty: 2 });
+    expect(hechosDeFicha(p)).toEqual(['Llaveros', 'Listo en 5 días', 'Mínimo 2']);
+  });
+});
+
+describe('jsonLdDeProducto', () => {
+  it('el material viaja al JSON-LD', () => {
+    const p = prod({ price: 24, material: 'PLA' });
+    expect(jsonLdDeProducto(p, { descripcion: 'd' }).material).toBe('PLA');
+  });
+
+  it('sin material, la clave NO se emite vacía', () => {
+    const p = prod({ price: 24, material: null });
+    expect('material' in jsonLdDeProducto(p, { descripcion: 'd' })).toBe(false);
   });
 });

@@ -12,7 +12,7 @@ import Personalizacion from './Personalizacion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { agregar as agregarAlCarrito } from '@/lib/carrito';
-import { precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
+import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
 import { fotosDeOpcion } from '@/lib/galeria';
 import { equivalenteEnMoneda, precioConTramos } from '@/lib/precio';
 import { pedirUrlDeFoto } from '@/lib/subir-foto';
@@ -111,12 +111,7 @@ export default function Ficha({ producto: p, info }: Props) {
     ),
   ].filter(Boolean);
 
-  const hechos = [
-    p.catLabel || '',
-    p.material || '',
-    p.ship ? `Listo en ${p.ship}` : '',
-    p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
-  ].filter(Boolean);
+  const hechos = hechosDeFicha(p);
 
   return (
     <div className="pdp">

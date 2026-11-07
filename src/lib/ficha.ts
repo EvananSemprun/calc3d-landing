@@ -35,3 +35,41 @@ export function precioBaseConOpciones(
   }
   return total;
 }
+
+/**
+ * Los hechos que se ven bajo el título de la ficha. El material NO está: no se muestra
+ * al cliente, viaja al JSON-LD (`jsonLdDeProducto`) para que Google lo lea.
+ */
+export function hechosDeFicha(p: ProductoVitrina): string[] {
+  return [
+    p.catLabel || '',
+    p.ship ? `Listo en ${p.ship}` : '',
+    p.minQty > 1 ? `Mínimo ${p.minQty}` : '',
+  ].filter(Boolean);
+}
+
+/**
+ * Datos estructurados `Product` de la ficha. `material` solo se emite si existe: una clave
+ * vacía en datos estructurados es peor que su ausencia.
+ */
+export function jsonLdDeProducto(
+  p: ProductoVitrina,
+  opciones: { descripcion: string; imagen?: string; url?: string },
+): Record<string, unknown> {
+  const { descripcion, imagen, url } = opciones;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.name,
+    description: descripcion,
+    ...(imagen ? { image: [imagen] } : {}),
+    ...(p.material ? { material: p.material } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: p.price.toFixed(2),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      ...(url ? { url } : {}),
+    },
+  };
+}

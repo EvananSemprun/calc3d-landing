@@ -8,6 +8,7 @@ import Base from '../../layouts/Base.astro';
 import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
+import { jsonLdDeProducto } from '../../lib/ficha';
 import { rutaDeSlug } from '../../lib/paginacion';
 import { rutaFicha, type ProductoVitrina } from '../../lib/producto';
 import type { InfoApi } from '../../lib/api';
@@ -45,20 +46,11 @@ const descripcion = p.desc || p.description || `${p.name} — impresión 3D a pe
 const canonical = rutaFicha(p.id);
 const imagen = p.image?.url;
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: p.name,
-  description: descripcion,
-  ...(imagen ? { image: [imagen] } : {}),
-  offers: {
-    '@type': 'Offer',
-    price: p.price.toFixed(2),
-    priceCurrency: 'USD',
-    availability: 'https://schema.org/InStock',
-    ...(Astro.site ? { url: new URL(canonical, Astro.site).href } : {}),
-  },
-};
+const jsonLd = jsonLdDeProducto(p, {
+  descripcion,
+  imagen,
+  url: Astro.site ? new URL(canonical, Astro.site).href : undefined,
+});
 ---
 
 <Base
