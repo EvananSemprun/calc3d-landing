@@ -606,15 +606,26 @@ ficha. Si `Beneficios.astro` asume cuatro, ajustarlo a tres.
 
 - [ ] **Paso 6: verificar por contenido y por PESO**
 
+⚠️ **`grep -c` NO SIRVE ACÁ, y este comando estaba mal.** `-c` cuenta **líneas que
+coinciden**, y `dist/index.html` es **una sola línea**: devuelve `1` para todo, islas
+incluidas. Alguien lee «1» y cree que queda una isla cuando quedan veintisiete. Hay que
+contar ocurrencias con `grep -o … | wc -l`.
+
 ```bash
-PUBLIC_API_URL=http://localhost:3001/api npx astro build 2>&1 | grep -c "peticion\|request"
-ls -la dist/index.html                                  # peso
-grep -c "astro-island" dist/index.html                  # islas
-grep -c "más vendidos" dist/index.html                  # 0
-grep -cE "PLA|PETG|ABS|TPU" dist/index.html             # 0
-grep -c "Listo en N días" dist/index.html               # 0
-grep -c "Traé tu archivo" dist/index.html               # 1
+PUBLIC_API_URL=http://localhost:3001/api npx astro build
+wc -c dist/index.html                                          # peso
+grep -o "astro-island" dist/index.html | wc -l                 # islas
+grep -o "más vendidos" dist/index.html | wc -l                 # 0
+grep -oE "PLA|PETG|ABS|TPU" dist/index.html | wc -l            # ver la nota de abajo
+grep -o "Listo en N días" dist/index.html | wc -l              # 0
+grep -o "Traé tu archivo" dist/index.html | wc -l              # 1
 ```
+
+⚠️ **El de los materiales NO puede dar 0, y eso está bien.** Lo que tiene que
+desaparecer es el texto que escribe **el sitio**. Lo que queda son dos cosas ajenas a
+esta tarea: el campo `material` serializado en los props de las tarjetas de Destacados
+(`ProductoVitrina` lo conserva a propósito para el JSON-LD de la ficha) y el `summary`
+que escribió el dueño. Ninguno se lee en pantalla.
 
 ⚠️ **El número de islas tiene que BAJAR, no subir.** La portada medida antes del plan
 anterior tenía 127 islas y 616 KB; la mitigación la dejó en 27 y 133 KB. Una sección de
