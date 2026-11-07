@@ -152,7 +152,7 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
 
         {!activo ? (
           <>
-            <div className="grid shop-grid" id="shopGrid">
+            <div className="grid shop-grid entrada-grid" id="shopGrid">
               {productos.map((p) => (
                 <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
               ))}

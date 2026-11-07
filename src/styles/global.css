@@ -53,6 +53,25 @@
   padding-inline: var(--gut);
 }
 
+/* ---------- Guardia de movimiento ----------
+   Va ANTES de todo lo animado y SIN @layer: lo que no está en una capa le gana a las
+   capas, y los !important sin capa le ganan a todo. Con `reduce` no se mueve nada:
+   ni entradas, ni hovers, ni el deslizamiento al tocar un ancla.
+   `animation-delay: 0s` evita que una entrada con `backwards` deje el elemento
+   invisible durante su retardo aunque ya no se anime. */
+@media (prefers-reduced-motion: reduce) {
+  /* Aparte a propósito: el `smooth` está en `html` (@layer base) y el universal no
+     siempre lo gana. Se apaga en los dos lados. */
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -1020,4 +1039,46 @@
     padding: 2px 8px;
     border-radius: 999px;
   }
+}
+
+/* ---------- Entrada de la página (un solo momento, en CSS puro) ----------
+   Corre al cargar, sin JS y sin observador: arranca en opacity 0 pero SIEMPRE termina
+   visible, así que con el JavaScript apagado la página se ve entera. `backwards` (no
+   `both`): al terminar se descartan los estilos de la animación, sin dejar un transform
+   ni un contexto de apilamiento colgando sobre el desplegable del buscador.
+   Escalonado: 0 / 60 / 120 / 180 ms el encabezado; la primera grilla arranca a 240 ms. */
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@layer components {
+  /* Portada: kicker + h1, lead, acciones + buscador, y el arte. */
+  .hero-home .hero-art-grid > div > :is(.kicker, .h1),
+  .hero-home .hero-art-grid > div > .lead,
+  .hero-home .hero-art-grid > div > :is(.hero-actions, .hero-search),
+  .hero-home .hero-art-grid > :is(img, a),
+  /* Página de categoría: migas, kicker, título y salida. */
+  .shop-head .container > *,
+  /* Primera grilla (solo la estática: no se repite al filtrar ni en «Destacados»). */
+  .entrada-grid > * {
+    animation: entrada var(--dur-lenta) var(--ease) backwards;
+  }
+  .hero-home .hero-art-grid > div > .lead,
+  .shop-head .container > :nth-child(2) { animation-delay: 60ms; }
+  .hero-home .hero-art-grid > div > :is(.hero-actions, .hero-search),
+  .shop-head .container > :nth-child(3) { animation-delay: 120ms; }
+  .hero-home .hero-art-grid > :is(img, a),
+  .shop-head .container > :nth-child(n+4) { animation-delay: 180ms; }
+
+  /* Tarjetas: escalonan las primeras 8; el resto comparte el retardo de la octava
+     (24 tarjetas con retardo propio harían llegar la última casi un segundo tarde). */
+  .entrada-grid > * { animation-delay: 240ms; }
+  .entrada-grid > :nth-child(2) { animation-delay: 270ms; }
+  .entrada-grid > :nth-child(3) { animation-delay: 300ms; }
+  .entrada-grid > :nth-child(4) { animation-delay: 330ms; }
+  .entrada-grid > :nth-child(5) { animation-delay: 360ms; }
+  .entrada-grid > :nth-child(6) { animation-delay: 390ms; }
+  .entrada-grid > :nth-child(7) { animation-delay: 420ms; }
+  .entrada-grid > :nth-child(n+8) { animation-delay: 450ms; }
 }
