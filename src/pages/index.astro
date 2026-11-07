@@ -9,6 +9,7 @@
  * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad.
  */
 import Base from '../layouts/Base.astro';
+import Buscador from '../components/catalogo/Buscador';
 import Carrusel from '../components/inicio/Carrusel';
 import FlashSale from '../components/inicio/FlashSale';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
@@ -72,6 +73,12 @@ const preguntas = [
   canonical="/"
   categorias={raices}
 >
+  <section class="bg-[var(--ink-800)] pt-6 pb-2" aria-label="Buscador">
+    <div class="container">
+      <Buscador client:load />
+    </div>
+  </section>
+
   <Carrusel client:load rutasDeCategoria={rutasDeCategoria} />
 
   <FlashSale tasa={info.rate} client:visible />
