@@ -178,9 +178,22 @@ leer la categoría como un filtro encendido. El borde es **inclusivo** (con 6 se
 
 - [ ] **Paso 5: `Catalogo.tsx` deja de dibujar el panel bajo el mínimo**
 
-Envolver el render de `<Filtros .../>` (las dos apariciones: la columna de escritorio y el
-panel de móvil) y el botón **«Filtros»** con `valeLaPenaFiltrar(indice)`. El contador de
-productos y el ordenamiento **se quedan siempre**.
+Envolver el render de `<Filtros .../>` y el botón **«Filtros»** con
+`valeLaPenaFiltrar(indice)`. El contador de productos **se queda siempre**.
+
+⚠️ **Corregido el 2026-11-07, tras la revisión de la tarea.** Este paso decía antes que
+«el ordenamiento se queda siempre», y eso era un defecto del plan: **el `Select` de
+ordenar vive DENTRO de `Filtros.tsx`** (líneas 100-112), no en la barra. Esconder el panel
+esconde también el orden.
+
+**Ruling: se acepta.** Con cinco productos o menos, ordenarlos no le ahorra nada a nadie —
+entran todos en una pantalla—, y sacar el `Select` a la barra es un cambio de maquetación
+que pertenece a la fase de pulido, no a esta. **Lo que cuesta si me equivoco:** alguien
+con exactamente 5 productos en una categoría no puede ordenarlos por precio. Es visible y
+se desanda moviendo un control.
+
+⚠️ También decía «las dos apariciones» de `<Filtros>` (escritorio y móvil). **Hay una
+sola**: el panel de móvil es el mismo `<aside>` con la clase `open`.
 
 ⚠️ El cálculo va sobre `indice` (la categoría entera), **nunca sobre `productos`** (la
 página de 24): si no, la página 2 de una categoría grande podría esconder los filtros.
