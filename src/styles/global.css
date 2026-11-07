@@ -75,6 +75,27 @@
   .product:hover, .product:hover .product-photo { transform: none; }
 }
 
+/* La transición entre páginas (`<ClientRouter />`) necesita su PROPIA guardia: los
+   pseudo-elementos `::view-transition-*` viven en un árbol aparte y el `*` de arriba NO
+   los alcanza, así que sin esto el fundido de la navegación se seguiría viendo con
+   `reduce`. Va en una regla separada de la siguiente a propósito: un selector
+   desconocido invalida TODA la lista, y en un navegador sin transiciones de vista eso
+   se llevaría puesta la guardia del respaldo animado. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Respaldo de Astro donde el navegador no soporta transiciones de vista. */
+@media (prefers-reduced-motion: reduce) {
+  [data-astro-transition-scope] {
+    animation: none !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

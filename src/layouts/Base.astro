@@ -14,6 +14,7 @@
  *                 que ya las traen de la API en el build, como el catálogo).
  */
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappCotizar from '../components/WhatsappCotizar.astro';
@@ -104,6 +105,18 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
     />
 
     {jsonLd && <script type="application/ld+json" set:html={jsonLdSeguro} />}
+
+    {/* Transiciones de vista: la navegación entre páginas no recarga, hace un fundido.
+        En Astro 7 el componente es `ClientRouter` (se llamaba `ViewTransitions` hasta
+        Astro 5).
+
+        ⚠️ Reemplaza el <body> sin recargar, así que todo script que se engancha una vez
+        al cargar deja de funcionar tras la primera navegación. Los tres de este sitio
+        (menú del Header, CTA de WhatsApp e insignia del carrito) ya se recablean en
+        `astro:page-load`; si se agrega otro, tiene que hacer lo mismo.
+        El respeto a `prefers-reduced-motion` está en global.css («Guardia de
+        movimiento»): Astro solo trae el suyo si alguna página usa `transition:*`. */}
+    <ClientRouter />
     <slot name="head" />
   </head>
   <body>
