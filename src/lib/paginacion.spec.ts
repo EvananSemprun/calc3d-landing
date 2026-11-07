@@ -15,10 +15,18 @@ const completo = prod('copa', {
 });
 
 describe('índice de categoría', () => {
-  it('trae solo lo que los controles necesitan, y nada más', () => {
+  it('trae lo que los controles y el carrito necesitan, y nada más', () => {
     const [e] = indiceDeCategoria([completo]);
-    expect(Object.keys(e).sort()).toEqual(['colors', 'id', 'image', 'name', 'price']);
-    expect(e).toEqual({ id: 'copa', name: 'copa', price: 24, colors: ['Rojo'], image: completo.image });
+    expect(Object.keys(e).sort()).toEqual([
+      'colors', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers', 'requiresOptions',
+    ]);
+    for (const prohibido of ['desc', 'description', 'specs', 'optionGroups', 'images', 'summary']) {
+      expect(e).not.toHaveProperty(prohibido);
+    }
+    expect(e).toEqual({
+      id: 'copa', name: 'copa', price: 24, colors: ['Rojo'], image: completo.image,
+      priceTiers: [], minQty: 1, requiresOptions: false,
+    });
   });
 
   it('un producto sin foto queda con image null, no undefined', () => {
@@ -31,7 +39,7 @@ describe('índice de categoría', () => {
 
   it('cada entrada pesa poco: mil productos no reintroducen los megas', () => {
     const peso = JSON.stringify(indiceDeCategoria([completo])[0]).length;
-    expect(peso).toBeLessThan(250);
+    expect(peso).toBeLessThan(330);
   });
 });
 
@@ -57,7 +65,7 @@ describe('rutas', () => {
   });
 });
 
-import { conPagina, listadosDe, paginaDe, paginaDesdeUrl, rutaDeSlug, ventanaDePaginas } from './paginacion';
+import { SLUG_SIN_CATEGORIA, conPagina, listadosDe, rutasDeListados, paginaDe, paginaDesdeUrl, rutaDeSlug, ventanaDePaginas } from './paginacion';
 
 describe('listados por categoría', () => {
   const cats = [
@@ -101,5 +109,44 @@ describe('paginado', () => {
     expect(paginaDesdeUrl('?p=4')).toBe(4);
     expect(paginaDesdeUrl('?p=abc')).toBe(1);
     expect(paginaDesdeUrl('?p=-2')).toBe(1);
+  });
+});
+
+describe('productos sin categoría', () => {
+  const cats = [{ slug: 'llaveros', nombre: 'Llaveros', parentSlug: null }];
+  const en = (slug: string, cat?: string) =>
+    prod(slug, cat ? { category: { slug: cat, name: cat } } : {});
+
+  it('tienen su propio listado, y las demás categorías no los pierden', () => {
+    const l = listadosDe(cats, [en('a', 'llaveros'), en('b'), en('c', 'borrada')]);
+    expect(l.map((x) => [x.cat, x.productos.map((p) => p.id)])).toEqual([
+      ['llaveros', ['a']],
+      [SLUG_SIN_CATEGORIA, ['b', 'c']],
+    ]);
+  });
+
+  it('si no hay huérfanos, el listado no existe', () => {
+    expect(listadosDe(cats, [en('a', 'llaveros')]).map((x) => x.cat)).toEqual(['llaveros']);
+  });
+
+  it('una categoría real con ese slug ROMPE el build, con un mensaje que dice qué hacer', () => {
+    const choque = [...cats, { slug: SLUG_SIN_CATEGORIA, nombre: 'Sin categoría', parentSlug: null }];
+    expect(() => listadosDe(choque, [en('a', 'llaveros')])).toThrow(/sin-categoria.*Cambiale el enlace/);
+  });
+});
+
+describe('mapa slug → ruta', () => {
+  it('las hijas cuelgan de su madre y los huérfanos tienen la suya', () => {
+    const cats = [
+      { slug: 'llaveros', nombre: 'Llaveros', parentSlug: null },
+      { slug: 'mundial', nombre: 'Mundial', parentSlug: 'llaveros' },
+    ];
+    const en = (slug: string, cat?: string) => prod(slug, cat ? { category: { slug: cat, name: cat } } : {});
+    const rutas = rutasDeListados(listadosDe(cats, [en('a', 'mundial'), en('b')]));
+    expect(rutas).toEqual({
+      llaveros: '/tienda/llaveros/',
+      mundial: '/tienda/llaveros/mundial/',
+      'sin-categoria': '/tienda/sin-categoria/',
+    });
   });
 });

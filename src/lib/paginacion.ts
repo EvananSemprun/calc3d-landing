@@ -1,5 +1,6 @@
 // Paginado e índice de categoría. Puro (sin DOM ni React) para poder probarlo en node.
 import type { Categoria } from './catalogo';
+import type { TramoPrecio } from './precio';
 import type { FotoApi, ProductoVitrina } from './producto';
 
 /** Tarjetas por página de categoría. */
@@ -8,8 +9,8 @@ export const POR_PAGINA = 24;
 /**
  * Lo MÍNIMO que los controles (filtros, orden, tope de precio) necesitan de cada
  * producto de la categoría. Viaja a la isla entero, así que cada campo que se agregue
- * se multiplica por el tamaño de la categoría: NO meter `summary`, `priceTiers` ni
- * `desc` — eso reintroduce el HTML de megas que el paginado vino a resolver.
+ * se multiplica por el tamaño de la categoría: NO meter `summary`, `desc`,
+ * `description`, `specs` ni `optionGroups` — eso reintroduce el HTML de megas que el paginado vino a resolver.
  */
 export interface EntradaIndice {
   id: string;
@@ -17,6 +18,10 @@ export interface EntradaIndice {
   price: number;
   colors: string[];
   image: FotoApi | null;
+  /** Lo que el carrito necesita para el "Agregar" de la tarjeta (ordenar no debe quitar la compra). */
+  priceTiers: TramoPrecio[];
+  minQty: number;
+  requiresOptions: boolean;
 }
 
 export function indiceDeCategoria(productos: readonly ProductoVitrina[]): EntradaIndice[] {
@@ -26,6 +31,9 @@ export function indiceDeCategoria(productos: readonly ProductoVitrina[]): Entrad
     price: p.price,
     colors: p.colors,
     image: p.image ?? null,
+    priceTiers: p.priceTiers,
+    minQty: p.minQty,
+    requiresOptions: p.requiresOptions,
   }));
 }
 
@@ -69,8 +77,20 @@ export function totalDePaginas(n: number): number {
   return Math.max(1, Math.ceil(n / POR_PAGINA));
 }
 
+/** Slug (y ruta) del listado de los productos que nadie metió en una categoría. */
+export const SLUG_SIN_CATEGORIA = 'sin-categoria';
+
 export function listadosDe(categorias: readonly Categoria[], productos: readonly ProductoVitrina[]): Listado[] {
+  // Una categoría real con este slug pisaría el listado de los huérfanos y mezclaría
+  // dos cosas distintas bajo la misma URL: se rompe el build en vez de publicarlo mal.
+  if (categorias.some((c) => c.slug === SLUG_SIN_CATEGORIA)) {
+    throw new Error(
+      `Hay una categoría con el enlace "${SLUG_SIN_CATEGORIA}", que la tienda reserva para los productos sin categoría ` +
+        `(/tienda/${SLUG_SIN_CATEGORIA}/). Cambiale el enlace a esa categoría en el panel y volvé a construir.`,
+    );
+  }
   const listados: Listado[] = [];
+  const colocados = new Set<string>();
   const existe = new Set(categorias.map((c) => c.slug));
   // Una hija cuya madre no existe en la lista se trata como raíz: no se pierde.
   const esHija = (c: Categoria) => !!c.parentSlug && existe.has(c.parentSlug);
@@ -83,6 +103,7 @@ export function listadosDe(categorias: readonly Categoria[], productos: readonly
       .filter((h) => h.n > 0);
     const deLaRaiz = productos.filter((p) => p.cat === raiz.slug || hijas.some((h) => h.slug === p.cat));
     if (deLaRaiz.length === 0) continue;
+    deLaRaiz.forEach((p) => colocados.add(p.id));
     listados.push({
       cat: raiz.slug,
       sub: null,
@@ -106,7 +127,29 @@ export function listadosDe(categorias: readonly Categoria[], productos: readonly
       });
     }
   }
+
+  // Los productos sin categoría (o con una que ya no existe) tienen su propio listado:
+  // olvidarse de asignar categoría pasa, y no pueden quedar invisibles.
+  const huerfanos = productos.filter((p) => !colocados.has(p.id));
+  if (huerfanos.length > 0) {
+    listados.push({
+      cat: SLUG_SIN_CATEGORIA,
+      sub: null,
+      nombre: 'Sin categoría',
+      nombreMadre: null,
+      productos: huerfanos,
+      hijas: [],
+      paginas: totalDePaginas(huerfanos.length),
+    });
+  }
   return listados;
+}
+
+/** slug → ruta de cada categoría que tiene listado (para los enlaces de los banners). */
+export function rutasDeListados(listados: readonly Listado[]): Record<string, string> {
+  const rutas: Record<string, string> = {};
+  for (const l of listados) rutas[l.sub ?? l.cat] = rutaDeCategoria(l.cat, l.sub);
+  return rutas;
 }
 
 /** Las categorías raíz que tienen listado, para el pie y el índice de la tienda. */

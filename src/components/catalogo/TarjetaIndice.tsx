@@ -1,13 +1,11 @@
-// Tarjeta LIVIANA para los resultados filtrados: sale del índice de la categoría
-// (nombre, precio, foto), que es lo único que viaja a la isla de toda la categoría.
-// Comparte clases con <TarjetaProducto>, que es la completa del paginado estático.
-import { Button } from '@/components/ui/button';
+// Tarjeta para los resultados filtrados u ordenados: sale del índice de la categoría
+// (nombre, precio, foto y lo que el carrito necesita), que es lo que viaja a la isla de
+// toda la categoría. Sin descripción ni etiquetas, pero CON "Agregar".
+// Comparte clases con <TarjetaProducto>, la completa del paginado estático.
 import type { TasaApi } from '@/lib/api';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import type { EntradaIndice } from '@/lib/paginacion';
-
-const BOTON_FANTASMA =
-  'h-10 px-[18px] border-[var(--card-line-strong)] bg-transparent text-foreground shadow-none hover:border-primary hover:bg-transparent hover:text-primary dark:border-[var(--card-line-strong)] dark:bg-transparent dark:hover:bg-transparent';
+import AccionesProducto from './AccionesProducto';
 
 export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIndice; tasa: TasaApi | null }) {
   const ficha = `/producto/${e.id}`;
@@ -43,11 +41,15 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
               </span>
             )}
           </span>
-          <div className="product-actions">
-            <Button asChild variant="outline" className={BOTON_FANTASMA}>
-              <a href={ficha}>Ver detalle</a>
-            </Button>
-          </div>
+          <AccionesProducto
+            id={e.id}
+            nombre={e.name}
+            precio={e.price}
+            imagen={e.image}
+            priceTiers={e.priceTiers}
+            minQty={e.minQty}
+            requiresOptions={e.requiresOptions}
+          />
         </div>
       </div>
     </article>

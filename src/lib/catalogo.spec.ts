@@ -3,7 +3,6 @@ import { adapt, type ProductoApi } from './producto';
 import { indiceDeCategoria } from './paginacion';
 import * as catalogo from './catalogo';
 import {
-  categoriasConProductos,
   coloresDe,
   filtrar,
   filtrosDesdeUrl,
@@ -21,20 +20,8 @@ const productos = [
   prod('tag', { priceUsd: 130.2, material: 'PETG', category: { slug: 'identificadores', name: 'Identificadores' }, colors: [{ value: 'Negro', swatchHex: '#111' }, { value: 'Rojo', swatchHex: '#f00' }] }),
   prod('ana', { priceUsd: 5, category: { slug: 'llaveros', name: 'Llaveros' } }),
 ];
-const cats = [
-  { slug: 'llaveros', nombre: 'Llaveros' },
-  { slug: 'vacia', nombre: 'Sin productos' },
-  { slug: 'identificadores', nombre: 'Identificadores' },
-];
 
 describe('listas que salen de los productos reales', () => {
-  it('una categoría sin productos no existe, y trae su conteo', () => {
-    expect(categoriasConProductos(cats, productos)).toEqual([
-      { slug: 'llaveros', nombre: 'Llaveros', n: 2 },
-      { slug: 'identificadores', nombre: 'Identificadores', n: 2 },
-    ]);
-  });
-
   it('los colores salen una sola vez cada uno', () => {
     expect(coloresDe(productos)).toEqual([
       ['Rojo', '#f00'],

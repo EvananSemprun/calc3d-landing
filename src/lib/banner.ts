@@ -21,12 +21,20 @@ function urlSegura(u: string | null | undefined): string | null {
   }
 }
 
-/** Destino del banner según su tipo de enlace. null = sin enlace (no se pinta botón). */
-export function enlaceBanner(b: Pick<Banner, 'linkType' | 'linkValue'>): string | null {
+/**
+ * Destino del banner según su tipo de enlace. null = sin enlace (no se pinta botón).
+ * `rutasDeCategoria` (slug → ruta, armado en el build) resuelve las categorías: una hija
+ * vive bajo su madre y este módulo no conoce la jerarquía. Una categoría sin listado
+ * (vacía o borrada) cae en el índice de la tienda en vez de dar un 404.
+ */
+export function enlaceBanner(
+  b: Pick<Banner, 'linkType' | 'linkValue'>,
+  rutasDeCategoria: Record<string, string> = {},
+): string | null {
   const v = b.linkValue ?? '';
   switch (b.linkType) {
     case 'CATEGORY':
-      return `/tienda/?cat=${encodeURIComponent(v)}`;
+      return Object.hasOwn(rutasDeCategoria, v) ? rutasDeCategoria[v] : '/tienda/';
     case 'PRODUCT':
       return `/producto/${encodeURIComponent(v)}`;
     case 'URL':

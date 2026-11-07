@@ -44,7 +44,8 @@ const FALLBACK: Slide[] = [
   },
 ];
 
-export default function Carrusel() {
+/** `rutasDeCategoria`: slug → ruta, armado en el build (una hija vive bajo su madre). */
+export default function Carrusel({ rutasDeCategoria = {} }: { rutasDeCategoria?: Record<string, string> }) {
   const [slides, setSlides] = useState<Slide[]>(FALLBACK);
   const [activa, setActiva] = useState(0);
   const [pausado, setPausado] = useState(false);
@@ -56,7 +57,7 @@ export default function Carrusel() {
         if (!banners.length) return;
         setSlides(
           banners.map((b) => {
-            const href = enlaceBanner(b);
+            const href = enlaceBanner(b, rutasDeCategoria);
             return {
               title: b.title ?? '',
               subtitle: b.subtitle,

@@ -20,10 +20,6 @@ export interface Categoria {
   parentSlug?: string | null;
 }
 
-export interface CategoriaConConteo extends Categoria {
-  n: number;
-}
-
 /** Colores presentes en el catálogo como pares [nombre, hex]. */
 export type ColorFiltro = [value: string, hex: string];
 
@@ -34,19 +30,6 @@ export interface ContextoUrl {
 }
 
 const ORDENES_VALIDOS: readonly Orden[] = ['price-asc', 'price-desc', 'name'];
-
-/**
- * Una categoría SIN productos no llega a ser opción: se vería, se tocaría y no
- * mostraría nada. Vale también para los enlaces del pie.
- */
-export function categoriasConProductos(
-  cats: readonly Categoria[],
-  productos: readonly ProductoVitrina[],
-): CategoriaConConteo[] {
-  return cats
-    .map((c) => ({ ...c, n: productos.filter((p) => p.cat === c.slug).length }))
-    .filter((c) => c.n > 0);
-}
 
 /** Los colores salen de los productos reales, no de una lista fija. */
 export function coloresDe(productos: readonly ProductoVitrina[]): ColorFiltro[] {

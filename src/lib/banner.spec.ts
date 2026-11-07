@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { enlaceBanner, formatearCuenta, porcentajeOff } from './banner';
 
 describe('enlaceBanner', () => {
-  it('CATEGORY → /tienda/?cat=', () => {
-    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'llaveros' })).toBe('/tienda/?cat=llaveros');
+  const rutas = { llaveros: '/tienda/llaveros/', mundial: '/tienda/llaveros/mundial/' };
+  it('CATEGORY → la ruta del mapa (una hija vive bajo su madre)', () => {
+    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'llaveros' }, rutas)).toBe('/tienda/llaveros/');
+    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'mundial' }, rutas)).toBe('/tienda/llaveros/mundial/');
+  });
+  it('CATEGORY sin listado (vacía, borrada, o "constructor") → el índice, no un 404', () => {
+    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'fantasma' }, rutas)).toBe('/tienda/');
+    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'constructor' }, rutas)).toBe('/tienda/');
+    expect(enlaceBanner({ linkType: 'CATEGORY', linkValue: 'llaveros' })).toBe('/tienda/');
   });
   it('PRODUCT → /producto/slug', () => {
     expect(enlaceBanner({ linkType: 'PRODUCT', linkValue: 'taza-feliz' })).toBe('/producto/taza-feliz');

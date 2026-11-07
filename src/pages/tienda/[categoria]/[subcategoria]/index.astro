@@ -1,17 +1,9 @@
 ---
 /** `/tienda/<categoria>/<subcategoria>/`: la página 1 de una subcategoría. */
 import ListadoCategoria from '../../../../components/catalogo/ListadoCategoria.astro';
-import { cargarTienda } from '../../../../lib/tienda-build';
+import { rutasDeListado } from '../../../../lib/tienda-build';
 
-export async function getStaticPaths() {
-  const { listados, info, raices } = await cargarTienda();
-  return listados
-    .filter((l) => l.sub !== null)
-    .map((listado) => ({
-      params: { categoria: listado.cat, subcategoria: listado.sub as string },
-      props: { listado, info, raices },
-    }));
-}
+export const getStaticPaths = () => rutasDeListado({ subcategoria: true, paginas: false });
 
 const { listado, info, raices } = Astro.props;
 ---

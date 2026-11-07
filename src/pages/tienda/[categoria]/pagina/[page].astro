@@ -1,19 +1,9 @@
 ---
 /** `/tienda/<categoria>/pagina/<n>/`, de la 2 en adelante (la 1 es la ruta de la categoría). */
 import ListadoCategoria from '../../../../components/catalogo/ListadoCategoria.astro';
-import { cargarTienda } from '../../../../lib/tienda-build';
+import { rutasDeListado } from '../../../../lib/tienda-build';
 
-export async function getStaticPaths() {
-  const { listados, info, raices } = await cargarTienda();
-  return listados
-    .filter((l) => l.sub === null)
-    .flatMap((listado) =>
-      Array.from({ length: listado.paginas - 1 }, (_, i) => i + 2).map((n) => ({
-        params: { categoria: listado.cat, page: String(n) },
-        props: { listado, info, raices, n },
-      })),
-    );
-}
+export const getStaticPaths = () => rutasDeListado({ subcategoria: false, paginas: true });
 
 const { listado, info, raices, n } = Astro.props;
 ---

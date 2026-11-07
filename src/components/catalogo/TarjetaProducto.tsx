@@ -5,24 +5,17 @@
 // tope 2 líneas y pie en COLUMNA (precio arriba, botones abajo) pegado al fondo con
 // `margin-top:auto`, así las tarjetas de una misma fila se alinean aunque su texto
 // mida distinto. Los estilos (`.product*`) viven en global.css.
-import { useEffect, useRef, useState } from 'react';
-import { Check, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { agregar } from '@/lib/carrito';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import type { ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
+import AccionesProducto from './AccionesProducto';
 
 const INSIGNIA = 'px-[11px] py-[5px] text-[11.5px] font-semibold tracking-[.08em] uppercase';
 const INSIGNIA_AMARILLA = `${INSIGNIA} border-primary/30 bg-primary/12 text-primary`;
 const INSIGNIA_SUAVE = `${INSIGNIA} border-border bg-card text-muted-foreground`;
 const INSIGNIA_OFERTA = `${INSIGNIA} border-[rgba(37,211,102,.35)] bg-[rgba(37,211,102,.14)] text-[#4be88a]`;
 
-// "Ver detalle": el .btn-ghost del sitio viejo (borde suave que se vuelve amarillo).
-const BOTON_FANTASMA =
-  'h-10 px-[18px] border-[var(--card-line-strong)] bg-transparent text-foreground shadow-none hover:border-primary hover:bg-transparent hover:text-primary dark:border-[var(--card-line-strong)] dark:bg-transparent dark:hover:bg-transparent';
-const BOTON_ACCION = 'h-10 px-4';
 
 interface Props {
   producto: ProductoVitrina;
@@ -30,32 +23,10 @@ interface Props {
 }
 
 export default function TarjetaProducto({ producto: p, tasa }: Props) {
-  const [agregado, setAgregado] = useState(false);
-  const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(temporizador.current), []);
-
   const ficha = `/producto/${p.id}`;
   const enOferta = !!p.compareAt && p.compareAt > p.price;
   const linea = [p.catLabel, p.material].filter(Boolean).join(' • ');
   const equivalente = equivalenteEnMoneda(p.price, tasa);
-
-  const agregarAlPedido = () => {
-    // El unitario va SIN tramo de mayoreo (igual que la ficha): el carrito aplica el
-    // tramo con la cantidad ACTUAL del renglón (`precioUnitarioItem`). Guardarlo ya
-    // con descuento lo aplicaría dos veces. Respeta el mínimo de compra.
-    agregar({
-      id: p.id,
-      qty: p.minQty || 1,
-      unit: p.price,
-      nombre: p.name,
-      imagen: p.image,
-      priceTiers: p.priceTiers,
-      minQty: p.minQty,
-    });
-    setAgregado(true);
-    clearTimeout(temporizador.current);
-    temporizador.current = setTimeout(() => setAgregado(false), 1600);
-  };
 
   return (
     <article className="card product">
@@ -114,33 +85,15 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
             )}
           </span>
 
-          <div className="product-actions">
-            <Button asChild variant="outline" className={BOTON_FANTASMA}>
-              <a href={ficha}>Ver detalle</a>
-            </Button>
-            {p.requiresOptions ? (
-              // Hay que elegir algo (color, tamaño): agregar a ciegas cotizaría el
-              // precio base y sin la opción. Se lleva a la ficha.
-              <Button asChild className={BOTON_ACCION}>
-                <a href={ficha} aria-label={`Elegir opciones de ${p.name}`}>
-                  <Plus aria-hidden="true" /> Elegir
-                </a>
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className={BOTON_ACCION}
-                onClick={agregarAlPedido}
-                aria-label={`Agregar ${p.name} al pedido`}
-              >
-                {agregado ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
-                {agregado ? 'Agregado' : 'Agregar'}
-              </Button>
-            )}
-          </div>
-          <span className="sr-only" role="status" aria-live="polite">
-            {agregado ? `${p.name} agregado al pedido` : ''}
-          </span>
+          <AccionesProducto
+            id={p.id}
+            nombre={p.name}
+            precio={p.price}
+            imagen={p.image}
+            priceTiers={p.priceTiers}
+            minQty={p.minQty}
+            requiresOptions={p.requiresOptions}
+          />
         </div>
       </div>
     </article>

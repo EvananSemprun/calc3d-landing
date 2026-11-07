@@ -17,9 +17,10 @@ import Pasos from '../components/Pasos.astro';
 import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
 import { cargarTienda } from '../lib/tienda-build';
-import { raicesConProductos, rutaDeSlug } from '../lib/paginacion';
+import { raicesConProductos, rutaDeSlug, rutasDeListados } from '../lib/paginacion';
 
-const { productos, categorias, info } = await cargarTienda();
+const { productos, categorias, info, listados } = await cargarTienda();
+const rutasDeCategoria = rutasDeListados(listados);
 
 const destacados = productos.slice(0, 4);
 const raices = raicesConProductos(categorias, productos);
@@ -71,7 +72,7 @@ const preguntas = [
   canonical="/"
   categorias={raices}
 >
-  <Carrusel client:load />
+  <Carrusel client:load rutasDeCategoria={rutasDeCategoria} />
 
   <FlashSale tasa={info.rate} client:visible />
 

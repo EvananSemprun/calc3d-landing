@@ -30,3 +30,25 @@ export function cargarTienda(): Promise<DatosTienda> {
   );
   return pendiente;
 }
+
+/**
+ * El `getStaticPaths` de las cuatro rutas de listado, en un solo lugar.
+ *  - `subcategoria`: los listados de subcategoría (si no, los de categoría raíz).
+ *  - `paginas`: de la página 2 en adelante (si no, solo la página 1, que es la ruta sin `pagina/`).
+ */
+export async function rutasDeListado({ subcategoria, paginas }: { subcategoria: boolean; paginas: boolean }) {
+  const { listados, info, raices } = await cargarTienda();
+  return listados
+    .filter((l) => (l.sub !== null) === subcategoria)
+    .flatMap((listado) => {
+      const numeros = paginas ? Array.from({ length: listado.paginas - 1 }, (_, i) => i + 2) : [1];
+      return numeros.map((n) => ({
+        params: {
+          categoria: listado.cat,
+          ...(subcategoria ? { subcategoria: listado.sub as string } : {}),
+          ...(paginas ? { page: String(n) } : {}),
+        },
+        props: { listado, info, raices, n },
+      }));
+    });
+}
