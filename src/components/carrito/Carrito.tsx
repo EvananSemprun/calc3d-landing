@@ -34,11 +34,22 @@ import { urlWhatsapp } from '@/lib/telefono';
 
 const claveDe = (i: ItemCarrito) => claveDeItem(i.id, i.opts, i.customNote, i.customImageKey);
 
+// Último número pintado; null = aún no se pintó nada (la primera carga no festeja).
+let ultimoConteo: number | null = null;
+
 function sincronizarInsignia() {
   const n = contar();
+  const sube = ultimoConteo !== null && n > ultimoConteo;
+  ultimoConteo = n;
   document.querySelectorAll<HTMLElement>('[data-bl="cart-count"]').forEach((el) => {
     el.textContent = String(n);
     el.hidden = n === 0;
+    // Pulso solo cuando el número SUBE; quitar algo no se festeja.
+    el.classList.remove('cart-count--pulso');
+    if (sube) {
+      void el.offsetWidth; // reinicia la animación si se agrega seguido
+      el.classList.add('cart-count--pulso');
+    }
   });
 }
 

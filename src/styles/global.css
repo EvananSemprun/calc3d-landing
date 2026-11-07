@@ -542,8 +542,20 @@
   }
 
   /* ---------- Tarjeta de producto ---------- */
-  .product { display: flex; flex-direction: column; overflow: hidden; }
-  .product-media { display: block; position: relative; }
+  .product {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform var(--dur-normal) var(--ease), box-shadow var(--dur-normal) var(--ease);
+  }
+  /* overflow: hidden recorta el zoom de la foto para que no se derrame. */
+  .product-media { display: block; position: relative; overflow: hidden; }
+  .product-photo { transition: transform var(--dur-lenta) var(--ease); }
+  /* Solo con puntero real: en un teléfono el :hover se queda pegado tras tocar. */
+  @media (hover: hover) {
+    .product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgb(0 0 0 / 0.35); }
+    .product:hover .product-photo { transform: scale(1.05); }
+  }
   .product-photo { display: block; aspect-ratio: 4/3; width: 100%; object-fit: cover; background: var(--ink-700); }
   .product .ph { aspect-ratio: 4/3; border-radius: 0; }
   .ph {
@@ -870,6 +882,13 @@
     place-items: center;
   }
   .cart-count[hidden] { display: none; }
+  /* Pulso al SUBIR el pedido (lo pone y quita Carrito.tsx). */
+  .cart-count--pulso { animation: cart-pulso var(--dur-lenta) var(--ease); }
+  @keyframes cart-pulso {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
 
   .cart-overlay {
     position: fixed;
