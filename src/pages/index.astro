@@ -83,7 +83,7 @@ const preguntas = [
     raices.length > 0 && (
       <section class="section" aria-labelledby="categorias-titulo">
         <div class="container">
-          <div class="eyebrow-row" style="margin-bottom:24px">
+          <div class="eyebrow-row mb-6">
             <h2 class="h2" id="categorias-titulo">
               Mirá por categoría
             </h2>
@@ -91,7 +91,7 @@ const preguntas = [
               Ver todo el catálogo →
             </a>
           </div>
-          <ul class="grid shop-grid entrada-grid" style="list-style:none;padding:0;margin:0">
+          <ul class="grid shop-grid entrada-grid list-none p-0 m-0">
             {raices.map((c) => (
               <li>
                 <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
@@ -110,9 +110,9 @@ const preguntas = [
 
   {
     destacados.length > 0 && (
-      <section class="section" style="padding-top:0" aria-labelledby="destacados-titulo">
+      <section class="section pt-0" aria-labelledby="destacados-titulo">
         <div class="container">
-          <div class="eyebrow-row" style="margin-bottom:24px">
+          <div class="eyebrow-row mb-6">
             <h2 class="h2" id="destacados-titulo">
               Destacados
             </h2>
@@ -138,8 +138,8 @@ const preguntas = [
 
   <section id="como-trabajamos" class="section section--blue">
     <div class="container">
-      <h2 class="h2 text-balance" style="margin-bottom:8px">Cómo trabajamos</h2>
-      <p class="lead" style="max-width:52ch">
+      <h2 class="h2 text-balance mb-2">Cómo trabajamos</h2>
+      <p class="lead max-w-[52ch]">
         Primero entendemos qué necesitás, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.
       </p>
       <Pasos pasos={pasos} />
@@ -148,7 +148,7 @@ const preguntas = [
 
   <section class="section">
     <div class="container">
-      <h2 class="h2" style="margin-bottom:24px">Preguntas frecuentes</h2>
+      <h2 class="h2 mb-6">Preguntas frecuentes</h2>
       <Faq preguntas={preguntas} />
     </div>
   </section>

@@ -10,11 +10,11 @@ interface Props {
 const { titulo, texto, boton } = Astro.props;
 ---
 
-<section class="section section--blue" style="padding-block:clamp(48px,6vw,80px)">
+<section class="section section--blue py-[clamp(48px,6vw,80px)]">
   <div class="container shop-cta">
     <div>
       <h2 class="h2 text-balance">{titulo}</h2>
-      <p class="lead" style="margin-top:10px">{texto}</p>
+      <p class="lead mt-[10px]">{texto}</p>
     </div>
     <LinkButton href="#" cotizar>{boton}</LinkButton>
   </div>

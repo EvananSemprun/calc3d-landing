@@ -38,10 +38,10 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
 
   {
     categoriasDelIndice.length > 0 && (
-      <section class="section" style="padding-top:0">
+      <section class="section pt-0">
         <div class="container">
-          <h2 class="h2" style="margin-bottom:24px">Categorías</h2>
-          <ul class="grid shop-grid entrada-grid" style="list-style:none;padding:0;margin:0">
+          <h2 class="h2 mb-6">Categorías</h2>
+          <ul class="grid shop-grid entrada-grid list-none p-0 m-0">
             {categoriasDelIndice.map((c) => (
               <li>
                 <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
@@ -63,9 +63,9 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
 
   {
     destacados.length > 0 && (
-      <section class="section" style="padding-top:0">
+      <section class="section pt-0">
         <div class="container">
-          <h2 class="h2" style="margin-bottom:24px">Destacados</h2>
+          <h2 class="h2 mb-6">Destacados</h2>
           <div class="grid shop-grid">
             {destacados.map((p) => (
               <TarjetaProducto producto={p} tasa={info.rate} client:visible />
@@ -78,7 +78,7 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
 
   {
     productos.length === 0 && (
-      <section class="section" style="padding-top:0">
+      <section class="section pt-0">
         <div class="container shop-state">
           <strong>Todavía no hay productos publicados.</strong>
           <p class="dim">Estamos preparando el catálogo. Mientras tanto, escribinos y cotizamos tu pieza.</p>
