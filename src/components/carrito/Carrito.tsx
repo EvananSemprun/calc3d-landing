@@ -46,6 +46,14 @@ function sincronizarInsignia() {
     el.hidden = n === 0;
     // Se toca la clase SOLO si el número sube: un evento que no sube no corta el pulso.
     if (sube) {
+      // La clase se saca al terminar la animación: dejarla puesta es estado colgado (y
+      // deja a los `@keyframes` como la fuente de verdad de si está pulsando o no). El
+      // listener se engancha UNA vez por elemento, no una por pulso, para no apilar
+      // listeners pendientes en la insignia.
+      if (!el.dataset.blPulsoLimpio) {
+        el.dataset.blPulsoLimpio = '1';
+        el.addEventListener('animationend', () => el.classList.remove('cart-count--pulso'));
+      }
       el.classList.remove('cart-count--pulso');
       void el.offsetWidth; // reinicia la animación si se agrega seguido
       el.classList.add('cart-count--pulso');

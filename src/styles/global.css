@@ -73,6 +73,11 @@
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    /* También el retardo, o una transición de 0.01ms sigue esperando el suyo. El caso
+       real es `.filters` (`visibility 0s 0.3s`): con `reduce` el panel salía de pantalla
+       al instante pero seguía 300 ms enfocable, así que el teclado entraba a controles
+       que ya no se veían. */
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
   /* El salto de 4px y el zoom existen para sentirse suaves; sin interpolación son
@@ -1123,11 +1128,16 @@ html[data-bl-navegando] { scroll-behavior: auto; }
 }
 
 @layer components {
-  /* Portada: kicker + h1, lead, acciones + buscador, y el arte. */
-  .hero-home .hero-art-grid > div > :is(.kicker, .h1),
-  .hero-home .hero-art-grid > div > .lead,
-  .hero-home .hero-art-grid > div > :is(.hero-actions, .hero-search),
-  .hero-home .hero-art-grid > :is(img, a),
+  /* Los dos heroes con arte al costado: la portada (`.hero-home`) y `/impresion-3d/`
+     (`.hero--sm`), que usan el mismo marcado. Se engancha a `.hero`, no a `.hero-home`:
+     `/impresion-3d/` se había quedado sin entrada (0 animaciones en toda la página) por
+     estar el selector atado a la clase de la portada. La ficha y el 404 NO llevan hero,
+     así que no les toca nada.
+     Portada: kicker + h1, lead, acciones + buscador, y el arte. */
+  .hero .hero-art-grid > div > :is(.kicker, .h1),
+  .hero .hero-art-grid > div > .lead,
+  .hero .hero-art-grid > div > :is(.hero-actions, .hero-search),
+  .hero .hero-art-grid > :is(img, a),
   /* Página de categoría: migas, kicker, título y salida. ⚠️ `> *` abarca CUALQUIER hijo
      futuro del encabezado (del 4º en adelante, a 180 ms): agregar un elemento ahí le suma
      la entrada; si no debe entrar, hay que excluirlo a propósito. */
@@ -1136,11 +1146,11 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   .entrada-grid > * {
     animation: entrada var(--dur-lenta) var(--ease) backwards;
   }
-  .hero-home .hero-art-grid > div > .lead,
+  .hero .hero-art-grid > div > .lead,
   .shop-head .container > :nth-child(2) { animation-delay: 60ms; }
-  .hero-home .hero-art-grid > div > :is(.hero-actions, .hero-search),
+  .hero .hero-art-grid > div > :is(.hero-actions, .hero-search),
   .shop-head .container > :nth-child(3) { animation-delay: 120ms; }
-  .hero-home .hero-art-grid > :is(img, a),
+  .hero .hero-art-grid > :is(img, a),
   .shop-head .container > :nth-child(n+4) { animation-delay: 180ms; }
 
   /* Tarjetas: escalonan las primeras 8; el resto comparte el retardo de la octava

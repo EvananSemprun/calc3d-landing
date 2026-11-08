@@ -29,8 +29,8 @@
   --maxw: 1240px;
   --gut: clamp(20px, 5vw, 56px);
   --ease: cubic-bezier(.22, .61, .36, 1);
-  /* Duraciones de movimiento: para lo nuevo; las transition viejas no se migraron. */
-  --dur-rapida: 160ms;
+  /* Duraciones de movimiento: para lo nuevo; las transition viejas no se migraron.
+     Hubo un `--dur-rapida: 160ms` que nunca se usó: se borró el 2026-11-07. */
   --dur-normal: 240ms;
   --dur-lenta: 420ms;
 

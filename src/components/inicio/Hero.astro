@@ -12,6 +12,15 @@
  * llegar a un lector de pantalla, ya que no se pinta en ningún lado.
  *
  * El buscador vive acá adentro: es la primera cosa que alguien hace con mil productos.
+ *
+ * ⚠️ **La animación de entrada depende de la FORMA de este DOM.** Las reglas de
+ * `entrada` (global.css, «Entrada de la página») se enganchan con hijo directo:
+ * `.hero .hero-art-grid > div > :is(.kicker, .h1, .lead, .hero-actions, .hero-search)`
+ * y `.hero .hero-art-grid > :is(img, a)`. Envolver los textos en un `div` más, o mover
+ * el arte adentro de ese `div`, **apaga la entrada sin que nada falle**: no hay error, el
+ * build sale verde y los tipos compilan — simplemente deja de animarse. El mismo marcado
+ * lo usa el hero de `/impresion-3d/`. Si hace falta cambiar la estructura, hay que
+ * actualizar esas reglas en el mismo cambio.
  */
 import bananoHola from '@/assets/brand/banano-hola.png';
 import Buscador from '@/components/catalogo/Buscador';

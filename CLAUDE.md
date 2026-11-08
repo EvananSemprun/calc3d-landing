@@ -135,19 +135,81 @@ inicial *y* en cada navegación.
   router (`{index, scrollX, scrollY}`) y su `onPopState` arranca con
   `if (ev.state === null) return`: pisarlo deja la entrada muda y **el botón ATRÁS cambia
   la URL sin cambiar la pantalla**. Hay que reusar `window.history.state` (lo hace
-  `Catalogo.tsx`, que refleja los filtros en la URL).
+  `Catalogo.tsx`, que refleja los filtros en la URL). La regresión es
+  **`src/estado-de-historia.spec.ts`**: falla si aparece un `replaceState(`/`pushState(`
+  con `null` literal en `src/`.
+- ⚠️ **El scroll de la navegación lo arregla `Base.astro`, no el router** (2026-11-07).
+  El router restaura la posición de lectura con un `scrollTo` hecho **justo después del
+  swap**, cuando la página destino todavía no recuperó su alto (islas `client:visible` sin
+  hidratar, fotos de R2 sin dimensiones): el destino se **recortaba** a lo que entraba y
+  el `scrollend` posterior guardaba ESE valor recortado en la entrada de historia, así que
+  la posición real no se recuperaba nunca más. Y ese `scrollTo` va en la forma de **dos
+  argumentos** (sin `behavior`), así que `html { scroll-behavior: smooth }` lo volvía un
+  deslizamiento animado en cada atrás/adelante. El script de navegación de `Base.astro`:
+  - pone **`data-bl-navegando`** en `<html>` mientras dura la navegación (la regla que
+    apaga el `smooth` está en `global.css`, **sin capa**);
+  - **captura el destino en `astro:before-preparation`**, antes de que el router pueda
+    pisarlo — después del swap `history.state` ya puede estar contaminado;
+  - **reintenta llegar mientras el documento crece** (ventana de 1 s), siempre con
+    `behavior: 'instant'`; al aterrizar bien, el `scrollend` del router deja la entrada
+    sana.
+  - ⚠️ **Y abandona el reintento si el usuario mueve la rueda, arrastra el dedo o toca una
+    tecla.** Recuperar su posición es un favor, no una orden: si ya se movió a propósito,
+    no se le discute.
 - ⚠️ **Un ancla con `href="#"` el router la toma por navegación** (`new URL('#', …).hash`
   es `''`, así que el atajo de hash no aplica): apila una entrada basura `/#` y el swap se
   lleva lo que haya abierto. Los CTA de cotizar llevan **`data-astro-reload`** para que el
   router se abstenga.
+- ⚠️ **La animación `entrada` NO corre al navegar** (2026-11-07). `entrada` se diseñó
+  como animación **de carga**, y montar el router convirtió cada clic en una carga: el
+  fundido de la transición y la entrada corrían encima, así que la página destino se veía
+  **casi vacía** durante los 250 ms del fundido (`entrada` la retiene en opacidad 0), el
+  `h1` se fundía dos veces y la grilla no se veía hasta 633 ms después del clic; en ATRÁS
+  se **re-escenificaba** una página ya vista (8 animaciones + el fundido + el scroll).
+  `Base.astro` pone **`data-bl-navegado`** en `astro:after-swap` —que dispara **solo** en
+  navegación de cliente— y `global.css` apaga `entrada` con ese atributo. Medido después:
+  **0** animaciones `entrada` al navegar y la grilla visible a los **38 ms**; en una carga
+  completa siguen estando. **El fundido se queda**: es el movimiento que le corresponde a
+  cambiar de página.
 - **`prefers-reduced-motion`**: la guardia de la transición está en `global.css`
   (bloque `::view-transition-*`). Astro trae la suya, pero **solo la inyecta si alguna
   página usa `transition:*`**, y acá ninguna lo hace.
 - **El prefetch al pasar el mouse queda ENCENDIDO** (decisión del dueño, 2026-11-07):
   `ClientRouter` lo activa para todos los enlaces. En un teléfono —donde los datos se
   pagan— el hover prácticamente no ocurre, y en escritorio el costo es barato frente a
-  la navegación instantánea. Si algún día molesta, la salida es
+  la navegación instantánea. Y el costo en datos móviles lo cubre la propia librería:
+  **Astro no prefetchea con `saveData` ni en 2g** (su `canPrefetchUrl` corta por
+  `isSlowConnection()`). Si algún día molesta, la salida es
   `prefetch: { prefetchAll: false }` en `astro.config.mjs`.
+
+## Movimiento: las reglas del CSS (`global.css`)
+
+- **La guardia de `prefers-reduced-motion` va SIN `@layer`.** Para las declaraciones
+  normales, lo que está fuera de capa le gana a lo encapado, y así la guardia pisa a las
+  utilidades propias de `@layer components`. ⚠️ **Lo que de verdad la sostiene es ser
+  `!important` contra declaraciones normales**: para los `!important` el orden de las
+  capas se **invierte** y lo que está fuera de capa queda ÚLTIMO, así que un `!important`
+  dentro de un `@layer` le ganaría. Hoy no hay ninguno; si se agrega, la guardia pierde.
+- ⚠️ **La guardia solo mata DURACIONES y RETARDOS**, no estados. Un `:hover` con
+  `transform` se sigue aplicando entero y de un frame: el «salto sin interpolación» que es
+  justo lo que se quiso evitar. Por eso cada `:hover` que mueva algo se anula a mano con
+  `transform: none` **y** vive dentro de `@media (hover: hover)` (en un teléfono, si no,
+  queda pegado tras tocar). Eso no depende de que alguien se acuerde:
+  **`src/hover-con-reduce.spec.ts`** falla si aparece un `:hover` con `transform` sin
+  cubrir en cualquiera de los dos sentidos.
+- **`entrada-grid` es la marca de «primera grilla»** y se pone **solo ahí**: en la grilla
+  estática del listado (la del HTML del build) y en la primera de `/tienda/`. **No** la
+  llevan la grilla filtrada de la isla —que se remonta al limpiar filtros y repetiría la
+  entrada— ni la franja «Destacados». Una clase explícita es lo que permite que «la
+  primera grilla entra» no signifique «toda grilla entra».
+- ⚠️ **`.shop-head .container > *` abarca cualquier hijo FUTURO** del encabezado de
+  categoría (del 4.º en adelante, a 180 ms): agregar un elemento ahí le suma la entrada
+  sola. Es a propósito —enumerar los hijos sería más frágil—, pero si uno no debe entrar,
+  hay que excluirlo explícitamente.
+- **Las reglas de `entrada` del hero dependen de la FORMA del DOM** (`> div >`, hijo
+  directo) y las usan la portada y `/impresion-3d/` con el mismo marcado. Envolver los
+  textos en un `div` más apaga la entrada **sin que nada falle**. Está avisado en
+  `Hero.astro`.
 
 ## Qué es y qué NO es
 - **Es** un catálogo de **solo lectura** que consume la API pública de `calc3d-api`
