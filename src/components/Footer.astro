@@ -46,6 +46,14 @@ const anio = new Date().getFullYear();
         {/* `data-astro-reload`: con el `href` todavía en `#`, el router lo tomaría por
             una navegación y reemplazaría el <body>. Ver LinkButton.astro. */}
         <a href="#" data-bl="cotizar" data-astro-reload>WhatsApp</a>
+        {/* El teléfono va con `tel:` y SIN espacios ni guiones en el href: en un
+            teléfono es un toque para llamar, y el texto se lee agrupado. */}
+        <a href="tel:+584146317864">0414 631 7864</a>
+        <a href="https://www.instagram.com/banano.lab/" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a
+          href="https://whatsapp.com/channel/0029VbEZ0Fl0lwgtvEJqZI03"
+          target="_blank"
+          rel="noopener noreferrer">Canal de WhatsApp</a>
       </div>
     </div>
     <div class="footer-bottom">
