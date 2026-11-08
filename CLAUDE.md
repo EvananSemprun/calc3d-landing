@@ -217,10 +217,14 @@ inicial *y* en cada navegación.
 - ⚠️ **La guardia solo mata DURACIONES y RETARDOS**, no estados. Un `:hover` con
   `transform` se sigue aplicando entero y de un frame: el «salto sin interpolación» que es
   justo lo que se quiso evitar. Por eso cada `:hover` que mueva algo se anula a mano con
-  `transform: none` **y** vive dentro de `@media (hover: hover)` (en un teléfono, si no,
+  `<propiedad>: none` **y** vive dentro de `@media (hover: hover)` (en un teléfono, si no,
   queda pegado tras tocar). Eso no depende de que alguien se acuerde:
-  **`src/hover-con-reduce.spec.ts`** falla si aparece un `:hover` con `transform` sin
-  cubrir en cualquiera de los dos sentidos.
+  **`src/hover-con-reduce.spec.ts`** falla si aparece un `:hover` que mueva sin cubrir en
+  cualquiera de los dos sentidos. Vigila **cuatro** propiedades —`transform` y las
+  individuales `translate`, `scale` y `rotate`, que desplazan igual— y **no** cuenta el
+  valor `none` como movimiento (un `:hover { transform: none }` es una anulación legítima).
+  ⚠️ No resuelve el anidamiento `&:hover`: hoy `global.css` no lo usa, y si se empieza a
+  usar hay que arreglar el test (daría un falso rojo).
 - **`entrada-grid` es la marca de «primera grilla»** y se pone **solo ahí**: en la grilla
   estática del listado (la del HTML del build) y en la primera de `/tienda/`. **No** la
   llevan la grilla filtrada de la isla —que se remonta al limpiar filtros y repetiría la
