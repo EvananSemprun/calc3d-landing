@@ -22,7 +22,7 @@ interface Props {
   info: InfoApi;
   raices: { slug: string; nombre: string }[];
 }
-import BannerCategoria from './BannerCategoria.astro';
+import BannerCategoriaEnVivo from '../banners/BannerCategoriaEnVivo';
 import { bannerDeCategoria } from '@/lib/banner';
 import { cargarTienda } from '@/lib/tienda-build';
 
@@ -60,7 +60,11 @@ const descripcion =
         }
       </nav>
       <span class="kicker">Catálogo · Impresión 3D</span>
-      <BannerCategoria banner={bannerDeCategoria(todosLosBanners, sub ?? cat)} />
+      <BannerCategoriaEnVivo
+        inicial={bannerDeCategoria(todosLosBanners, sub ?? cat)}
+        slug={sub ?? cat}
+        client:load
+      />
       <h1 class="h1 text-balance">{nombre}</h1>
       {/*
         La salida sube UN nivel, no dos: desde una subcategoría vuelve a su madre (el

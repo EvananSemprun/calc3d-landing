@@ -9,7 +9,7 @@ import FichaEnVivo from '../../components/ficha/FichaEnVivo';
 import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
-import BannerCategoria from '../../components/catalogo/BannerCategoria.astro';
+import BannerCategoriaEnVivo from '../../components/banners/BannerCategoriaEnVivo';
 import { bannerDeCategoria } from '../../lib/banner';
 import { jsonLdDeProducto } from '../../lib/ficha';
 import { rutaDeSlug } from '../../lib/paginacion';
@@ -84,7 +84,7 @@ const jsonLd = jsonLdDeProducto(p, {
   </div>
 
   <main class="container">
-    <BannerCategoria banner={bannerDeCategoria(banners, p.cat)} />
+    <BannerCategoriaEnVivo inicial={bannerDeCategoria(banners, p.cat)} slug={p.cat} client:load />
     <FichaEnVivo inicial={p} slug={p.id} info={info} client:load />
   </main>
 

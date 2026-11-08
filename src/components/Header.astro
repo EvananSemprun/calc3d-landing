@@ -11,6 +11,7 @@
  */
 import isotipo from '../assets/brand/isotipo-amarillo.png';
 import logotipo from '../assets/brand/logotipo-blanco.png';
+import FranjaEnVivo from './banners/FranjaEnVivo';
 
 /**
  * El texto de la franja lo puede poner un banner de TEXTO desde el panel. Sin ninguno
@@ -42,7 +43,7 @@ function activo(href: string): boolean {
 
 <div class="topbar">
   <div class="container topbar-inner">
-    <span>🍌 {texto ?? TEXTO_POR_DEFECTO}</span>
+    <span>🍌 <FranjaEnVivo inicial={texto ?? null} respaldo={TEXTO_POR_DEFECTO} client:load /></span>
   </div>
 </div>
 <header class="nav">

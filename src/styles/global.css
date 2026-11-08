@@ -372,7 +372,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   }
 
   /* ---------- Carrusel de la portada ----------
-     Las diapositivas están TODAS en el HTML (ver CarruselHero.astro); el JS solo mueve
+     Las diapositivas están TODAS en el HTML (ver HeroEnVivo.tsx); el JS solo mueve
      `data-activa`. Sin JS se ve la primera, que es lo que se quería conservar. */
   .hero-carrusel .hero-slide { display: none; }
   .hero-carrusel .hero-slide[data-activa] { display: grid; }

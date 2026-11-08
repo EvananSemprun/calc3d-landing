@@ -15,8 +15,8 @@
  * NO hay contadores inventados, reseñas ni portafolio: solo lo que es verdad.
  */
 import Base from '../layouts/Base.astro';
-import Hero from '../components/inicio/Hero.astro';
-import CarruselHero from '../components/inicio/CarruselHero.astro';
+import HeroEnVivo from '../components/inicio/HeroEnVivo';
+import bananoHola from '../assets/brand/banano-hola.png';
 import { bannersDeHero } from '../lib/banner';
 import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
@@ -82,15 +82,7 @@ const preguntas = [
   canonical="/"
   categorias={raices}
 >
-  {
-    /* Con banners de portada cargados manda el carrusel; sin ninguno, el hero de
-       siempre con su arte de marca. Nunca queda un hueco. */
-    slidesDelHero.length > 0 ? (
-      <CarruselHero slides={slidesDelHero} rutasDeCategoria={rutasDeCategoria} />
-    ) : (
-      <Hero banners={banners} rutasDeCategoria={rutasDeCategoria} />
-    )
-  }
+  <HeroEnVivo slidesIniciales={slidesDelHero} rutasDeCategoria={rutasDeCategoria} arte={{ src: bananoHola.src, width: bananoHola.width, height: bananoHola.height }} client:load />
 
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mirá por categoría" verTodo client:load />
 
