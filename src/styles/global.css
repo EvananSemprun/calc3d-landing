@@ -76,8 +76,15 @@
     scroll-behavior: auto !important;
   }
   /* El salto de 4px y el zoom existen para sentirse suaves; sin interpolación son
-     solo un salto y un cambio de encuadre. La sombra se queda: comunica sin mover. */
+     solo un salto y un cambio de encuadre. La sombra y el color se quedan: comunican
+     sin mover.
+     ⚠️ La guardia de arriba solo mata DURACIONES, así que un `transform` de :hover se
+     sigue aplicando entero y de un frame. Cada `:hover` que mueva algo tiene que
+     anularse acá, y eso lo exige `hover-con-reduce.spec.ts`: la política no son tres
+     excepciones escritas a mano. */
   .product:hover, .product:hover .product-photo { transform: none; }
+  .color-pick:hover { transform: none; }
+  .btn-wa:hover { transform: none; }
 }
 
 /* La transición entre páginas (`<ClientRouter />`) necesita su PROPIA guardia: los
@@ -520,7 +527,12 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     cursor: pointer;
     transition: transform 0.15s, border-color 0.15s;
   }
-  .color-pick:hover { transform: scale(1.1); }
+  /* Solo con puntero real: en un teléfono el :hover se queda pegado tras tocar
+     (y acá se queda pegado AGRANDADO). Su `transform` se anula en la guardia de
+     `reduce`, como el de `.product` y el de `.btn-wa`. */
+  @media (hover: hover) {
+    .color-pick:hover { transform: scale(1.1); }
+  }
   .color-pick[aria-pressed="true"] { border-color: var(--yellow); }
   .color-pick[aria-pressed="true"]::after {
     content: "✓";
@@ -1063,7 +1075,12 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     color: #04210f;
     transition: background 0.2s, transform 0.2s;
   }
-  .btn-wa:hover { background: #2bea72; transform: translateY(-2px); }
+  /* Solo con puntero real: es el botón de WhatsApp del cajón y del modal —la última
+     pantalla del embudo— y en un teléfono quedaba pegado 2px arriba tras tocarlo.
+     Su `transform` se anula en la guardia de `reduce`. */
+  @media (hover: hover) {
+    .btn-wa:hover { background: #2bea72; transform: translateY(-2px); }
+  }
 }
 
 /* ============================================================
