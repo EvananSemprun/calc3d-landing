@@ -6,6 +6,13 @@
  *
  * `cotizar` marca el enlace como CTA de WhatsApp: `href="#"` hasta que
  * `WhatsappCotizar` (en Base) le pone el enlace real, o lo oculta si no hay teléfono.
+ *
+ * ⚠️ Un CTA de cotizar lleva `data-astro-reload`. Mientras el `href` es `#`, el router
+ * de `astro:transitions` NO lo reconoce como ancla (`new URL('#', location.href).hash`
+ * es `''`): hacía `preventDefault()` y navegaba, apilando una entrada basura `/#` y
+ * reemplazando el `<body>` — y con eso se llevaba el modal de «pieza a medida» que
+ * `PiezaAMedida` acababa de abrir. Con el atributo el router se abstiene ANTES de su
+ * `preventDefault`, y el de `PiezaAMedida` cancela igual, así que no recarga nada.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { cn } from '@/lib/utils';
@@ -29,6 +36,7 @@ const tamano = grande ? 'h-[3.4rem] px-8 text-lg' : '';
   href={href}
   class={cn(buttonVariants({ variant, size: 'lg' }), tamano, clase)}
   data-bl={cotizar ? 'cotizar' : undefined}
+  data-astro-reload={cotizar ? true : undefined}
   {...resto}
 >
   <slot />

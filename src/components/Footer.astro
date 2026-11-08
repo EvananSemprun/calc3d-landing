@@ -43,7 +43,9 @@ const anio = new Date().getFullYear();
       </div>
       <div>
         <h4>Contacto</h4>
-        <a href="#" data-bl="cotizar">WhatsApp</a>
+        {/* `data-astro-reload`: con el `href` todavía en `#`, el router lo tomaría por
+            una navegación y reemplazaría el <body>. Ver LinkButton.astro. */}
+        <a href="#" data-bl="cotizar" data-astro-reload>WhatsApp</a>
       </div>
     </div>
     <div class="footer-bottom">
