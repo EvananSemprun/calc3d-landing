@@ -109,6 +109,46 @@ saltar a otro.
   `npx --yes shadcn@latest add <comp>` y revisar que los imports queden en `@/lib/utils`.
 - `typescript` pineado en `^6` (astro check rechaza TS 7).
 
+## Transiciones de vista: `<ClientRouter />` (desde 2026-11-07)
+
+`Base.astro` monta **`<ClientRouter />`** de `astro:transitions` (en Astro 7 se llama
+así; `<ViewTransitions />` es el nombre viejo, hasta Astro 5). La navegación entre
+páginas ya **no recarga**: hace un fundido y reemplaza el `<body>`.
+
+⚠️ **Esa es la regla que rompe cosas sin avisar:** todo `<script>` que se engancha una
+sola vez al evaluarse queda colgado de un elemento que ya no está en el DOM. No hay
+error en consola, los tipos compilan y el build sale **verde** — el botón simplemente
+deja de hacer nada. Pasó con tres: el menú del `Header`, el CTA de WhatsApp
+(`WhatsappCotizar`, que se quedaba en `href="#"`: **una venta perdida**) y la insignia
+del carrito. Los tres se recablean en **`astro:page-load`**, que dispara en la carga
+inicial *y* en cada navegación.
+
+- **El recableado va en los DOS momentos** (al evaluar el módulo **y** en
+  `astro:page-load`): ese evento lo dispara el módulo del router, así que **no existe si
+  `ClientRouter` no está montado**. Cablear solo en el evento deja el sitio muerto si
+  alguien saca el router.
+- **`src/scripts-recableados.spec.ts`** es la regresión: falla si un `<script>` de
+  `src/components` o `src/layouts` engancha un listener sin recablearse. Busca la
+  **llamada**, no la palabra (con un `includes` se daba por satisfecho con los
+  comentarios que nombran el evento).
+- ⚠️ **`history.replaceState` nunca con `null`.** En el estado de historia vive el del
+  router (`{index, scrollX, scrollY}`) y su `onPopState` arranca con
+  `if (ev.state === null) return`: pisarlo deja la entrada muda y **el botón ATRÁS cambia
+  la URL sin cambiar la pantalla**. Hay que reusar `window.history.state` (lo hace
+  `Catalogo.tsx`, que refleja los filtros en la URL).
+- ⚠️ **Un ancla con `href="#"` el router la toma por navegación** (`new URL('#', …).hash`
+  es `''`, así que el atajo de hash no aplica): apila una entrada basura `/#` y el swap se
+  lleva lo que haya abierto. Los CTA de cotizar llevan **`data-astro-reload`** para que el
+  router se abstenga.
+- **`prefers-reduced-motion`**: la guardia de la transición está en `global.css`
+  (bloque `::view-transition-*`). Astro trae la suya, pero **solo la inyecta si alguna
+  página usa `transition:*`**, y acá ninguna lo hace.
+- **El prefetch al pasar el mouse queda ENCENDIDO** (decisión del dueño, 2026-11-07):
+  `ClientRouter` lo activa para todos los enlaces. En un teléfono —donde los datos se
+  pagan— el hover prácticamente no ocurre, y en escritorio el costo es barato frente a
+  la navegación instantánea. Si algún día molesta, la salida es
+  `prefetch: { prefetchAll: false }` en `astro.config.mjs`.
+
 ## Qué es y qué NO es
 - **Es** un catálogo de **solo lectura** que consume la API pública de `calc3d-api`
   (`/public/store/*`). Sin sesión, sin datos personales guardados.

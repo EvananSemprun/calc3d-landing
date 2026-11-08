@@ -2,6 +2,7 @@
 // los tests): pide el índice la primera vez que se enfoca el campo y filtra en el
 // navegador. Si el JS falla, el campo simplemente no hace nada y el resto del sitio anda.
 import { useEffect, useId, useRef, useState } from 'react';
+import { navigate } from 'astro:transitions/client';
 import { Input } from '@/components/ui/input';
 import { buscar, type EntradaBusqueda } from '@/lib/indice-busqueda';
 import { rutaFicha } from '@/lib/producto';
@@ -44,8 +45,11 @@ export default function Buscador() {
   const hayConsulta = consulta.trim().length > 0;
   const resultados = estado === 'listo' ? buscar(indice, consulta) : [];
 
+  // `navigate` del router, no `window.location.href`: era la única navegación interna
+  // que seguía recargando la página entera. Sin router montado hace la carga completa
+  // igual, así que no depende de él.
   const irAFicha = (id: string) => {
-    window.location.href = rutaFicha(id);
+    void navigate(rutaFicha(id));
   };
 
   const alTeclear = (e: React.KeyboardEvent) => {

@@ -65,8 +65,14 @@
     }
   }
 
+  // Función NOMBRADA, no una arrow anónima: así `addEventListener` deduplica sola si el
+  // módulo se evaluara dos veces (una arrow nueva en cada evaluación se apilaría).
+  function repintar() {
+    void pintar();
+  }
+
   // Los dos momentos, igual que el menú del Header: `astro:page-load` solo existe con el
   // router de `astro:transitions` montado, y sin él el botón se quedaría en `href="#"`.
-  void pintar();
-  document.addEventListener('astro:page-load', () => void pintar());
+  repintar();
+  document.addEventListener('astro:page-load', repintar);
 </script>
