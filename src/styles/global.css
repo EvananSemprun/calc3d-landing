@@ -111,9 +111,12 @@
 /* Mientras dura una navegación del router, el scroll es INSTANTÁNEO para todos.
    El router restaura la posición de lectura con un `scrollTo(x, y)` de dos argumentos
    —sin `behavior`—, así que el `smooth` de `@layer base` lo convertía en un
-   deslizamiento animado de ~470 ms en cada atrás/adelante (medido el 2026-11-07).
+   deslizamiento animado en cada atrás/adelante (medido el 2026-11-07: 27 pasos, 530 ms).
    Va SIN @layer a propósito: una declaración fuera de capa le gana a una encapada.
-   El atributo lo pone y lo saca el script de navegación de `Base.astro`. */
+   ⚠️ El atributo lo pone el script de navegación de `Base.astro` DENTRO del swap
+   (envolviendo `ev.swap`), no antes: `swapRootAttributes` de Astro borra TODOS los
+   atributos de `<html>` y el `scrollTo` del router va justo después. Ver el detalle en
+   el docblock de ese script. */
 html[data-bl-navegando] { scroll-behavior: auto; }
 
 @layer base {
@@ -1170,8 +1173,10 @@ html[data-bl-navegando] { scroll-behavior: auto; }
    carga: el fundido de la transición y la entrada corrían encima, así que la página
    destino se veía casi vacía durante el fundido (`entrada` la retiene en opacidad 0),
    el h1 se fundía dos veces y en ATRÁS se re-escenificaba una página ya vista.
-   `Base.astro` pone `data-bl-navegado` en `astro:after-swap`, que dispara solo en una
-   navegación de cliente. Va SIN @layer para ganarle al bloque de arriba, que está en
+   `Base.astro` pone `data-bl-navegado` dentro del swap, envolviendo `ev.swap` de
+   `astro:before-swap` (que solo ocurre en una navegación de cliente): es el único punto
+   después de que `swapRootAttributes` borre los atributos de `<html>`.
+   Va SIN @layer para ganarle al bloque de arriba, que está en
    `@layer components`. El fundido de la transición SE QUEDA: es el movimiento que le
    corresponde a cambiar de página. */
 html[data-bl-navegado] :is(

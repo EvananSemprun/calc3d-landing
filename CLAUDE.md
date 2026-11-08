@@ -145,17 +145,33 @@ inicial *y* en cada navegación.
   el `scrollend` posterior guardaba ESE valor recortado en la entrada de historia, así que
   la posición real no se recuperaba nunca más. Y ese `scrollTo` va en la forma de **dos
   argumentos** (sin `behavior`), así que `html { scroll-behavior: smooth }` lo volvía un
-  deslizamiento animado en cada atrás/adelante. El script de navegación de `Base.astro`:
-  - pone **`data-bl-navegando`** en `<html>` mientras dura la navegación (la regla que
-    apaga el `smooth` está en `global.css`, **sin capa**);
+  deslizamiento animado en cada atrás/adelante (medido: 27 pasos en 530 ms). El script de
+  navegación de `Base.astro`:
+  - pone **`data-bl-navegando`** en `<html>` para apagar el `smooth` (la regla está en
+    `global.css`, **sin capa**), y ⚠️ **lo pone DENTRO del swap, envolviendo `ev.swap` de
+    `astro:before-swap`** — ésa es la pieza que no es obvia. `swapRootAttributes` de Astro
+    hace `removeAttribute` de **TODOS** los atributos de `<html>`, y el `scrollTo` del
+    router va después de eso y antes de `astro:after-swap`: un atributo puesto en
+    `astro:before-preparation` llega **muerto** justo al instante que importa (medido en el
+    momento exacto de la llamada: `navegando: false`, `scroll-behavior: "smooth"`).
+    `ev.swap` es `writable` a propósito y es el único punto entre el swap y el `scrollTo`.
   - **captura el destino en `astro:before-preparation`**, antes de que el router pueda
     pisarlo — después del swap `history.state` ya puede estar contaminado;
   - **reintenta llegar mientras el documento crece** (ventana de 1 s), siempre con
     `behavior: 'instant'`; al aterrizar bien, el `scrollend` del router deja la entrada
     sana.
-  - ⚠️ **Y abandona el reintento si el usuario mueve la rueda, arrastra el dedo o toca una
-    tecla.** Recuperar su posición es un favor, no una orden: si ya se movió a propósito,
-    no se le discute.
+  - ⚠️ **Y abandona el reintento si se movió el usuario**, con DOS detecciones porque
+    ninguna sola alcanza: por **intención** (`wheel`/`touchmove`/`keydown`, que avisan
+    incluso cuando el scroll no se mueve — rueda hacia abajo estando ya en el tope
+    recortado) y por **posición** (si `scrollY` cambió respecto de lo último que puso el
+    script y el alto **no** cambió, lo movió otro). La segunda es la que no adivina la
+    fuente: arrastrar la barra de scroll, el autoscroll del botón del medio y arrastrar una
+    selección **no emiten ninguno** de esos tres eventos, y sin ella el reintento traía al
+    usuario de vuelta al cuadro siguiente. Recuperar su posición es un favor, no una orden.
+  - ⚠️ **No se quitó `html { scroll-behavior: smooth }`** (la alternativa): obligaría a un
+    listener de clics recableado en `astro:page-load` para que los anclas con hash sigan
+    deslizándose, o sea la clase de fallo silencioso que este repo viene cerrando, a cambio
+    de algo que hoy funciona bien.
 - ⚠️ **Un ancla con `href="#"` el router la toma por navegación** (`new URL('#', …).hash`
   es `''`, así que el atajo de hash no aplica): apila una entrada basura `/#` y el swap se
   lleva lo que haya abierto. Los CTA de cotizar llevan **`data-astro-reload`** para que el
@@ -166,8 +182,11 @@ inicial *y* en cada navegación.
   **casi vacía** durante los 250 ms del fundido (`entrada` la retiene en opacidad 0), el
   `h1` se fundía dos veces y la grilla no se veía hasta 633 ms después del clic; en ATRÁS
   se **re-escenificaba** una página ya vista (8 animaciones + el fundido + el scroll).
-  `Base.astro` pone **`data-bl-navegado`** en `astro:after-swap` —que dispara **solo** en
-  navegación de cliente— y `global.css` apaga `entrada` con ese atributo. Medido después:
+  `Base.astro` pone **`data-bl-navegado`** dentro del swap (envolviendo `ev.swap`, el mismo
+  punto que `data-bl-navegando` y por la misma razón: `swapRootAttributes` borra los
+  atributos de `<html>`; antes se ponía en `astro:after-swap`, que funcionaba porque entre
+  el swap y ese evento no hay repintado, pero dejaba una ventana sin motivo) y `global.css`
+  apaga `entrada` con ese atributo. Medido después:
   **0** animaciones `entrada` al navegar y la grilla visible a los **38 ms**; en una carga
   completa siguen estando. **El fundido se queda**: es el movimiento que le corresponde a
   cambiar de página.

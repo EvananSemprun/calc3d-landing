@@ -128,28 +128,53 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
        *    `{index, scrollX, scrollY}` por entrada de historia, pero la restaura con un
        *    `scrollTo` hecho INMEDIATAMENTE después del swap, cuando la página destino
        *    todavía no recuperó su alto: las islas `client:visible` no hidrataron y las
-       *    fotos de R2 no traen dimensiones. Medido: la portada mide 2097 px en ese
-       *    instante y 4700 estabilizada, así que un destino de 2600 se recortaba a 759.
-       *    Y el `scrollend` posterior hace que el router guarde ESE 759 en la entrada:
-       *    la posición real no se recuperaba nunca más.
+       *    fotos de R2 no traen dimensiones. Medido con la portada llegando corta a
+       *    propósito: un destino de 2600 se recorta a 735. Y el `scrollend` posterior
+       *    hace que el router guarde ESE 735 en la entrada: la posición real no se
+       *    recuperaba nunca más.
        *
        * 2. Ese `scrollTo(x, y)` va en la forma de DOS ARGUMENTOS (sin `behavior`), así
        *    que `html { scroll-behavior: smooth }` lo convertía en un deslizamiento
-       *    animado de ~470 ms en cada atrás/adelante que nadie diseñó. El único que
-       *    recibía el comportamiento correcto era quien pide `reduce`, porque su guardia
-       *    fuerza `scroll-behavior: auto`.
+       *    animado en cada atrás/adelante que nadie diseñó (medido: 51 pasos en 850 ms).
+       *    El único que recibía el comportamiento correcto era quien pide `reduce`,
+       *    porque su guardia fuerza `scroll-behavior: auto`.
        *
-       * El arreglo, en tres piezas:
-       *  - `data-bl-navegando` en <html> mientras dura la navegación: apaga el `smooth`
-       *    (la regla vive en global.css, SIN capa, para ganarle a `@layer base`).
+       * ⚠️⚠️ **EL ATRIBUTO SE REPONE DENTRO DEL SWAP, Y ÉSA ES LA PIEZA QUE NO ES
+       * OBVIA.** `swapRootAttributes` de Astro hace `removeAttribute` de **TODOS** los
+       * atributos de `<html>` y repone solo los del documento nuevo. El `scrollTo` del
+       * router va **después** de eso y **antes** de `astro:after-swap`, así que un
+       * `data-bl-navegando` puesto en `astro:before-preparation` llega MUERTO justo al
+       * instante que importa: medido en el momento exacto de la llamada daba
+       * `navegando: false` y `scroll-behavior: "smooth"`. El único punto entre el swap y
+       * el `scrollTo` es `ev.swap` de `astro:before-swap`, que Astro declara `writable`
+       * a propósito para envolverlo. Sin eso, lo único que mataba el deslizamiento era
+       * el `behavior: 'instant'` del propio reintento 3-8 ms después — y entonces todo
+       * colgaba de **una sola pata**: si el usuario movía la rueda ANTES del swap el
+       * reintento abandonaba, nadie cancelaba el scroll del router, y volvían los dos
+       * defectos juntos (lo arrastra, y lento).
+       *
+       * La alternativa era sacar `html { scroll-behavior: smooth }` y pedir el
+       * deslizamiento explícito en los anclas con hash. Se descartó: obligaría a un
+       * listener de clics recableado en `astro:page-load` —justo la clase de fallo
+       * silencioso que este repo viene cerrando— para recuperar algo que hoy funciona
+       * bien (los anclas internos deslizan y aterrizan exacto). Si el envoltorio de
+       * `ev.swap` dejara de funcionar, el síntoma es que vuelve el deslizamiento: visible
+       * y medible, no silencioso.
+       *
+       * El resto del arreglo:
        *  - el destino se CAPTURA en `astro:before-preparation`, antes de que el router
        *    pueda pisarlo; no se vuelve a leer `history.state`.
        *  - después del swap se reintenta llegar mientras el documento crece (ventana de
        *    1 s), siempre con `behavior: 'instant'`. Al aterrizar bien, el `scrollend`
        *    del router guarda la posición BUENA, así que la entrada queda sana.
        *
-       * ⚠️ NO SE LE DISCUTE AL USUARIO: si mueve la rueda, arrastra el dedo o toca una
-       * tecla, se abandona el reintento. Recuperar su posición es un favor, no una orden.
+       * ⚠️ NO SE LE DISCUTE AL USUARIO, y se detecta de DOS formas porque ninguna sola
+       * alcanza: por intención (`wheel`/`touchmove`/`keydown`, que avisan incluso cuando
+       * el scroll no se mueve — p. ej. rueda hacia abajo estando ya en el tope recortado)
+       * y por POSICIÓN (si `scrollY` cambió respecto de lo último que pusimos nosotros y
+       * el alto NO cambió, lo movió otro). La segunda es la que no adivina la fuente:
+       * arrastrar la barra de scroll, el autoscroll del botón del medio y arrastrar una
+       * selección no emiten ninguno de esos tres eventos.
        */
       const VENTANA_MS = 1000;
       const raiz = document.documentElement;
@@ -159,6 +184,9 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
       let hasta = 0;
       let cuadro = 0;
       let usuarioIntervino = false;
+      /** Lo último que pusimos NOSOTROS, con el alto que tenía el documento en ese momento. */
+      let puesta: number | null = null;
+      let altoDeLaPuesta = 0;
 
       for (const evento of ['wheel', 'touchmove', 'keydown'] as const) {
         window.addEventListener(
@@ -170,10 +198,40 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
         );
       }
 
+      /** Las dos marcas que el swap borra y hay que reponer: ver el aviso de arriba. */
+      function marcarNavegacion() {
+        // Apaga el `smooth` para el `scrollTo` que el router hace enseguida.
+        raiz.setAttribute('data-bl-navegando', '');
+        // Y apaga la animación `entrada` por el resto de la sesión: `entrada` es una
+        // animación DE CARGA y con el router cada clic se volvía una carga, así que el
+        // fundido y la entrada corrían encima — la página destino se veía casi vacía
+        // durante los 250 ms del fundido (`entrada` la retiene en opacidad 0), el h1 se
+        // fundía dos veces y la grilla no se veía hasta 633 ms después del clic; en ATRÁS
+        // se re-escenificaba una página ya vista (8 animaciones + el fundido + el scroll).
+        // El fundido SE QUEDA: ése es el movimiento que le corresponde a cambiar de
+        // página. La regla vive en global.css, al final del bloque de `entrada`.
+        raiz.setAttribute('data-bl-navegado', '');
+      }
+
+      function anotarPosicion() {
+        puesta = window.scrollY;
+        altoDeLaPuesta = raiz.scrollHeight;
+      }
+
+      /** Se movió alguien que no somos nosotros (y no es el documento creciendo). */
+      function seMovioOtro() {
+        return (
+          puesta !== null &&
+          raiz.scrollHeight === altoDeLaPuesta &&
+          Math.abs(window.scrollY - puesta) > 1
+        );
+      }
+
       function terminar() {
         if (cuadro) cancelAnimationFrame(cuadro);
         cuadro = 0;
         destino = null;
+        puesta = null;
         raiz.removeAttribute('data-bl-navegando');
       }
 
@@ -181,19 +239,19 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
         if (cuadro) cancelAnimationFrame(cuadro);
         cuadro = 0;
         if (!destino) return;
-        if (usuarioIntervino) return terminar();
+        if (usuarioIntervino || seMovioOtro()) return terminar();
         // Lo máximo que se puede pedir con el alto de AHORA: el resto llega cuando el
         // documento crezca, y para eso está el reintento.
         const objetivo = Math.min(destino.y, Math.max(0, raiz.scrollHeight - window.innerHeight));
         if (Math.abs(window.scrollY - objetivo) > 1) {
           window.scrollTo({ left: destino.x, top: objetivo, behavior: 'instant' });
         }
+        anotarPosicion();
         if (Math.abs(window.scrollY - destino.y) <= 1 || Date.now() >= hasta) return terminar();
         cuadro = requestAnimationFrame(intentar);
       }
 
       document.addEventListener('astro:before-preparation', (ev) => {
-        raiz.setAttribute('data-bl-navegando', '');
         usuarioIntervino = false;
         // En una navegación de historia el navegador YA aplicó la entrada destino, así
         // que acá `history.state` trae su posición guardada, intacta.
@@ -204,31 +262,26 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
             : null;
       });
 
+      // El ÚNICO punto entre `swapRootAttributes` (que borra los atributos de <html>) y
+      // el `scrollTo` del router. `ev.swap` es el punto de extensión de Astro para esto.
+      document.addEventListener('astro:before-swap', (ev) => {
+        const swapDelRouter = ev.swap;
+        ev.swap = () => {
+          swapDelRouter();
+          marcarNavegacion();
+        };
+      });
+
       document.addEventListener('astro:after-swap', () => {
-        // `astro:after-swap` dispara SOLO en una navegación de cliente (nunca en una carga
-        // completa): es la señal exacta de «esta página no se está cargando, se está
-        // reemplazando». Marcar el documento apaga la animación `entrada` para el resto
-        // de la sesión (la regla vive en global.css, al final del bloque de `entrada`).
-        //
-        // ⚠️ `entrada` se diseñó como animación DE CARGA, y al montar el router cada clic
-        // se volvió una carga: dos sistemas de movimiento encima. Medido el 2026-11-07
-        // en portada → /tienda/: durante los 250 ms del fundido la página destino estaba
-        // casi vacía (el h1 y la primera tarjeta en opacidad 0) porque `entrada` la
-        // retenía, el h1 se fundía dos veces y la grilla no se veía hasta 633 ms después
-        // del clic. En ATRÁS se apilaban tres sistemas (8 animaciones `entrada` + el
-        // fundido + el scroll): re-escenificar una página que el usuario ya había visto.
-        // El fundido de la transición SE QUEDA: ése es el movimiento que le corresponde
-        // a cambiar de página.
-        raiz.setAttribute('data-bl-navegado', '');
         // Acá el router ya hizo su `scrollTo`, recortado si la página aún no creció.
         hasta = Date.now() + VENTANA_MS;
+        anotarPosicion(); // la posición en la que el router nos dejó
         if (!destino) terminar();
         else intentar();
       });
 
       // Las islas y las fotos llegan después del swap: éste es el momento en que el alto
-      // ya suele ser el definitivo. También limpia el atributo si una navegación quedó a
-      // medias (abortada) y nunca llegó a su swap.
+      // ya suele ser el definitivo.
       document.addEventListener('astro:page-load', () => {
         if (destino) intentar();
         else raiz.removeAttribute('data-bl-navegando');
