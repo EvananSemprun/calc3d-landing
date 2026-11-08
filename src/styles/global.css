@@ -1137,3 +1137,21 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   .entrada-grid > :nth-child(7) { animation-delay: 420ms; }
   .entrada-grid > :nth-child(n+8) { animation-delay: 450ms; }
 }
+
+/* `entrada` corre SOLO en una carga completa, nunca en una navegación de cliente.
+   Es una animación DE CARGA, y con `<ClientRouter />` montado cada clic se volvió una
+   carga: el fundido de la transición y la entrada corrían encima, así que la página
+   destino se veía casi vacía durante el fundido (`entrada` la retiene en opacidad 0),
+   el h1 se fundía dos veces y en ATRÁS se re-escenificaba una página ya vista.
+   `Base.astro` pone `data-bl-navegado` en `astro:after-swap`, que dispara solo en una
+   navegación de cliente. Va SIN @layer para ganarle al bloque de arriba, que está en
+   `@layer components`. El fundido de la transición SE QUEDA: es el movimiento que le
+   corresponde a cambiar de página. */
+html[data-bl-navegado] :is(
+  .hero .hero-art-grid > div > *,
+  .hero .hero-art-grid > :is(img, a),
+  .shop-head .container > *,
+  .entrada-grid > *
+) {
+  animation: none;
+}

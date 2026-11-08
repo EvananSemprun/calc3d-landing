@@ -205,6 +205,21 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
       });
 
       document.addEventListener('astro:after-swap', () => {
+        // `astro:after-swap` dispara SOLO en una navegación de cliente (nunca en una carga
+        // completa): es la señal exacta de «esta página no se está cargando, se está
+        // reemplazando». Marcar el documento apaga la animación `entrada` para el resto
+        // de la sesión (la regla vive en global.css, al final del bloque de `entrada`).
+        //
+        // ⚠️ `entrada` se diseñó como animación DE CARGA, y al montar el router cada clic
+        // se volvió una carga: dos sistemas de movimiento encima. Medido el 2026-11-07
+        // en portada → /tienda/: durante los 250 ms del fundido la página destino estaba
+        // casi vacía (el h1 y la primera tarjeta en opacidad 0) porque `entrada` la
+        // retenía, el h1 se fundía dos veces y la grilla no se veía hasta 633 ms después
+        // del clic. En ATRÁS se apilaban tres sistemas (8 animaciones `entrada` + el
+        // fundido + el scroll): re-escenificar una página que el usuario ya había visto.
+        // El fundido de la transición SE QUEDA: ése es el movimiento que le corresponde
+        // a cambiar de página.
+        raiz.setAttribute('data-bl-navegado', '');
         // Acá el router ya hizo su `scrollTo`, recortado si la página aún no creció.
         hasta = Date.now() + VENTANA_MS;
         if (!destino) terminar();
