@@ -205,6 +205,14 @@ inicial *y* en cada navegación.
   **Astro no prefetchea con `saveData` ni en 2g** (su `canPrefetchUrl` corta por
   `isSlowConnection()`). Si algún día molesta, la salida es
   `prefetch: { prefetchAll: false }` en `astro.config.mjs`.
+- ⚠️ **El movimiento NO se puede medir en una pestaña oculta** (2026-11-08). Si el panel
+  del navegador de la app está escondido, la página corre como **página de fondo**: las
+  transiciones de vista **no arrancan** y las animaciones CSS **no avanzan**. El síntoma
+  engaña: el clic no navega, `data-astro-transition` se queda pegado en `<html>` y
+  `getAnimations()` devuelve las mismas animaciones «vivas» para siempre — se lee igual
+  que un router roto. Pasó al verificar producción. `tabs_context` termina diciendo si el
+  panel está visible: **leer esa línea antes de creerle a la medición**. Para medir
+  movimiento, el panel visible o **Playwright** (ahí `visibilityState` es `visible`).
 
 ## Movimiento: las reglas del CSS (`global.css`)
 
