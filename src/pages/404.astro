@@ -2,10 +2,19 @@
 /**
  * Página 404 de marca. Astro genera `dist/404.html`; Cloudflare Pages la sirve ante una
  * ruta inexistente (404 REAL, no "404 blando"). Lleva noindex: no debe aparecer en el buscador.
+ *
+ * ⚠️ **Además RESCATA un producto sin página propia.** La tienda se arma en el build, así
+ * que un producto creado después cae acá. Si la ruta es `/producto/<algo>/`, en vez del
+ * cartel se resuelve ese producto contra la API y el enlace compartido funciona igual.
+ * Ver `RescatarProducto.tsx` para por qué va acá y no en una regla de reescritura.
  */
 import Base from '../layouts/Base.astro';
 import { buttonVariants } from '../components/ui/button';
 import bananoError from '../assets/brand/banano-error.png';
+import RescatarProducto from '../components/ficha/RescatarProducto';
+import { cargarTienda } from '../lib/tienda-build';
+
+const { info } = await cargarTienda();
 ---
 
 <Base
@@ -13,7 +22,13 @@ import bananoError from '../assets/brand/banano-error.png';
   description="La página que buscás no existe o se movió."
   noindex
 >
-  <section class="section error-404">
+  <section class="section">
+    <div class="container">
+      <RescatarProducto info={info} client:load />
+    </div>
+  </section>
+
+  <section class="section error-404" id="cartel-404">
     <div class="container error-404-inner">
       <img src={bananoError.src} alt="" width={160} height={160} class="error-404-art" />
       <p class="kicker">Error 404</p>
@@ -26,6 +41,15 @@ import bananoError from '../assets/brand/banano-error.png';
     </div>
   </section>
 </Base>
+
+<script is:inline>
+  // El cartel se esconde ANTES de pintar si la ruta es una ficha: así nadie ve «esta
+  // página no existe» un instante y después el producto. Es `is:inline` y va acá, sin
+  // esperar a ningún evento, justo por eso.
+  if (/^\/producto\/[^/]+\/?$/.test(location.pathname)) {
+    document.getElementById('cartel-404')?.setAttribute('hidden', '');
+  }
+</script>
 
 <style>
   .error-404-inner {
