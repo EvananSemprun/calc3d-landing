@@ -265,12 +265,55 @@ inicial *y* en cada navegación.
 - **Necesita `PUBLIC_SITE_URL`** (dominio sin barra final) para el sitemap y las canónicas
   absolutas; sin ella se omiten.
 
-## El build pega a la API (SSG)
-El build del **catálogo, las fichas y el inicio** trae los productos/categorías/info de la
-API **en el build** (`getStaticPaths` / frontmatter) y los deja como HTML. Por eso **la API
-tiene que estar arriba en el build**; si cae, el build **falla fuerte** (no publica un
-catálogo vacío). El inicio también dejó de ser API-independiente (sus destacados y bloques
-por categoría son SSG). Local: `PUBLIC_API_URL=http://localhost:3001/api pnpm build`.
+## El build hornea, y el navegador REFRESCA (2026-11-08)
+
+El build del **catálogo, las fichas, el inicio y los banners** trae todo de la API
+(`getStaticPaths` / frontmatter) y lo deja como HTML. Por eso **la API tiene que estar
+arriba en el build**; si cae, el build **falla fuerte** (no publica un catálogo vacío).
+Local: `PUBLIC_API_URL=http://localhost:3001/api pnpm build`.
+
+⚠️ **Pero eso ya no es toda la historia.** Desde el 2026-11-08 las islas vuelven a
+preguntarle a la API **al montar** y reemplazan lo que cambió: prender o apagar un
+producto, corregir un precio o cargar un banner **se ve sin reconstruir el sitio**. Lo
+hace `useEnVivo` (`lib/vivo.ts`), y lo usan el catálogo de categoría, la ficha, los
+destacados y las categorías del inicio y de `/tienda/`, y los tres tipos de banner.
+
+**Por qué así y no una SPA** (decisión del dueño, con las dos opciones medidas): el
+primer pintado ya trae productos, así que Google y la previsualización de WhatsApp los
+leen del HTML. En una SPA el `index.html` queda en ~2 KB sin un solo producto —medido en
+las páginas de Detales, que son ese patrón— y cada ficha compartida previsualiza igual.
+
+Tres reglas que sostienen esto:
+
+1. **Lo que se rederiva usa las MISMAS funciones puras del build** (`listadosDe`,
+   `paginaDe`, `destacadosDe`, `bannerDeCategoria`…). Si el navegador listara por su
+   cuenta, el día que cambie la regla el sitio diría una cosa recién construido y otra un
+   minuto después.
+2. **Una categoría que se quedó sin productos se muestra VACÍA, no con lo horneado.** La
+   primera versión conservaba lo horneado ahí y seguía mostrando el producto que el dueño
+   acababa de apagar — justo el bug que esto venía a cerrar.
+3. **Si la API falla, se conserva lo horneado y se avisa.** Y **no se reintenta**: el tope
+   público es 120 peticiones por minuto y el costo de fallar es ver datos de hace un rato.
+
+⚠️ **Lo que SIGUE necesitando un build**: la página propia de un producto nuevo (su
+título, su descripción y su JSON-LD). Mientras no exista, su enlace igual funciona — lo
+rescata la 404, ver abajo — pero responde con estado 404.
+
+⚠️ **`PUBLIC_API_URL` se HORNEA en el bundle del cliente.** Al probar el refresco contra
+una API distinta hay que **reconstruir**: una corrida apuntando a producción parece
+demostrar que el refresco no anda.
+
+### El enlace de un producto que todavía no tiene página
+
+Lo resuelve **la 404** (`RescatarProducto.tsx`): si la ruta es `/producto/<algo>/`, en vez
+del cartel se resuelve ese producto contra la API.
+
+⚠️ **NO se puede hacer con una regla de reescritura, y está probado.** El 2026-11-08 se
+intentó con `public/_redirects` (`/producto/* -> /p/ 200`) y en producción **tapó las
+fichas que sí existían**: todas pasaron a devolver la cáscara y perdieron su título, su
+descripción y su JSON-LD. La suposición de que Cloudflare sirve primero el archivo
+estático es falsa para ese caso. La 404, en cambio, solo se sirve cuando no hay archivo.
+⚠️ Y no se puede probar en local: `astro preview` no lee `_redirects`.
 
 ## Carrito → WhatsApp: la única escritura (y sus reglas)
 `api-escritura.ts` (`enviarPedido`, `enviarConsulta`) es lo único que **escribe**:
@@ -323,26 +366,42 @@ y viaja solo la **clave**. Sin R2, el cargador no aparece y el pedido entra con 
 
 ## Hero de la portada y Flash Sale
 
-⚠️ **El carrusel de 3 slides YA NO EXISTE.** Era una isla de React con autoplay; se
-reemplazó por `components/inicio/Hero.astro`, **HTML estático**: el `h1`, el subtítulo y
-las dos acciones están en el HTML del build (SEO, sin salto de maquetación y sin JS para
-leer el mensaje principal). Si en un comentario viejo aparece «carrusel», está
-desactualizado. Lo único interactivo que vive dentro del hero es el **buscador**.
+⚠️ **El carrusel VOLVIÓ el 2026-11-08**, por pedido del dueño y con el reparo sobre la
+mesa (se había quitado porque era una isla de React y el mensaje no se leía sin JS). Vive
+en `components/inicio/HeroEnVivo.tsx`, que reemplazó a `Hero.astro` y a
+`CarruselHero.astro`. Si en un comentario viejo dice que el carrusel no existe, está
+desactualizado.
 
-- **Los banners del panel** (`/public/store/banners`) siguen usándose, pero reemplazan
-  **solo el ARTE** del hero: se toma el primero que tenga imagen (la API los devuelve por
-  `position`). Sin banners, o si el banner no trae imagen, va el arte propio
-  (`banano-hola.png`): nunca un hueco.
-- ⚠️ **DOS cambios de comportamiento que el dueño va a notar**, y que no se pueden
-  deducir del código del panel:
-  1. **Los banners se traen en el BUILD** (`cargarTienda`), no desde el navegador: el hero
-     es estático y no puede hacer `fetch`. **Un banner cargado en el panel ya no aparece
-     solo — necesita un despliegue** (un push a `main`, o un `pnpm build`). Antes el
-     carrusel lo levantaba al recargar la página.
-  2. **El título y el subtítulo que el dueño escriba en un banner dejan de verse**: el
-     mensaje de la portada es uno y es fijo, está en el `h1`/`lead` del hero. El `title`
-     se recicla como `alt` de la imagen (es lo único que lo hace llegar a un lector de
-     pantalla) y el `subtitle` no se usa en ningún lado.
+**La mitigación del riesgo, que es obligatoria:** todas las diapositivas se generan
+también en el BUILD —las islas de Astro se renderizan ahí— así que el `h1` y el mensaje
+siguen en el HTML. El JS solo elige cuál está activa. Medido: **un solo `<h1>`** en la
+portada, con o sin banners.
+
+⚠️ **Se conserva la FORMA del DOM**: `section.hero > .container.hero-art-grid > div` + la
+imagen hermana. Las reglas de la animación de entrada se enganchan con hijo directo sobre
+esa estructura; envolver los textos en un div más **la apaga sin que nada falle**.
+
+⚠️ **Solo la primera diapositiva lleva `<h1>`**; las demás usan `<p class="h1">`, que se
+ve igual. Un solo banner **no** es carrusel: ni puntos ni rotación. Con
+`prefers-reduced-motion` no rota sola, pero los puntos siguen andando.
+
+### Los TRES tipos de banner (2026-11-08)
+
+`StoreBanner.kind` dice **dónde** se muestra; `linkType` dice **adónde lleva**. Son cosas
+distintas y conviven.
+
+| `kind` | Dónde se ve | Sin ninguno cargado |
+|---|---|---|
+| `HERO` | El carrusel de la portada | El arte de marca (`banano-hola.png`) |
+| `TEXTO` | La franja de arriba, en todas las páginas | El texto escrito a mano en `Header.astro` |
+| `CATEGORIA` | `/tienda/<cat>/` y las fichas de sus productos | No se dibuja nada |
+
+Un `TEXTO` no lleva imagen y un `CATEGORIA` exige su categoría: lo fija el contrato Zod,
+que además **prohíbe** lo ajeno a cada tipo. Un `CATEGORIA` cuya categoría se borró **no
+se devuelve** por la API: no hay página donde mostrarlo.
+
+⚠️ Los tres **ya no necesitan un despliegue**: se refrescan en el navegador como el resto
+del catálogo.
 - Si los banners fallan, el build **NO** se cae (`fetchBanners().catch(() => [])`): un
   banner es decoración. El catálogo, en cambio, sí es obligatorio.
 - El arte de un banner es remoto y sus medidas no se conocen en el build, así que no puede
@@ -440,3 +499,26 @@ quedó en `calc3d-web.pages.dev`; este repo es el que lleva dominio propio.
 
 ## Git
 - No hacer commit ni push salvo que se pida. Un push a `main` **despliega** en Pages.
+
+## Lo que cambió el 2026-11-08 (resumen para no releer todo)
+
+Día largo. Lo que hay que saber si venís de una versión anterior de este archivo:
+
+- **La tienda es reactiva sobre lo horneado** (ver «El build hornea, y el navegador
+  REFRESCA»). Era estática a secas.
+- **Volvió el carrusel**, y hay **tres tipos de banner** (hero, franja de texto,
+  categoría), todos en vivo.
+- **La insignia «Nuevo» es AUTOMÁTICA**: sale de `publishedAt` (15 días desde que se
+  publica, no desde que se crea la ficha). El contrato **rechaza** escribirla a mano.
+- **Las insignias son OPACAS.** Las dos de color eran translúcidas y sobre una foto clara
+  caían a 1,27 de contraste (el mínimo AA es 4,5). Viven en `catalogo/insignias.ts`,
+  una sola definición para las dos tarjetas y la ficha.
+- **Un solo botón por tarjeta** («Elegir opciones»), que lleva a la ficha. Antes eran dos
+  y con un producto que exige opciones los dos iban al mismo lado.
+- **La tarjeta dice «desde»** cuando alguna opción suma. Los tramos por cantidad NO lo
+  disparan: esos bajan el precio.
+- **Hay tests de PANTALLA** (jsdom + testing-library), elegidos por la extensión del
+  archivo: `*.spec.ts` → node, `*.spec.tsx` → jsdom. Hasta ese día ni un test tocaba el
+  JSX y se podía borrar un botón con la suite en verde.
+- **El pie** lleva teléfono, Instagram y canal de WhatsApp; en Contacto quedó solo el
+  enlace de WhatsApp, sin el número repetido.
