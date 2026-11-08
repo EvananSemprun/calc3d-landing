@@ -20,6 +20,8 @@ import CarruselHero from '../components/inicio/CarruselHero.astro';
 import { bannersDeHero } from '../lib/banner';
 import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
+import CategoriasEnVivo from '../components/catalogo/CategoriasEnVivo';
+import DestacadosEnVivo from '../components/catalogo/DestacadosEnVivo';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
 import Pasos from '../components/Pasos.astro';
@@ -90,56 +92,9 @@ const preguntas = [
     )
   }
 
-  {
-    raices.length > 0 && (
-      <section class="section" aria-labelledby="categorias-titulo">
-        <div class="container">
-          <div class="eyebrow-row mb-6">
-            <h2 class="h2" id="categorias-titulo">
-              Mirá por categoría
-            </h2>
-            <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">
-              Ver todo el catálogo →
-            </a>
-          </div>
-          <ul class="grid shop-grid entrada-grid list-none p-0 m-0">
-            {raices.map((c) => (
-              <li>
-                <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
-                  <h3 class="text-lg font-semibold">{c.nombre}</h3>
-                  <p class="mono dim mt-1 text-sm">
-                    {c.n} producto{c.n === 1 ? '' : 's'}
-                  </p>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    )
-  }
+  <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mirá por categoría" verTodo client:load />
 
-  {
-    destacados.length > 0 && (
-      <section class="section pt-0" aria-labelledby="destacados-titulo">
-        <div class="container">
-          <div class="eyebrow-row mb-6">
-            <h2 class="h2" id="destacados-titulo">
-              Destacados
-            </h2>
-            <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">
-              Ver todo →
-            </a>
-          </div>
-          <div class="grid shop-grid">
-            {destacados.map((p) => (
-              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
+  <DestacadosEnVivo inicial={destacados} tope={TOPE_DESTACADOS} tasa={info.rate} verTodo client:load />
 
   <FlashSale tasa={info.rate} client:visible />
 

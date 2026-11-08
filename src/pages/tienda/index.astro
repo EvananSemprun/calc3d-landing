@@ -9,6 +9,8 @@
  */
 import Base from '../../layouts/Base.astro';
 import CtaCotizar from '../../components/CtaCotizar.astro';
+import CategoriasEnVivo from '../../components/catalogo/CategoriasEnVivo';
+import DestacadosEnVivo from '../../components/catalogo/DestacadosEnVivo';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
 import { rutaDeCategoria } from '../../lib/paginacion';
@@ -36,45 +38,19 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
     </div>
   </section>
 
-  {
-    categoriasDelIndice.length > 0 && (
-      <section class="section pt-0">
-        <div class="container">
-          <h2 class="h2 mb-6">Categorías</h2>
-          <ul class="grid shop-grid entrada-grid list-none p-0 m-0">
-            {categoriasDelIndice.map((c) => (
-              <li>
-                <a class="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
-                  <h3 class="text-lg font-semibold">{c.nombre}</h3>
-                  <p class="mono dim mt-1 text-sm">
-                    {c.n} producto{c.n === 1 ? '' : 's'}
-                  </p>
-                  {hijasDe(c.slug).length > 0 && (
-                    <p class="dim mt-2 text-sm">{hijasDe(c.slug).map((h) => h.nombre).join(' · ')}</p>
-                  )}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    )
-  }
+  <CategoriasEnVivo
+    inicial={categoriasDelIndice.map((c) => ({ ...c, hijas: hijasDe(c.slug).map((h) => h.nombre) }))}
+    modo="indice"
+    titulo="Categorías"
+    client:load
+  />
 
-  {
-    destacados.length > 0 && (
-      <section class="section pt-0">
-        <div class="container">
-          <h2 class="h2 mb-6">Destacados</h2>
-          <div class="grid shop-grid">
-            {destacados.map((p) => (
-              <TarjetaProducto producto={p} tasa={info.rate} client:visible />
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
+  <DestacadosEnVivo
+    inicial={destacados}
+    tope={TOPE_DESTACADOS_TIENDA}
+    tasa={info.rate}
+    client:load
+  />
 
   {
     productos.length === 0 && (
