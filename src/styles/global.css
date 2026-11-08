@@ -54,9 +54,14 @@
 }
 
 /* ---------- Guardia de movimiento ----------
-   Va ANTES de todo lo animado y SIN @layer: lo que no está en una capa le gana a las
-   capas, y los !important sin capa le ganan a todo. Con `reduce` no se mueve nada:
-   ni entradas, ni hovers, ni el deslizamiento al tocar un ancla.
+   Va ANTES de todo lo animado y SIN @layer: para las declaraciones normales, lo que no
+   está en una capa le gana a las capas.
+   ⚠️ Lo que sostiene esta guardia NO es estar fuera de capa: es ser `!important` contra
+   declaraciones normales. Para los `!important` el orden de las capas se INVIERTE y lo
+   que está fuera de capa queda ÚLTIMO, así que un `!important` dentro de un `@layer` le
+   ganaría a uno sin capa. Hoy no hay ninguno; si se agrega, esta guardia pierde.
+   Con `reduce` no se mueve nada: ni entradas, ni hovers, ni el deslizamiento al tocar
+   un ancla.
    `animation-delay: 0s` evita que una entrada con `backwards` deje el elemento
    invisible durante su retardo aunque ya no se anime. */
 @media (prefers-reduced-motion: reduce) {
@@ -90,6 +95,14 @@
     animation: none !important;
   }
 }
+
+/* Mientras dura una navegación del router, el scroll es INSTANTÁNEO para todos.
+   El router restaura la posición de lectura con un `scrollTo(x, y)` de dos argumentos
+   —sin `behavior`—, así que el `smooth` de `@layer base` lo convertía en un
+   deslizamiento animado de ~470 ms en cada atrás/adelante (medido el 2026-11-07).
+   Va SIN @layer a propósito: una declaración fuera de capa le gana a una encapada.
+   El atributo lo pone y lo saca el script de navegación de `Base.astro`. */
+html[data-bl-navegando] { scroll-behavior: auto; }
 
 @layer base {
   * {
