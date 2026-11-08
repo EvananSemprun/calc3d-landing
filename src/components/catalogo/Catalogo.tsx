@@ -99,7 +99,11 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
   useEffect(() => {
     if (!listo) return;
     const nueva = conPagina(sincronizarUrl(window.location.href, filtros, tope), activo ? pagCliente : 1);
-    if (nueva !== window.location.href) window.history.replaceState(null, '', nueva);
+    // ⚠️ Se REUSA `window.history.state`, nunca `null`. En esa entrada vive el estado del
+    // router de `astro:transitions` (`{index, scrollX, scrollY}`), y su `onPopState`
+    // arranca con `if (ev.state === null) return`: pisarlo con `null` deja la entrada
+    // muda, así que al tocar ATRÁS la barra de direcciones cambia y la pantalla NO.
+    if (nueva !== window.location.href) window.history.replaceState(window.history.state, '', nueva);
   }, [filtros, listo, tope, activo, pagCliente]);
 
   const cambiar = useCallback(
