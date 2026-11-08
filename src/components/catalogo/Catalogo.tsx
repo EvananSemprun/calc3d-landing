@@ -26,17 +26,22 @@ import {
   sincronizarUrl,
   topePrecio,
   valeLaPenaFiltrar,
+  coloresDe,
   type ColorFiltro,
   type Filtros as EstadoFiltros,
 } from '@/lib/catalogo';
 import {
   conPagina,
+  indiceDeCategoria,
+  listadosDe,
   paginaDe,
   paginaDesdeUrl,
   totalDePaginas,
   type EntradaIndice,
 } from '@/lib/paginacion';
 import type { ProductoVitrina } from '@/lib/producto';
+import { useEnVivo } from '@/lib/vivo';
+import { fetchCategorias, fetchProductosCompletos } from '@/lib/api';
 import Filtros from './Filtros';
 import Paginacion from './Paginacion';
 import TarjetaIndice from './TarjetaIndice';
@@ -56,9 +61,43 @@ interface Props {
   paginas: number;
 }
 
+/**
+ * ⚠️ **El catálogo es REACTIVO sobre lo horneado** (2026-11-08, decisión del dueño).
+ *
+ * El HTML trae el catálogo del último build —por eso Google y WhatsApp lo leen— y al
+ * montar el navegador vuelve a preguntarle a la API y rederiva el listado de ESTA
+ * categoría con las MISMAS funciones puras que usó el build (`listadosDe`, `paginaDe`,
+ * `indiceDeCategoria`, `coloresDe`). Prender, apagar o repreciar un producto se ve sin
+ * reconstruir el sitio.
+ *
+ * ⚠️ Rederivar con las mismas funciones no es prolijidad: si el navegador listara por su
+ * cuenta, el día que cambie la regla de qué entra en una categoría, el sitio mostraría
+ * una cosa recién construido y otra un minuto después.
+ *
+ * ⚠️ Si la API no contesta, se queda lo horneado y se avisa. No se vacía la pantalla.
+ */
 export default function Catalogo({ productos, indice, colores, info, cat, sub, pagina, paginas }: Props) {
-  const tope = useMemo(() => topePrecio(indice), [indice]);
-  const datos = useMemo(() => ({ colores, tope }), [colores, tope]);
+  const horneado = useMemo(
+    () => ({ productos, indice, colores, paginas }),
+    [productos, indice, colores, paginas],
+  );
+  const { datos: vivo, error: apiCaida } = useEnVivo(horneado, async () => {
+    const [todos, categorias] = await Promise.all([fetchProductosCompletos(), fetchCategorias()]);
+    const listado = listadosDe(categorias, todos).find((l) => l.cat === cat && l.sub === sub);
+    // ⚠️ Sin listado, la categoría se quedó SIN productos (listadosDe no devuelve las
+    // vacías). Se muestra vacía, NO lo horneado: conservarlo seguiría mostrando un
+    // producto que el dueño acaba de apagar, que es justo lo que esto viene a arreglar.
+    // Una caída de la API es otra cosa: ahí el fetch lanza y se conserva lo horneado.
+    if (!listado) return { productos: [], indice: [], colores: [], paginas: 1 };
+    return {
+      productos: paginaDe(listado.productos, pagina),
+      indice: indiceDeCategoria(listado.productos),
+      colores: coloresDe(listado.productos),
+      paginas: listado.paginas,
+    };
+  });
+  const tope = useMemo(() => topePrecio(vivo.indice), [vivo.indice]);
+  const datos = useMemo(() => ({ colores: vivo.colores, tope }), [vivo.colores, tope]);
 
   // El primer render (servidor Y cliente) usa los filtros por defecto: así el HTML
   // hidrata sin discrepancias. La URL se aplica justo después, en el efecto.
@@ -90,7 +129,10 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
     setListo(true);
   }, [datos, conFiltros]);
 
-  const filtrados = useMemo(() => (activo ? filtrar(indice, filtros) : []), [activo, indice, filtros]);
+  const filtrados = useMemo(
+    () => (activo ? filtrar(vivo.indice, filtros) : []),
+    [activo, vivo.indice, filtros],
+  );
   const totalFiltrado = totalDePaginas(filtrados.length);
   // Si la página guardada en el enlace ya no existe (el catálogo cambió), se acota.
   const pagCliente = Math.min(pag, totalFiltrado);
@@ -122,7 +164,7 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
     document.getElementById('shopGrid')?.scrollIntoView({ block: 'start' });
   }, []);
 
-  const total = activo ? filtrados.length : indice.length;
+  const total = activo ? filtrados.length : vivo.indice.length;
   const visiblesCliente = activo ? paginaDe(filtrados, pagCliente) : [];
 
   return (
@@ -169,11 +211,11 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
               className={`grid shop-grid${yaEntro.current ? '' : ' entrada-grid'}`}
               id="shopGrid"
             >
-              {productos.map((p) => (
+              {vivo.productos.map((p) => (
                 <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
               ))}
             </div>
-            <Paginacion actual={pagina} total={paginas} cat={cat} sub={sub} />
+            <Paginacion actual={pagina} total={vivo.paginas} cat={cat} sub={sub} />
           </>
         ) : filtrados.length > 0 ? (
           <>
