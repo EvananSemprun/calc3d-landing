@@ -16,9 +16,9 @@ import { cargarTienda } from '../../lib/tienda-build';
 import { rutaDeCategoria } from '../../lib/paginacion';
 import { destacadosDe, TOPE_DESTACADOS_TIENDA } from '../../lib/portada';
 
-const { productos, info, listados, raices, categoriasDelIndice } = await cargarTienda();
+const { completos, info, listados, raices, categoriasDelIndice } = await cargarTienda();
 // Mismo criterio que la portada (la insignia del panel manda) con otro tope: ver `portada.ts`.
-const destacados = destacadosDe(productos, TOPE_DESTACADOS_TIENDA);
+const destacados = destacadosDe(completos, TOPE_DESTACADOS_TIENDA);
 const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub === null)?.hijas ?? [];
 ---
 
@@ -53,7 +53,7 @@ const hijasDe = (slug: string) => listados.find((l) => l.cat === slug && l.sub =
   />
 
   {
-    productos.length === 0 && (
+    completos.length === 0 && (
       <section class="section pt-0">
         <div class="container shop-state">
           <strong>Todavía no hay productos publicados.</strong>

@@ -31,13 +31,13 @@ import { cargarTienda } from '../lib/tienda-build';
 import { rutaDeCategoria, rutasDeListados } from '../lib/paginacion';
 import { destacadosDe, TOPE_DESTACADOS } from '../lib/portada';
 
-const { productos, info, listados, raices, banners } = await cargarTienda();
+const { completos, info, listados, raices, banners } = await cargarTienda();
 const slidesDelHero = bannersDeHero(banners);
 const rutasDeCategoria = rutasDeListados(listados);
 
 // `raices` ya son las categorías raíz con productos ("Sin categoría" afuera): es lo
 // mismo que lleva el pie de todas las páginas, así que no se recalcula acá.
-const destacados = destacadosDe(productos, TOPE_DESTACADOS);
+const destacados = destacadosDe(completos, TOPE_DESTACADOS);
 
 const beneficios = [
   { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargás: sin stock viejo ni sobreproducción.' },

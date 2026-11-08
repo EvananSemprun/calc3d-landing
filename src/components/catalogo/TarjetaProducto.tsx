@@ -7,7 +7,7 @@
 // mida distinto. Los estilos (`.product*`) viven en global.css.
 import { Badge } from '@/components/ui/badge';
 import { equivalenteEnMoneda } from '@/lib/precio';
-import { lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
+import { hayRecargo, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
 import AccionesProducto from './AccionesProducto';
 import { INSIGNIA_DESTACADA, INSIGNIA_NUEVO, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
@@ -74,6 +74,7 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
 
         <div className="product-foot">
           <span className="price">
+            {hayRecargo(p) && <small className="price-desde">desde </small>}
             ${p.price.toFixed(2)}
             <small> USD</small>
             {equivalente && (

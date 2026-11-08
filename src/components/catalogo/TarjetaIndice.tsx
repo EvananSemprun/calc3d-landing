@@ -44,6 +44,7 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
         </div>
         <div className="product-foot">
           <span className="price">
+            {e.desde && <small className="price-desde">desde </small>}
             ${e.price.toFixed(2)}
             <small> USD</small>
             {equivalente && (

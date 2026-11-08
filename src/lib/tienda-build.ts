@@ -57,9 +57,13 @@ export function cargarTienda(): Promise<DatosTienda> {
     categorias,
     info,
     banners,
-    listados: listadosDe(categorias, productos),
-    raices: raicesConProductos(categorias, productos),
-    categoriasDelIndice: categoriasDelIndice(categorias, productos),
+    // ⚠️ Se deriva de `completos`, NO de `productos`: la respuesta de TARJETA no trae los
+    // recargos de las opciones, y sin ellos la tarjeta no puede saber si su precio es un
+    // piso («desde $8» en el árbol, que llega a $30). Las dos ya se piden en este mismo
+    // build, así que no cuesta una consulta más.
+    listados: listadosDe(categorias, completos),
+    raices: raicesConProductos(categorias, completos),
+    categoriasDelIndice: categoriasDelIndice(categorias, completos),
   }));
   return pendiente;
 }

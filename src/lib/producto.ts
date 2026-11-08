@@ -106,6 +106,20 @@ export interface ProductoVitrina {
   colors: string[];
 }
 
+/**
+ * ¿El precio de la tarjeta es un PISO y no el precio final?
+ *
+ * Lo es cuando alguna opción suma: el árbol vale $8 en 12 cm y $30 en 26 cm, así que una
+ * tarjeta que diga «$8.00» a secas se lee como el precio y no como el arranque. La ficha
+ * sí muestra el total al elegir (medido: $24,00 → $25,50 al marcar una opción); el que
+ * necesita el «desde» es el catálogo.
+ *
+ * ⚠️ Solo recargos POSITIVOS. Un 0 no cambia el precio y no justifica la palabra.
+ */
+export function hayRecargo(p: { optionGroups?: GrupoOpcionesApi[] }): boolean {
+  return (p.optionGroups ?? []).some((g) => g.options.some((o) => (o.priceDeltaUsd ?? 0) > 0));
+}
+
 /** La línea gris de la tarjeta: la categoría y nada más (el material no se muestra). */
 export function lineaDeTarjeta(p: ProductoVitrina): string {
   return p.catLabel || '';

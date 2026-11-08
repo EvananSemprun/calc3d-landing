@@ -1217,3 +1217,7 @@ html[data-bl-navegado] :is(
 ) {
   animation: none;
 }
+
+/* El «desde» del precio: más chico y apagado que la cifra, porque es un matiz y no el
+   dato. Va en la misma línea para que no empuje el alto de la tarjeta. */
+.price-desde { font-size: 0.72em; font-weight: 600; color: var(--text-dim); }

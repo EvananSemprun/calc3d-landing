@@ -18,14 +18,15 @@ describe('índice de categoría', () => {
   it('trae lo que los controles y el carrito necesitan, y nada más', () => {
     const [e] = indiceDeCategoria([completo]);
     expect(Object.keys(e).sort()).toEqual([
-      'badge', 'colors', 'compareAt', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers', 'requiresOptions',
+      'badge', 'colors', 'compareAt', 'desde', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers',
+      'requiresOptions',
     ]);
     for (const prohibido of ['desc', 'description', 'specs', 'optionGroups', 'images', 'summary']) {
       expect(e).not.toHaveProperty(prohibido);
     }
     expect(e).toEqual({
       id: 'copa', name: 'copa', price: 24, colors: ['Rojo'], image: completo.image,
-      priceTiers: [], minQty: 1, requiresOptions: false, badge: null, compareAt: null,
+      priceTiers: [], minQty: 1, requiresOptions: false, badge: null, compareAt: null, desde: false,
     });
   });
 

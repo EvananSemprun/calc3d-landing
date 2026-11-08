@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adapt, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo } from './producto';
+import { adapt, hayRecargo, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo } from './producto';
 
 describe('adapt', () => {
   it('mapea la forma de la API a la de la vitrina', () => {
@@ -196,4 +196,34 @@ describe('textoDeMinimo', () => {
 it('materialKey ya no existe', () => {
   const p = adapt({ slug: 'c', name: 'C', priceUsd: 1, minQty: 1, material: ' PLA ' });
   expect('materialKey' in p).toBe(false);
+});
+
+/**
+ * El «desde» de la tarjeta (2026-11-08). El árbol vale $8 en 12 cm y $30 en 26 cm: una
+ * tarjeta que diga «$8.00» a secas se lee como el precio y no como el arranque.
+ */
+describe('hayRecargo', () => {
+  const grupo = (deltas: number[]) => ({
+    name: 'Tamaño',
+    options: deltas.map((d, i) => ({ value: `op${i}`, priceDeltaUsd: d })),
+  });
+
+  it('con una opción que suma, el precio es un piso', () => {
+    expect(hayRecargo({ optionGroups: [grupo([0, 7, 22])] })).toBe(true);
+  });
+
+  it('⚠️ un recargo de 0 NO cuenta: no cambia el precio', () => {
+    // El caso del color: tres opciones, todas al mismo precio. Decir «desde» ahí sería
+    // avisar de un aumento que no existe.
+    expect(hayRecargo({ optionGroups: [grupo([0, 0, 0])] })).toBe(false);
+  });
+
+  it('sin opciones, tampoco', () => {
+    expect(hayRecargo({ optionGroups: [] })).toBe(false);
+    expect(hayRecargo({})).toBe(false);
+  });
+
+  it('alcanza con que UNA opción de UN grupo sume', () => {
+    expect(hayRecargo({ optionGroups: [grupo([0, 0]), grupo([0, 1.5])] })).toBe(true);
+  });
 });

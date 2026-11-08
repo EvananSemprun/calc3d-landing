@@ -1,7 +1,7 @@
 // Paginado e índice de categoría. Puro (sin DOM ni React) para poder probarlo en node.
 import type { Categoria } from './catalogo';
 import type { TramoPrecio } from './precio';
-import type { FotoApi, ProductoVitrina } from './producto';
+import { hayRecargo, type FotoApi, type ProductoVitrina } from './producto';
 
 /** Tarjetas por página de categoría. */
 export const POR_PAGINA = 24;
@@ -24,6 +24,8 @@ export interface EntradaIndice {
   requiresOptions: boolean;
   /** Insignia de la esquina ("Nuevo"…). Sin ella, ordenar por precio le quitaría la insignia a la tarjeta. */
   badge: string | null;
+  /** true si alguna opción suma: la tarjeta dice «desde». */
+  desde: boolean;
   /** Precio de lista, para el tachado de la oferta. */
   compareAt: number | null;
 }
@@ -40,6 +42,7 @@ export function indiceDeCategoria(productos: readonly ProductoVitrina[]): Entrad
     requiresOptions: p.requiresOptions,
     badge: p.badge ?? null,
     compareAt: p.compareAt ?? null,
+    desde: hayRecargo(p),
   }));
 }
 
