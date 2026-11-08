@@ -10,7 +10,7 @@ import { equivalenteEnMoneda } from '@/lib/precio';
 import { lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
 import AccionesProducto from './AccionesProducto';
-import { INSIGNIA_DESTACADA, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
+import { INSIGNIA_DESTACADA, INSIGNIA_NUEVO, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
 
 
 
@@ -44,6 +44,7 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
         )}
         <div className="product-badges">
           {p.badge && <Badge className={INSIGNIA_DESTACADA}>{p.badge}</Badge>}
+          {p.nuevo && <Badge className={INSIGNIA_NUEVO}>Nuevo</Badge>}
           {enOferta && <Badge className={INSIGNIA_OFERTA}>Oferta</Badge>}
           {p.custom && <Badge className={INSIGNIA_SUAVE}>Personalizable</Badge>}
         </div>

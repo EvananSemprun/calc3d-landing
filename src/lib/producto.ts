@@ -52,6 +52,7 @@ export interface ProductoApi {
   minQty: number;
   material?: string | null;
   badge?: string | null;
+  nuevo?: boolean;
   custom?: boolean;
   requiresOptions?: boolean;
   specs?: EspecificacionApi[];
@@ -89,6 +90,8 @@ export interface ProductoVitrina {
   minQty: number;
   material: string | null;
   badge: string | null;
+  /** Insignia automatica: la DERIVA el servidor de la fecha de publicacion. */
+  nuevo: boolean;
   custom: boolean;
   requiresOptions: boolean;
   specs: EspecificacionApi[];
@@ -150,6 +153,7 @@ export function adapt(p: ProductoApi): ProductoVitrina {
     minQty: p.minQty,
     material: p.material ?? null,
     badge: p.badge ?? null,
+    nuevo: p.nuevo === true,
     custom: !!p.custom,
     requiresOptions: !!p.requiresOptions,
     specs: p.specs ?? [],

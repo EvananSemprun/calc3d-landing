@@ -10,6 +10,7 @@ import Galeria from './Galeria';
 import Opciones from './Opciones';
 import Personalizacion from './Personalizacion';
 import { Badge } from '@/components/ui/badge';
+import { INSIGNIA_NUEVO } from '@/components/catalogo/insignias';
 import { Button } from '@/components/ui/button';
 import { agregar as agregarAlCarrito } from '@/lib/carrito';
 import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
@@ -99,6 +100,13 @@ export default function Ficha({ producto: p, info }: Props) {
 
   const insignias = [
     p.badge && <Badge key="badge">{p.badge}</Badge>,
+    // La automatica va junto a la del dueno, con SU color: las dos pueden salir a la vez
+    // y con el mismo tono no se distinguiria cual dice el y cual dice el sistema.
+    p.nuevo && (
+      <Badge key="nuevo" className={INSIGNIA_NUEVO}>
+        Nuevo
+      </Badge>
+    ),
     p.custom && (
       <Badge key="custom" variant="secondary">
         Personalizable

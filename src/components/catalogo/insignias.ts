@@ -27,3 +27,14 @@ export const INSIGNIA_SUAVE = `${INSIGNIA} border-border bg-card text-muted-fore
 
 /** Oferta. Verde lleno con texto navy; el verde es el mismo de la marca para WhatsApp. */
 export const INSIGNIA_OFERTA = `${INSIGNIA} border-transparent bg-[#25d366] text-[#000814]`;
+
+/**
+ * «Nuevo», AUTOMÁTICA: la deriva el servidor de la fecha de publicación (`esNuevo` de
+ * shared, 15 días). El dueño ya no puede escribirla a mano — el contrato la rechaza.
+ *
+ * ⚠️ **Color propio, y NO el verde de la oferta.** Las cuatro pueden salir en la misma
+ * tarjeta, y dos significados con el mismo color es el error que ya se corrigió una vez
+ * acá: si «Nuevo» y «Oferta» fueran iguales, el color dejaría de informar. Blanco de
+ * marca sobre navy: opaca como las otras, y distinta de las tres.
+ */
+export const INSIGNIA_NUEVO = `${INSIGNIA} border-transparent bg-[#EAF1FB] text-[#000814]`;
