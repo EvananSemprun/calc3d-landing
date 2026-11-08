@@ -52,7 +52,11 @@ function sincronizarInsignia() {
       // listeners pendientes en la insignia.
       if (!el.dataset.blPulsoLimpio) {
         el.dataset.blPulsoLimpio = '1';
-        el.addEventListener('animationend', () => el.classList.remove('cart-count--pulso'));
+        // Se filtra por nombre: sin eso, CUALQUIER animación que termine en la insignia
+        // le saca la clase a mitad del pulso. Hoy no hay otra, pero la habrá.
+        el.addEventListener('animationend', (e) => {
+          if (e.animationName === 'cart-pulso') el.classList.remove('cart-count--pulso');
+        });
       }
       el.classList.remove('cart-count--pulso');
       void el.offsetWidth; // reinicia la animación si se agrega seguido
