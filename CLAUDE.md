@@ -135,9 +135,14 @@ inicial *y* en cada navegación.
   router (`{index, scrollX, scrollY}`) y su `onPopState` arranca con
   `if (ev.state === null) return`: pisarlo deja la entrada muda y **el botón ATRÁS cambia
   la URL sin cambiar la pantalla**. Hay que reusar `window.history.state` (lo hace
-  `Catalogo.tsx`, que refleja los filtros en la URL). La regresión es
-  **`src/estado-de-historia.spec.ts`**: falla si aparece un `replaceState(`/`pushState(`
-  con `null` literal en `src/`.
+  `Catalogo.tsx`, que refleja los filtros en la URL). ⚠️ **Y prohibir solo `null` no
+  alcanza: las otras formas rompen PEOR.** Medido: con `undefined`, `history.state` queda
+  `undefined`, el `=== null` del router **no corta**, sigue y revienta con
+  `TypeError: Cannot read properties of undefined (reading 'index')` — de fallo silencioso
+  pasa a excepción en cada ATRÁS; con `{}` o cualquier objeto ajeno tampoco corta y el
+  índice de historia queda basura. La regresión es
+  **`src/estado-de-historia.spec.ts`**, y exige el invariante real: que el primer argumento
+  **sea** `window.history.state` o un `{ ...window.history.state, … }`.
 - ⚠️ **El scroll de la navegación lo arregla `Base.astro`, no el router** (2026-11-07).
   El router restaura la posición de lectura con un `scrollTo` hecho **justo después del
   swap**, cuando la página destino todavía no recuperó su alto (islas `client:visible` sin
