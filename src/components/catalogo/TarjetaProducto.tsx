@@ -88,15 +88,7 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
             )}
           </span>
 
-          <AccionesProducto
-            id={p.id}
-            nombre={p.name}
-            precio={p.price}
-            imagen={p.image}
-            priceTiers={p.priceTiers}
-            minQty={p.minQty}
-            requiresOptions={p.requiresOptions}
-          />
+          <AccionesProducto id={p.id} nombre={p.name} />
         </div>
       </div>
     </article>

@@ -1,68 +1,36 @@
-// Los botones del pie de una tarjeta: "Ver detalle" y "Agregar" (o "Elegir" si el
-// producto exige una opción). Los comparten la tarjeta completa del paginado estático y
-// la del modo filtrado: ordenar o filtrar NO le quita la compra directa al comprador.
-import { useEffect, useRef, useState } from 'react';
-import { Check, Plus } from 'lucide-react';
+// El pie de una tarjeta del catálogo: UN solo botón, que lleva a la ficha del producto.
+//
+// ⚠️ Hasta el 2026-11-08 eran DOS, "Ver detalle" y "Elegir"/"Agregar", y con un producto
+// que exige alguna opción los dos eran el MISMO enlace a la ficha (`requiresOptions`
+// mandaba a elegir allá, porque agregar a ciegas cotizaría el precio base y sin la
+// opción). Dos botones pegados que hacen lo mismo obligan a leer los dos para descubrir
+// que daba igual cuál tocar. En el catálogo real eso era el 100 % de los productos: todos
+// tienen al menos un grupo obligatorio.
+//
+// ⚠️ El `+` se fue con el segundo botón, y no es cosmético: un "más" promete agregar al
+// pedido, y esto navega. El texto dice lo que pasa.
+//
+// ⚠️ Lo que se PIERDE y fue decisión del dueño (2026-11-08): un producto SIN opciones
+// obligatorias ya no se puede agregar al pedido desde la tarjeta; hay que entrar a la
+// ficha. Hoy no existe ninguno. Si vuelve a hacer falta la compra directa desde la
+// grilla, el camino es `agregar()` de `lib/carrito` y vive en la ficha
+// (`AccionesFicha`), no acá.
 import { Button } from '@/components/ui/button';
-import { agregar } from '@/lib/carrito';
-import type { TramoPrecio } from '@/lib/precio';
-import { rutaFicha, type FotoApi } from '@/lib/producto';
-
-const BOTON_FANTASMA =
-  'h-10 px-[18px] border-[var(--card-line-strong)] bg-transparent text-foreground shadow-none hover:border-primary hover:bg-transparent hover:text-primary dark:border-[var(--card-line-strong)] dark:bg-transparent dark:hover:bg-transparent';
-const BOTON_ACCION = 'h-10 px-4';
+import { rutaFicha } from '@/lib/producto';
 
 interface Props {
   id: string;
   nombre: string;
-  precio: number;
-  imagen: FotoApi | null;
-  priceTiers: TramoPrecio[];
-  minQty: number;
-  requiresOptions: boolean;
 }
 
-export default function AccionesProducto({ id, nombre, precio, imagen, priceTiers, minQty, requiresOptions }: Props) {
-  const [agregado, setAgregado] = useState(false);
-  const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(temporizador.current), []);
-
-  const ficha = rutaFicha(id);
-
-  const agregarAlPedido = () => {
-    // El unitario va SIN tramo de mayoreo (igual que la ficha): el carrito aplica el
-    // tramo con la cantidad ACTUAL del renglón (`precioUnitarioItem`). Guardarlo ya
-    // con descuento lo aplicaría dos veces. Respeta el mínimo de compra.
-    agregar({ id, qty: minQty || 1, unit: precio, nombre, imagen, priceTiers, minQty });
-    setAgregado(true);
-    clearTimeout(temporizador.current);
-    temporizador.current = setTimeout(() => setAgregado(false), 1600);
-  };
-
+export default function AccionesProducto({ id, nombre }: Props) {
   return (
-    <>
-      <div className="product-actions">
-        <Button asChild variant="outline" className={BOTON_FANTASMA}>
-          <a href={ficha}>Ver detalle</a>
-        </Button>
-        {requiresOptions ? (
-          // Hay que elegir algo (color, tamaño): agregar a ciegas cotizaría el
-          // precio base y sin la opción. Se lleva a la ficha.
-          <Button asChild className={BOTON_ACCION}>
-            <a href={ficha} aria-label={`Elegir opciones de ${nombre}`}>
-              <Plus aria-hidden="true" /> Elegir
-            </a>
-          </Button>
-        ) : (
-          <Button type="button" className={BOTON_ACCION} onClick={agregarAlPedido} aria-label={`Agregar ${nombre} al pedido`}>
-            {agregado ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
-            {agregado ? 'Agregado' : 'Agregar'}
-          </Button>
-        )}
-      </div>
-      <span className="sr-only" role="status" aria-live="polite">
-        {agregado ? `${nombre} agregado al pedido` : ''}
-      </span>
-    </>
+    <div className="product-actions">
+      <Button asChild className="h-10 px-4">
+        <a href={rutaFicha(id)} aria-label={`Ver ${nombre}`}>
+          Elegir opciones
+        </a>
+      </Button>
+    </div>
   );
 }

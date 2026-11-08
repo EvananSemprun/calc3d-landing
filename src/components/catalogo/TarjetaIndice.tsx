@@ -55,15 +55,7 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
               <s className="dim mono ml-1.5 text-[13px]">${e.compareAt.toFixed(2)}</s>
             )}
           </span>
-          <AccionesProducto
-            id={e.id}
-            nombre={e.name}
-            precio={e.price}
-            imagen={e.image}
-            priceTiers={e.priceTiers}
-            minQty={e.minQty}
-            requiresOptions={e.requiresOptions}
-          />
+          <AccionesProducto id={e.id} nombre={e.name} />
         </div>
       </div>
     </article>
