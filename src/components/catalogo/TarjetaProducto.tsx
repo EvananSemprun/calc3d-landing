@@ -10,11 +10,8 @@ import { equivalenteEnMoneda } from '@/lib/precio';
 import { lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
 import AccionesProducto from './AccionesProducto';
+import { INSIGNIA_DESTACADA, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
 
-const INSIGNIA = 'px-[11px] py-[5px] text-[11.5px] font-semibold tracking-[.08em] uppercase';
-const INSIGNIA_AMARILLA = `${INSIGNIA} border-primary/30 bg-primary/12 text-primary`;
-const INSIGNIA_SUAVE = `${INSIGNIA} border-border bg-card text-muted-foreground`;
-const INSIGNIA_OFERTA = `${INSIGNIA} border-[rgba(37,211,102,.35)] bg-[rgba(37,211,102,.14)] text-[#4be88a]`;
 
 
 interface Props {
@@ -46,7 +43,7 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
           <div className="ph" data-label="sin foto" />
         )}
         <div className="product-badges">
-          {p.badge && <Badge className={INSIGNIA_AMARILLA}>{p.badge}</Badge>}
+          {p.badge && <Badge className={INSIGNIA_DESTACADA}>{p.badge}</Badge>}
           {enOferta && <Badge className={INSIGNIA_OFERTA}>Oferta</Badge>}
           {p.custom && <Badge className={INSIGNIA_SUAVE}>Personalizable</Badge>}
         </div>

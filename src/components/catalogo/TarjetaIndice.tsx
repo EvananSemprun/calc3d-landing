@@ -8,9 +8,8 @@ import { equivalenteEnMoneda } from '@/lib/precio';
 import { rutaFicha } from '@/lib/producto';
 import type { EntradaIndice } from '@/lib/paginacion';
 import AccionesProducto from './AccionesProducto';
+import { INSIGNIA_DESTACADA } from './insignias';
 
-const INSIGNIA_AMARILLA =
-  'px-[11px] py-[5px] text-[11.5px] font-semibold tracking-[.08em] uppercase border-primary/30 bg-primary/12 text-primary';
 
 export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIndice; tasa: TasaApi | null }) {
   const ficha = rutaFicha(e.id);
@@ -32,7 +31,7 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
         )}
         {e.badge && (
           <div className="product-badges">
-            <Badge className={INSIGNIA_AMARILLA}>{e.badge}</Badge>
+            <Badge className={INSIGNIA_DESTACADA}>{e.badge}</Badge>
           </div>
         )}
       </a>
