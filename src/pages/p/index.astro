@@ -1,0 +1,36 @@
+---
+/**
+ * Cáscara para un producto SIN página propia.
+ *
+ * La tienda se arma en el build, así que un producto creado después no tiene HTML. Sin
+ * esto, su enlace daría 404 — y el dueño puso como condición que los enlaces
+ * personalizados sigan funcionando aunque la previsualización sea genérica.
+ *
+ * `public/_redirects` reescribe `/producto/*` acá con código 200: Cloudflare sirve
+ * primero el archivo estático si existe, así que esta página solo entra en juego cuando
+ * NO existe. La barra de direcciones conserva `/producto/<slug>/`, y de ahí
+ * `FichaEnVivo` saca el enlace.
+ *
+ * ⚠️ `noindex`: esta cáscara no tiene contenido para un buscador. La página de verdad,
+ * con su título, su descripción y su JSON-LD, nace en el próximo build. Sin el noindex,
+ * Google podría quedarse con la versión vacía.
+ */
+import Base from '../../layouts/Base.astro';
+import FichaEnVivo from '../../components/ficha/FichaEnVivo';
+import { cargarTienda } from '../../lib/tienda-build';
+
+const { info, raices } = await cargarTienda();
+---
+
+<Base
+  title={`Producto — ${info.businessName}`}
+  description="Ficha de producto"
+  categorias={raices}
+  noindex
+>
+  <section class="section">
+    <div class="container">
+      <FichaEnVivo inicial={null} info={info} client:load />
+    </div>
+  </section>
+</Base>

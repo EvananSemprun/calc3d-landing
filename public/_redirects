@@ -1,0 +1,5 @@
+# Un producto creado DESPUÉS del último build no tiene página propia. Cloudflare sirve
+# primero el archivo estático si existe, así que esta regla solo entra cuando no existe:
+# reescribe (200, no redirige) a la cáscara, que resuelve el producto por su enlace.
+# La barra de direcciones conserva /producto/<slug>/.
+/producto/* /p/ 200

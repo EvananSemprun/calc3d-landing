@@ -12,7 +12,12 @@ const env = { ...loadEnv(process.env.NODE_ENV ?? 'development', process.cwd(), '
 export default defineConfig({
   output: 'static',
   site: env.PUBLIC_SITE_URL || undefined,
-  integrations: [react(), sitemap({ filter: (pagina) => !pagina.includes('/tienda/sin-categoria/') })],
+  integrations: [
+    react(),
+    // Fuera del sitemap: la categoría sin clasificar y la CÁSCARA /p/ (que además es
+    // noindex — pedirle a Google que la visite y que no la indexe es contradictorio).
+    sitemap({ filter: (pagina) => !/\/tienda\/sin-categoria\/|\/p\/$/.test(pagina) }),
+  ],
   server: { port: 5182 },
   vite: {
     // Tailwind 4 se engancha como plugin de Vite (@astrojs/tailwind es solo para Tailwind 3).

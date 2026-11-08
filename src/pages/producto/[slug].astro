@@ -5,6 +5,7 @@
  * descripción). El contenido queda en el HTML (SEO) y la isla `Ficha` lo hidrata.
  */
 import Base from '../../layouts/Base.astro';
+import FichaEnVivo from '../../components/ficha/FichaEnVivo';
 import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
@@ -84,7 +85,7 @@ const jsonLd = jsonLdDeProducto(p, {
 
   <main class="container">
     <BannerCategoria banner={bannerDeCategoria(banners, p.cat)} />
-    <Ficha producto={p} info={info} client:load />
+    <FichaEnVivo inicial={p} slug={p.id} info={info} client:load />
   </main>
 
   {relacionados.length > 0 && (

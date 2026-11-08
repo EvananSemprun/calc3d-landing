@@ -45,6 +45,16 @@ export async function fetchProductosCompletos(): Promise<ProductoVitrina[]> {
   return products.map(adapt);
 }
 
+/**
+ * UNA ficha, por su enlace. La respuesta viene PLANA, sin envoltorio.
+ *
+ * La usa la ficha para refrescarse en vivo y la ruta comodín para resolver un producto
+ * que todavía no tiene página propia. Lanza si no existe: quien llama decide qué mostrar.
+ */
+export async function fetchProducto(slug: string): Promise<ProductoVitrina> {
+  return adapt(await getJson<ProductoApi>(`/public/store/products/${encodeURIComponent(slug)}`));
+}
+
 /** Categorías del negocio, en el orden que les dio el panel. */
 export async function fetchCategorias(): Promise<Categoria[]> {
   const { categories } = await getJson<{ categories: { slug: string; name: string; parentSlug?: string | null }[] }>(
