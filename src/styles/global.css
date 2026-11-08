@@ -372,14 +372,20 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   }
 
   /* ---------- Tarjetas ---------- */
+  /* El borde en REPOSO es el fuerte: sobre un fondo casi negro el relleno no alcanza
+     para delimitar una tarjeta. Medido: subir la superficie tres escalones solo llega
+     a 1,38:1, porque en esa zona la constante de la formula de contraste domina. Lo que
+     delimita es el BORDE, y ahi si hay recorrido: 16% da 1,31 y 30% da 1,85. El 45%
+     queda para el hover, que asi sigue diciendo algo. */
   .card {
     background: var(--card);
-    border: 1px solid var(--card-line);
+    border: 1px solid var(--card-line-strong);
     border-radius: var(--radius-lg);
-    transition: transform 0.3s var(--ease), border-color 0.3s, background 0.3s;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.3s var(--ease), border-color 0.3s, background 0.3s, box-shadow 0.3s;
   }
   @media (hover: hover) {
-    .card:hover { border-color: var(--card-line-strong); }
+    .card:hover { border-color: var(--card-line-hover); }
   }
   .card.pad { padding: 26px; display: flex; flex-direction: column; gap: 10px; }
   .card.pad .h3 { margin: 0; }

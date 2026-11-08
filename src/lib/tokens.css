@@ -13,6 +13,9 @@
   /* --- Paleta de marca --- */
   --ink-900: #000814;   /* fondo principal */
   --ink-800: #001026;
+  --ink-750: #001730;   /* superficie de TARJETA. Entre 800 y 700, y distinta de las dos:
+                            ink-700 ya es --muted/--secondary/--popover, y si la tarjeta
+                            fuera ese mismo color una pildora apagada encima desapareceria. */
   --ink-700: #001D3D;   /* azul profundo */
   --ink-600: #003566;   /* azul medio */
   --ink-500: #0a4a87;
@@ -23,8 +26,13 @@
   --text-faint: #5d76a0;
   --card-line: rgba(157, 178, 204, 0.16);
   --card-line-strong: rgba(157, 178, 204, 0.30);
+  --card-line-hover: rgba(157, 178, 204, 0.45);
 
-  --shadow-tarjeta: 0 12px 28px rgb(0 0 0 / 0.35);
+  /* Sobre un fondo casi negro una sombra negra no se ve: lo que despega la tarjeta es la
+     LINEA DE LUZ de 1px arriba (inset), que simula luz desde arriba. La sombra queda para
+     dar profundidad cuando la tarjeta se levanta. */
+  --shadow-card: inset 0 1px 0 rgba(157, 178, 204, 0.1), 0 8px 20px rgb(0 0 0 / 0.45);
+  --shadow-tarjeta: inset 0 1px 0 rgba(157, 178, 204, 0.14), 0 12px 28px rgb(0 0 0 / 0.5);
   --shadow-yellow: 0 14px 34px -12px rgba(255, 195, 0, 0.45);
   --maxw: 1240px;
   --gut: clamp(20px, 5vw, 56px);
@@ -39,7 +47,7 @@
   /* --- Tokens de shadcn mapeados a la marca --- */
   --background: var(--ink-900);
   --foreground: var(--text);
-  --card: var(--ink-800);
+  --card: var(--ink-750);
   --card-foreground: var(--text);
   --popover: var(--ink-700);
   --popover-foreground: var(--text);
