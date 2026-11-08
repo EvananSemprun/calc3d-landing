@@ -18,6 +18,8 @@ import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappCotizar from '../components/WhatsappCotizar.astro';
+import { cargarTienda } from '../lib/tienda-build';
+import { textoDeBanner } from '../lib/banner';
 import Carrito from '../components/carrito/Carrito';
 import PiezaAMedida from '../components/carrito/PiezaAMedida';
 
@@ -55,6 +57,11 @@ const urlImagen = image ? absoluta(image) : undefined;
 // JSON.stringify no escapa "<": un "</script>" dentro de un texto (p.ej. una descripción
 // escrita por el dueño) cerraría la etiqueta e inyectaría HTML. La secuencia u003c (con barra invertida) es JSON válido.
 const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
+
+// `cargarTienda` memoiza por proceso, así que pedirlo acá no cuesta una consulta más:
+// es la misma foto del catálogo que ven todas las páginas del build.
+const { banners } = await cargarTienda();
+const textoDeLaFranja = textoDeBanner(banners);
 ---
 
 <!doctype html>
@@ -290,7 +297,7 @@ const jsonLdSeguro = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : 
     <slot name="head" />
   </head>
   <body>
-    <Header />
+    <Header texto={textoDeLaFranja} />
     <main>
       <slot />
     </main>

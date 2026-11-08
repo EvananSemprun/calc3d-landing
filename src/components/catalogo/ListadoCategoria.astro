@@ -22,7 +22,13 @@ interface Props {
   info: InfoApi;
   raices: { slug: string; nombre: string }[];
 }
+import BannerCategoria from './BannerCategoria.astro';
+import { bannerDeCategoria } from '@/lib/banner';
+import { cargarTienda } from '@/lib/tienda-build';
+
 const { listado, pagina, info, raices } = Astro.props;
+// `cargarTienda` memoiza: pedir los banners acá no cuesta una consulta más.
+const { banners: todosLosBanners } = await cargarTienda();
 
 const { cat, sub, nombre, nombreMadre, productos, hijas, paginas, sinCategoria } = listado;
 const deLaPagina = paginaDe(productos, pagina);
@@ -54,6 +60,7 @@ const descripcion =
         }
       </nav>
       <span class="kicker">Catálogo · Impresión 3D</span>
+      <BannerCategoria banner={bannerDeCategoria(todosLosBanners, sub ?? cat)} />
       <h1 class="h1 text-balance">{nombre}</h1>
       {/*
         La salida sube UN nivel, no dos: desde una subcategoría vuelve a su madre (el

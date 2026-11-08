@@ -371,6 +371,30 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     .hero-art, .hero-art-link { order: -1; max-width: 200px; }
   }
 
+  /* ---------- Carrusel de la portada ----------
+     Las diapositivas están TODAS en el HTML (ver CarruselHero.astro); el JS solo mueve
+     `data-activa`. Sin JS se ve la primera, que es lo que se quería conservar. */
+  .hero-carrusel .hero-slide { display: none; }
+  .hero-carrusel .hero-slide[data-activa] { display: grid; }
+  .hero-puntos { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
+  .hero-punto {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border: 1px solid var(--card-line-strong);
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .hero-punto[aria-selected='true'] { background: var(--yellow); border-color: var(--yellow); }
+  /* El foco se ve: son los únicos controles del carrusel. */
+  .hero-punto:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+
+  /* ---------- Banner de categoría ---------- */
+  .banner-cat { display: block; margin-bottom: 26px; border-radius: var(--radius-lg); overflow: hidden; }
+  .banner-cat img { display: block; width: 100%; height: auto; }
+
   /* ---------- Tarjetas ---------- */
   /* El borde en REPOSO es el fuerte: sobre un fondo casi negro el relleno no alcanza
      para delimitar una tarjeta. Medido: subir la superficie tres escalones solo llega

@@ -8,6 +8,8 @@ import Base from '../../layouts/Base.astro';
 import Ficha from '../../components/ficha/Ficha';
 import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
+import BannerCategoria from '../../components/catalogo/BannerCategoria.astro';
+import { bannerDeCategoria } from '../../lib/banner';
 import { jsonLdDeProducto } from '../../lib/ficha';
 import { rutaDeSlug } from '../../lib/paginacion';
 import { rutaFicha, type ProductoVitrina } from '../../lib/producto';
@@ -40,6 +42,9 @@ interface Props {
 }
 
 const { producto: p, info, relacionados, categorias, raices } = Astro.props as Props;
+
+// Memoizado: no cuesta una consulta mas.
+const { banners } = await cargarTienda();
 
 const descripcion = p.desc || p.description || `${p.name} — impresión 3D a pedido.`;
 // Con barra final, para que coincida con la URL servida (/producto/slug/) y el sitemap.
@@ -78,6 +83,7 @@ const jsonLd = jsonLdDeProducto(p, {
   </div>
 
   <main class="container">
+    <BannerCategoria banner={bannerDeCategoria(banners, p.cat)} />
     <Ficha producto={p} info={info} client:load />
   </main>
 

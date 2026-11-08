@@ -1,0 +1,126 @@
+---
+/**
+ * El carrusel de la portada: una diapositiva por banner de HERO, con su imagen, su
+ * título y su subtítulo.
+ *
+ * ⚠️ **TODAS las diapositivas se generan en el BUILD y van en el HTML.** Lo que hace el
+ * JS es solo cambiar cuál está activa. Esto es la mitigación del riesgo que el dueño
+ * aceptó el 2026-11-08: el carrusel de tres slides se había quitado en la migración a
+ * Astro justo porque era una isla de React y el mensaje principal no se leía sin JS.
+ * Con las slides en el HTML, sin JS se ve la primera y es correcta, no hay salto de
+ * layout y un buscador las ve todas. Si alguien pasa a construirlas en el cliente, se
+ * pierde lo que se cuidó acá.
+ *
+ * ⚠️ **Un solo banner NO es un carrusel**: no se dibujan controles ni corre el script.
+ *
+ * ⚠️ **Solo la PRIMERA lleva `<h1>`.** Las demás usan `<p class="h1">`: se ven igual y
+ * la página conserva un único encabezado de primer nivel.
+ */
+import LinkButton from '@/components/LinkButton.astro';
+import type { Banner } from '@/lib/banner';
+import { enlaceBanner } from '@/lib/banner';
+
+interface Props {
+  slides: Banner[];
+  rutasDeCategoria?: Record<string, string>;
+}
+const { slides, rutasDeCategoria = {} } = Astro.props;
+
+const conEnlace = slides.map((b) => ({ b, href: enlaceBanner(b, rutasDeCategoria) }));
+const varias = conEnlace.length > 1;
+---
+
+<section
+  class="hero hero-home hero-carrusel"
+  aria-label="Novedades"
+  aria-roledescription={varias ? 'carrusel' : undefined}
+  data-bl-carrusel={varias ? '' : undefined}
+>
+  <div class="container">
+    {
+      conEnlace.map(({ b, href }, i) => (
+        <div
+          class="hero-art-grid hero-slide"
+          data-activa={i === 0 ? '' : undefined}
+          aria-hidden={i === 0 ? undefined : 'true'}
+          aria-roledescription={varias ? 'diapositiva' : undefined}
+          aria-label={varias ? `${i + 1} de ${conEnlace.length}` : undefined}
+        >
+          <div>
+            {i === 0 ? <h1 class="h1 text-balance">{b.title}</h1> : <p class="h1 text-balance">{b.title}</p>}
+            {b.subtitle && <p class="lead">{b.subtitle}</p>}
+            <div class="hero-actions">
+              {href ? <LinkButton href={href}>Ver más</LinkButton> : <LinkButton href="/tienda/">Ver el catálogo</LinkButton>}
+              <LinkButton href="#" variant="outline" cotizar>Cotizar por WhatsApp</LinkButton>
+            </div>
+          </div>
+          <img class="hero-art hero-art--banner" src={b.imageUrl} alt={b.title ?? ''} loading={i === 0 ? 'eager' : 'lazy'} />
+        </div>
+      ))
+    }
+
+    {
+      varias && (
+        <div class="hero-puntos" role="tablist" aria-label="Elegir diapositiva">
+          {conEnlace.map((_, i) => (
+            <button
+              type="button"
+              role="tab"
+              class="hero-punto"
+              data-indice={i}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              aria-label={`Diapositiva ${i + 1}`}
+            />
+          ))}
+        </div>
+      )
+    }
+  </div>
+</section>
+
+{
+  varias && (
+    <script>
+      // Rotación del carrusel. Lo ÚNICO que hace el JS es mover `data-activa`: las
+      // diapositivas ya están en el HTML.
+      //
+      // ⚠️ Con `prefers-reduced-motion: reduce` NO rota solo. Los puntos siguen
+      // funcionando: se saca el movimiento automático, no el control.
+      //
+      // ⚠️ Se engancha a `astro:page-load` (no a DOMContentLoaded) porque con el router
+      // de vistas el documento no se vuelve a cargar al navegar.
+      document.addEventListener('astro:page-load', () => {
+        const caja = document.querySelector('[data-bl-carrusel]');
+        if (!caja) return;
+        const slides = Array.from(caja.querySelectorAll('.hero-slide'));
+        const puntos = Array.from(caja.querySelectorAll('.hero-punto'));
+        if (slides.length < 2) return;
+
+        let actual = 0;
+        const mostrar = (i) => {
+          actual = (i + slides.length) % slides.length;
+          slides.forEach((s, k) => {
+            s.toggleAttribute('data-activa', k === actual);
+            if (k === actual) s.removeAttribute('aria-hidden');
+            else s.setAttribute('aria-hidden', 'true');
+          });
+          puntos.forEach((p, k) => p.setAttribute('aria-selected', k === actual ? 'true' : 'false'));
+        };
+
+        puntos.forEach((p, k) => p.addEventListener('click', () => mostrar(k)));
+
+        const quieto = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let reloj = 0;
+        const arrancar = () => {
+          clearInterval(reloj);
+          if (!quieto.matches) reloj = window.setInterval(() => mostrar(actual + 1), 6000);
+        };
+        arrancar();
+        quieto.addEventListener('change', arrancar);
+        // Al navegar con el router, el <body> se reemplaza: sin esto el reloj seguiría
+        // corriendo contra nodos que ya no existen.
+        document.addEventListener('astro:before-swap', () => clearInterval(reloj), { once: true });
+      });
+    </script>
+  )
+}
