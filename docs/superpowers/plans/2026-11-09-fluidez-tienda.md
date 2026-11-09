@@ -514,9 +514,15 @@ describe('<Cruce>', () => {
   it('en el primer render no cruza (lo horneado se pinta de una)', …);
   it('cruza cuando el valor cambia', …);
   it('no cruza cuando el valor llega igual — el caso normal', …);
-  it('no cambia la altura del bloque', …);  // estructura: un solo nodo, sin wrapper que mida
+  it('sobre un elemento que ya existe NO agrega ningún nodo', …);
+  it('alrededor de un nodo de texto suelto agrega UN solo elemento, en línea', …);
 });
 ```
+
+⚠️ **jsdom no hace layout: `getBoundingClientRect()` devuelve ceros.** Un test de jsdom
+**no puede** comprobar «no cambia la altura» — daría verde con el bloque roto, igual que
+pasa con el CSS (ver Global Constraints). Lo que se amarra acá es la **estructura**; la
+geometría se mide en el navegador (paso 7).
 
 El tercero es el que importa: el refresco contesta lo mismo casi siempre, y ahí **no se
 debe ver nada**.
@@ -528,11 +534,25 @@ debe ver nada**.
 Compara el `valor` con el del render anterior. El CSS reusa la transición de opacidad de
 la Tarea 3, con `--dur-normal`.
 
+**Dos formas, y la razón de que sean dos.** Medido en el marcado real: el precio de la
+tarjeta es un **nodo de texto suelto** dentro de `<span class="price">`
+(`TarjetaProducto.tsx:87`), así que para fundirlo hace falta envolverlo; pero `.price-alt`,
+las insignias y el texto de la franja **ya son elementos propios**, y envolverlos agrega una
+caja al medio sin ninguna necesidad.
+
+- `useCruce(valor)` → devuelve las props para **esparcir sobre un elemento que ya existe**.
+  Cero nodos nuevos. Es la forma que se usa en la mayoría de los casos.
+- `<Cruce valor>` → **solo** para un nodo de texto suelto que no tiene elemento propio.
+  Envuelve en un `<span>` **en línea** (un `<span>` en línea alrededor de texto en línea no
+  cambia la geometría; uno alrededor de un hijo `display: block` o de un hijo de flex/grid
+  **sí** la cambia, y por eso no se usa ahí).
+
 - [ ] **Step 4: Correr el test** → PASS
 
 - [ ] **Step 5: Escribir el test de `useEnVivo` con la API caída**
 
-Punto 4 del Review Focus. En `src/lib/vivo.spec.ts`:
+Punto 4 del Review Focus. En **`src/lib/vivo.spec.tsx`** (con `x` — ya existe; ver la
+advertencia de **Files**, que es la que vale):
 
 ```ts
 it('con la API caída conserva lo horneado y no reporta ningún cambio de dato', …);
@@ -544,7 +564,12 @@ cruzar. Cruzar ahí haría parpadear datos viejos como si fueran nuevos.
 
 - [ ] **Step 6: Correr el test, implementar lo que falte en `vivo.ts`, volver a correr** → PASS
 
-- [ ] **Step 7: Cablear los 4 consumidores y validar con una mutación**
+- [ ] **Step 7: Cablear los 4 consumidores, medir la geometría y validar con una mutación**
+
+**Medir antes de dar por bueno el «no cambia la altura»**, porque ningún test de jsdom lo
+cubre: con el `astro preview` en 5182, leer `getBoundingClientRect()` de `.product-foot`,
+`.price` y la franja **antes y después** del cambio, a **390 y 1280**. Tienen que dar lo
+mismo al píxel. Si alguno se mueve, el envoltorio está en el lugar equivocado.
 
 Envolver precio, precio tachado, insignias y texto de franja. Después, la mutación:
 **borrar el `<Cruce>` de `TarjetaIndice` y dejarlo en `TarjetaProducto`** → los tests de
@@ -555,7 +580,7 @@ sola fue exactamente lo que lo dejó pasar.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/vivo.ts src/lib/vivo.spec.ts src/components/ui/Cruce.tsx \
+git add src/lib/vivo.ts src/lib/vivo.spec.tsx src/components/ui/Cruce.tsx \
         src/components/ui/Cruce.spec.tsx src/components/catalogo src/components/ficha src/components/banners
 git commit -m "feat(tienda): el refresco en vivo cruza el dato que cambió, sin cartel ni destello"
 ```
