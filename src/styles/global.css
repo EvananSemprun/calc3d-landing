@@ -12,27 +12,12 @@
 
    Se declaran los 6 aunque la portada solo descargue 4 (400, 600, 700 y 900; el 500 y el
    800 quedan `unloaded`): el navegador baja únicamente las caras que una página usa, así
-   que declarar de más no cuesta tráfico.
+   que declarar de más no cuesta tráfico. La precarga, en cambio, sí: va UNA sola y está
+   en `Base.astro`.
 
-   ⚠️ **LA ESTRATEGIA COMPLETA SON DOS PIEZAS, Y NO HAY UNA TERCERA:**
-
-   1. `font-display: swap` (lo trae `@fontsource` en cada cara) → el texto **se ve desde el
-      primer cuadro**, pintado con la familia de respaldo de acá abajo.
-   2. Los **overrides de métrica** de esa familia → cuando Poppins llega, el texto cambia de
-      dibujo pero **no se mueve**: 0 px de salto (medido; antes eran 37,1 px en el `h1` de
-      la portada).
-
-   Juntas, **esperar la fuente no cuesta nada**, y por eso **no hay precarga y no debe
-   haberla**: se probó precargar el woff2 del peso 900 y el primer pintado dio **igual o
-   peor** (portada móvil LCP 664 ms con precarga vs **612 sin**; escritorio 624 vs 612; sin
-   interceptar nada, 792 vs 772 y 788 vs **712**). El woff2 va en prioridad alta y le roba
-   ancho de banda al CSS que bloquea el pintado. Lo único que compraba era cerrar la ventana
-   en que se ve el respaldo, que es justo lo que la pieza 2 volvió inofensivo. El detalle y
-   el método están en `Base.astro`, y lo vigila `src/fuentes.spec.ts`.
-
-   ⚠️ Y `font-display` no se cambia a `block` NUNCA: dejaría el texto **invisible** hasta
-   que llegue la fuente —rompe la pieza 1— y el elemento que define el LCP es texto. Lo
-   vigila `src/fuentes.spec.ts`.
+   `@fontsource` trae `font-display: swap` en cada cara. Eso no se cambia a `block`
+   NUNCA: dejaría el texto invisible hasta que llegue la fuente, y el que define el LCP es
+   texto. Lo vigila `src/fuentes.spec.ts`.
    ============================================================ */
 @import "@fontsource/poppins/latin-400.css";
 @import "@fontsource/poppins/latin-500.css";
