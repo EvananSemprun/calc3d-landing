@@ -19,9 +19,65 @@ import { join } from 'node:path';
  * ⚠️ Es una lista a mano y no un patrón general («cualquier palabra terminada en -ás»)
  * porque ese patrón se come «además», «después», «atrás» y «quizás», y un guardián que
  * grita por todo termina desactivado.
+ *
+ * ⚠️ **SIN ``, igual que `LUGAR`, y por el mismo motivo.** La primera versión usaba
+ * `…` y por eso NO encontraba ninguna forma terminada en vocal acentuada: «mirá»,
+ * «probá», «elegí». En JavaScript una vocal acentuada no es carácter de palabra, así
+ * que después de la «á» no hay frontera que valer. Quedó «Mirá por categoría» en la
+ * portada, publicado, hasta el 2026-11-09. Las que terminan en «s» sí se encontraban,
+ * y eso hizo parecer que el guardián funcionaba.
  */
-const VOSEO =
-  /\b(vos|mirá|tenés|tenelo|elegís|podés|contanos|contás|encargás|escribinos|querés|coordinás|pagás|revisás|aprobás|buscás|encontrás|necesitás|mandanos|preguntanos|confirmalo|probá|acordate|fijate|sabés|decís|decinos|avisanos|llevate|pedilo)\b/i;
+const LETRA = '[a-záéíóúñA-ZÁÉÍÓÚÑ]';
+const FORMAS = [
+  'vos',
+  'mirá',
+  'mirálo',
+  'tenés',
+  'tenelo',
+  'elegís',
+  'elegí',
+  'podés',
+  'contanos',
+  'contás',
+  'contá',
+  'encargás',
+  'escribinos',
+  'escribí',
+  'querés',
+  'coordinás',
+  'pagás',
+  'revisás',
+  'revisá',
+  'aprobás',
+  'buscás',
+  'encontrás',
+  'necesitás',
+  'mandanos',
+  'mandá',
+  'preguntanos',
+  'confirmalo',
+  'probá',
+  'acordate',
+  'fijate',
+  'sabés',
+  'decís',
+  'decinos',
+  'avisanos',
+  'llevate',
+  'pedilo',
+  'pedí',
+  'hacé',
+  'armá',
+  'cargá',
+  'agregá',
+  'poné',
+  'sumá',
+  'usá',
+  'andá',
+  'guardá',
+  'dale',
+];
+const VOSEO = new RegExp(`(?<!${LETRA})(${FORMAS.join('|')})(?!${LETRA})`, 'i');
 
 /**
  * Argentinismos de lugar.

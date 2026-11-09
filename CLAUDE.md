@@ -599,10 +599,14 @@ vuelve a aparecer una forma de voseo en texto visible. Tres cosas que no hay que
 - ⚠️ **La lista de formas es A MANO.** Un patrón general («cualquier palabra terminada
   en -ás») se come «además», «después», «atrás» y «quizás»; un guardián que grita por
   todo termina desactivado.
-- ⚠️ **`` NO funciona junto a una vocal acentuada en JavaScript.** Un `/acá/` no
-  encuentra «desde acá»: después de la «á» no hay frontera de palabra. La primera
-  versión de este test pasó en VERDE con «desde acá» escrito en la portada. Van miradas
-  laterales explícitas (`(?<![a-záéíóúñ])`).
+- ⚠️ **`` NO funciona junto a una vocal acentuada en JavaScript**, y esto mordió DOS
+  veces. Un `/acá/` no encuentra «desde acá»: después de la «á» no hay frontera de
+  palabra. La primera versión del test pasó en VERDE con «desde acá» escrito en la
+  portada. Se arregló en `LUGAR`… y se dejó el `` en la lista de voseo, así que
+  **ninguna forma terminada en vocal acentuada se detectaba**: «mirá», «probá»,
+  «mandá», «elegí». Las que terminan en «s» sí, y eso hizo parecer que el guardián
+  andaba. «Mirá por categoría» siguió publicado en la portada hasta que se corrigió, el
+  mismo día. Las dos listas usan miradas laterales (`(?<![a-záéíóúñ…])`).
 - Los comentarios del código se saltan (de línea Y de bloque): están en el español de
   quien los escribió y no los lee ningún cliente. Validado con dos mutaciones el
   2026-11-09: voseo en texto visible → rojo; el mismo voseo en un comentario → verde.

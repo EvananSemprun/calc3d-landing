@@ -102,7 +102,7 @@ export default function Buscador() {
         >
           {estado === 'error' && (
             <li role="presentation" className="px-3 py-2 text-sm text-muted-foreground">
-              No pudimos cargar la búsqueda. Probá desde el <a className="underline" href="/tienda/">catálogo</a>.
+              No pudimos cargar la búsqueda. Prueba desde el <a className="underline" href="/tienda/">catálogo</a>.
             </li>
           )}
           {estado === 'cargando' && (
@@ -110,7 +110,7 @@ export default function Buscador() {
           )}
           {estado === 'listo' && resultados.length === 0 && (
             <li role="presentation" className="px-3 py-2 text-sm text-muted-foreground">
-              Nada con «{consulta.trim()}». Probá con otra palabra o <a className="underline" href="/tienda/">mirá el catálogo</a>.
+              Nada con «{consulta.trim()}». Prueba con otra palabra o <a className="underline" href="/tienda/">mira el catálogo</a>.
             </li>
           )}
           {resultados.map((r, i) => (
