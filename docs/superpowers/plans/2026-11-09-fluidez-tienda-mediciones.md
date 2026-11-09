@@ -139,4 +139,77 @@ reportado un LCP de 30 segundos en el listado.
 
 ---
 
+## El script exacto, para que la Tarea 8 mida IGUAL
+
+⚠️ **La línea base no guardó este script y eso fue un error.** Sin él, la Tarea 8 mide con
+otro arnés —y posiblemente otro binario de Chromium— y las dos tablas dejan de ser
+comparables, que es lo único que les da sentido. Queda escrito acá para que se reuse tal
+cual. Se corre con Playwright, con el preview en 5182.
+
+```js
+async (page) => {
+  const browser = page.context().browser();
+  const BASE = 'http://localhost:5182';
+  const urls = [
+    ['portada', '/'],
+    ['listado', '/tienda/navidad/'],
+    ['ficha', '/producto/arbol-de-navidad-con-nombres/'],
+  ];
+  const init = () => {
+    window.__lcp = 0; window.__cls = 0; window.__shifts = [];
+    try {
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) {
+        window.__lcp = e.startTime;
+        window.__lcpEl = e.element ? (e.element.className || e.element.tagName) : null;
+      } }).observe({ type: 'largest-contentful-paint', buffered: true });
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) {
+        window.__cls += e.value;
+        for (const s of (e.sources || [])) if (s.node)
+          window.__shifts.push(String(s.node.className || s.node.tagName).slice(0, 40));
+      } }).observe({ type: 'layout-shift', buffered: true });
+    } catch (e) { window.__err = String(e); }
+  };
+  const out = [];
+  for (const [nombre, url] of urls) {
+    for (let i = 1; i <= 5; i++) {
+      // Contexto nuevo por corrida = caché FRÍA. Es parte del método.
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const p = await ctx.newPage();
+      await p.addInitScript(init);
+      const cdp = await ctx.newCDPSession(p);
+      await cdp.send('Network.enable');
+      await cdp.send('Network.emulateNetworkConditions', {
+        offline: false, latency: 150,
+        downloadThroughput: 1.6 * 1024 * 1024 / 8,
+        uploadThroughput: 750 * 1024 / 8,
+      });
+      try {
+        await p.goto(BASE + url, { waitUntil: 'load', timeout: 60000 });
+      } catch (e) { out.push({ nombre, run: i, error: String(e).slice(0, 120) }); await ctx.close(); continue; }
+      await p.waitForTimeout(2500);
+      const m = await p.evaluate(() => ({
+        lcp: window.__lcp, cls: window.__cls, el: window.__lcpEl,
+        shifts: [...new Set(window.__shifts)].slice(0, 5),
+      }));
+      out.push({ nombre, run: i, lcp: Math.round(m.lcp), cls: Number(m.cls.toFixed(4)),
+                 lcpEl: m.el, culpables: m.shifts });
+      await ctx.close();
+    }
+  }
+  return JSON.stringify(out);
+}
+```
+
+Para escritorio, lo mismo con `viewport: { width: 1280, height: 800 }`.
+
+⚠️ **La versión de Chromium es parte del método.** La línea base no la anotó, así que la
+Tarea 8 tiene que **re-medir la base Y el después con el mismo binario, en la misma
+sesión**, y comparar esas dos. Una mejora o un empeoramiento de un 10-15 % entre tablas
+medidas con binarios distintos no dice nada.
+
+⚠️ **El umbral habla de la mediana de 5 corridas.** Si una tanda da un resultado dudoso, la
+salida correcta es **aislar la variable** (por ejemplo neutralizar el cambio en el CSS del
+`dist/` ya construido y volver a medir), no ampliar la muestra hasta que el número entre.
+Ampliar la muestra cambia el método a mitad de camino y hace la comparación incomparable.
+
 ## Después del trabajo — pendiente (Tarea 8)
