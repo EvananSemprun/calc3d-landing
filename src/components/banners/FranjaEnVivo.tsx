@@ -1,3 +1,4 @@
+import Cruce from '@/components/ui/Cruce';
 import { fetchBanners } from '@/lib/api';
 import { textoDeBanner } from '@/lib/banner';
 import { useEnVivo } from '@/lib/vivo';
@@ -15,5 +16,10 @@ import { useEnVivo } from '@/lib/vivo';
  */
 export default function FranjaEnVivo({ inicial, respaldo }: { inicial: string | null; respaldo: string }) {
   const { datos } = useEnVivo(inicial, async () => textoDeBanner(await fetchBanners()));
-  return <>{datos ?? respaldo}</>;
+  const texto = datos ?? respaldo;
+  // El texto de la franja es un nodo suelto dentro del `<span>` del emoji (`Header.astro`),
+  // así que para fundirlo hace falta envolverlo. Prender o apagar el banner de texto desde
+  // el panel cruza en vez de saltar; el respaldo cuenta como un valor más (si el dueño
+  // apaga el banner, el texto de siempre vuelve cruzando).
+  return <Cruce valor={texto}>{texto}</Cruce>;
 }

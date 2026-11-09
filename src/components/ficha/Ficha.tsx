@@ -10,6 +10,7 @@ import Galeria from './Galeria';
 import Opciones from './Opciones';
 import Personalizacion from './Personalizacion';
 import { Badge } from '@/components/ui/badge';
+import { useCruce } from '@/components/ui/Cruce';
 import { INSIGNIA_NUEVO } from '@/components/catalogo/insignias';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -68,6 +69,15 @@ export default function Ficha({ producto: p, info }: Props) {
   // es por unidad: sin esta cuenta, subir la cantidad no muestra nada.
   const total = totalRenglon(precioUnit, cantidad);
   const equivalenteTotal = equivalenteEnMoneda(total, info.rate);
+
+  // El cruce del refresco en vivo (ver `ui/Cruce.tsx`).
+  // ⚠️ **El valor que lo dispara es `p.price`, NO el número que se pinta.** Lo de
+  // pantalla es el total de lo que se está por pedir y se mueve cada vez que el visitante
+  // toca `+` o elige otra opción: fundirlo ahí convertiría el contador en un parpadeo, y
+  // cinco clics seguidos en un tartamudeo. Lo que cruza es lo que cambió SIN que el
+  // visitante lo pidiera, o sea el precio que el dueño corrigió desde el panel.
+  const crucePrecio = useCruce(p.price);
+  const cruceInsignia = useCruce(p.badge);
 
   const elegir = (grupo: string, valor: string) => {
     setElegido((prev) => ({ ...prev, [grupo]: valor }));
@@ -136,7 +146,11 @@ export default function Ficha({ producto: p, info }: Props) {
   };
 
   const insignias = [
-    p.badge && <Badge key="badge">{p.badge}</Badge>,
+    p.badge && (
+      <Badge key="badge" {...cruceInsignia}>
+        {p.badge}
+      </Badge>
+    ),
     // La automatica va junto a la del dueno, con SU color: las dos pueden salir a la vez
     // y con el mismo tono no se distinguiria cual dice el y cual dice el sistema.
     p.nuevo && (
@@ -191,7 +205,10 @@ export default function Ficha({ producto: p, info }: Props) {
           «$ BCV» y no «USD»: lo publicado está en dólares BCV, que no es el dólar del
           costeo (ver CLAUDE.md de la API, «el margen en USDT»).
         */}
-        <div className="pdp-price">
+        {/* Los dos renglones del precio llevan la MISMA marca: son el mismo dato (el
+            unitario y el total salen de `p.price`), así que fundir uno y no el otro
+            dejaría media cifra cruzando y la otra media cambiando de golpe. */}
+        <div className="pdp-price" {...crucePrecio}>
           ${total.toFixed(2)}
           {/* «BCV» a secas: el signo ya esta en el numero, y «$1.50 $ BCV» se lee mal. */}
           <small> BCV</small>
@@ -201,7 +218,7 @@ export default function Ficha({ producto: p, info }: Props) {
             </span>
           )}
         </div>
-        <p className="pdp-unit dim">
+        <p className="pdp-unit dim" {...crucePrecio}>
           ${precioUnit.toFixed(2)} c/u
           {equivalente && (
             <span className="price-alt-inline">

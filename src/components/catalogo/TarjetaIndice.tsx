@@ -4,6 +4,7 @@
 // Comparte clases con <TarjetaProducto>, la completa del paginado estático.
 import type { TasaApi } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import Cruce, { useCruce } from '@/components/ui/Cruce';
 import Foto from '@/components/ui/Foto';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import { rutaFicha } from '@/lib/producto';
@@ -16,6 +17,12 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
   const ficha = rutaFicha(e.id);
   const equivalente = equivalenteEnMoneda(e.price, tasa);
   const enOferta = !!e.compareAt && e.compareAt > e.price;
+  // Los MISMOS cruces que `TarjetaProducto`: las dos tarjetas se ven iguales y son dos
+  // componentes distintos, así que lo que cruza en una tiene que cruzar en la otra (lo
+  // exige `ui/Cruce.spec.tsx`, que las prueba en paralelo).
+  const cruceEquivalente = useCruce(equivalente);
+  const cruceTachado = useCruce(e.compareAt);
+  const cruceInsignia = useCruce(e.badge);
   return (
     <article className="card product">
       <a className="product-media" href={ficha} aria-label={`Ver ${e.name}`}>
@@ -32,7 +39,11 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
         )}
         {(e.badge || e.nuevo) && (
           <div className="product-badges">
-            {e.badge && <Badge className={INSIGNIA_DESTACADA}>{e.badge}</Badge>}
+            {e.badge && (
+              <Badge className={INSIGNIA_DESTACADA} {...cruceInsignia}>
+                {e.badge}
+              </Badge>
+            )}
             {e.nuevo && <Badge className={INSIGNIA_NUEVO}>Nuevo</Badge>}
           </div>
         )}
@@ -46,15 +57,19 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
         <div className="product-foot">
           <span className="price">
             {e.desde && <small className="price-desde">desde </small>}
-            ${e.price.toFixed(2)}
+            {/* Nodo de texto suelto, igual que en `TarjetaProducto`: acá sí hace falta
+                envolverlo para poder fundirlo. */}
+            <Cruce valor={e.price}>${e.price.toFixed(2)}</Cruce>
             <small> BCV</small>
             {equivalente && (
-              <span className="price-alt">
+              <span className="price-alt" {...cruceEquivalente}>
                 ≈ {equivalente} {tasa?.currencyCode}
               </span>
             )}
             {enOferta && e.compareAt != null && (
-              <s className="dim mono ml-1.5 text-[13px]">${e.compareAt.toFixed(2)}</s>
+              <s className="dim mono ml-1.5 text-[13px]" {...cruceTachado}>
+                ${e.compareAt.toFixed(2)}
+              </s>
             )}
           </span>
           <AccionesProducto id={e.id} nombre={e.name} />

@@ -6,6 +6,7 @@
 // `margin-top:auto`, así las tarjetas de una misma fila se alinean aunque su texto
 // mida distinto. Los estilos (`.product*`) viven en global.css.
 import { Badge } from '@/components/ui/badge';
+import Cruce, { useCruce } from '@/components/ui/Cruce';
 import Foto from '@/components/ui/Foto';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import { hayRecargo, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
@@ -36,6 +37,16 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
   const minimo = textoDeMinimo(p);
   const equivalente = equivalenteEnMoneda(p.price, tasa);
 
+  // El refresco en vivo cruza el dato que el dueño corrigió desde el panel, en vez de
+  // reemplazarlo de golpe. Son los tres textos que cambian de valor sin mover la
+  // tarjeta; un producto que aparece o desaparece vale SECO (ver `ui/Cruce.tsx`).
+  // ⚠️ `TarjetaIndice` —la del filtrado— tiene que cruzar LO MISMO. Son dos componentes
+  // con el mismo aspecto y este repo ya dejó pasar dos veces lo que se cubrió en uno
+  // solo (la insignia «Nuevo», la moneda «USD»). Lo exige `ui/Cruce.spec.tsx`.
+  const cruceEquivalente = useCruce(equivalente);
+  const cruceTachado = useCruce(p.compareAt);
+  const cruceInsignia = useCruce(p.badge);
+
   return (
     <article className="card product">
       <a className="product-media" href={ficha} aria-label={`Ver ${p.name}`}>
@@ -52,7 +63,11 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
           <div className="ph" data-label="sin foto" />
         )}
         <div className="product-badges">
-          {p.badge && <Badge className={INSIGNIA_DESTACADA}>{p.badge}</Badge>}
+          {p.badge && (
+            <Badge className={INSIGNIA_DESTACADA} {...cruceInsignia}>
+              {p.badge}
+            </Badge>
+          )}
           {p.nuevo && <Badge className={INSIGNIA_NUEVO}>Nuevo</Badge>}
           {enOferta && <Badge className={INSIGNIA_OFERTA}>Oferta</Badge>}
           {p.custom && <Badge className={INSIGNIA_SUAVE}>Personalizable</Badge>}
@@ -84,15 +99,20 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
         <div className="product-foot">
           <span className="price">
             {hayRecargo(p) && <small className="price-desde">desde </small>}
-            ${p.price.toFixed(2)}
+            {/* El precio es un nodo de texto SUELTO: no tiene elemento propio que marcar,
+                así que acá sí hace falta envolverlo. El `<span>` va pelado y en línea
+                (medido: `.price` y `.product-foot` al píxel, a 390 y 1280). */}
+            <Cruce valor={p.price}>${p.price.toFixed(2)}</Cruce>
             <small> BCV</small>
             {equivalente && (
-              <span className="price-alt">
+              <span className="price-alt" {...cruceEquivalente}>
                 ≈ {equivalente} {tasa?.currencyCode}
               </span>
             )}
             {enOferta && p.compareAt != null && (
-              <s className="dim mono ml-1.5 text-[13px]">${p.compareAt.toFixed(2)}</s>
+              <s className="dim mono ml-1.5 text-[13px]" {...cruceTachado}>
+                ${p.compareAt.toFixed(2)}
+              </s>
             )}
           </span>
 

@@ -22,6 +22,15 @@ import { NoExiste } from './api';
  * para el primero.** Si la API no contesta, lo del último build es lo mejor que hay. Si
  * la API contesta que el producto ya no está, lo horneado es justamente lo que NO hay
  * que mostrar: es la ficha de algo que no se vende. Mezclarlos fue el bug.
+ *
+ * ⚠️ **Con `error`, `datos` tiene que seguir siendo LA MISMA REFERENCIA que `inicial`, y
+ * eso ahora es un contrato** (2026-11-09). Quien consume esto le pasa el dato a `useCruce`
+ * (`components/ui/Cruce.tsx`), que funde lo que cambió: reponer lo horneado en el `catch`
+ * —un `setDatos({ ...inicial })`, un `structuredClone`, volver a derivarlo— dejaría la
+ * misma pantalla pero con una referencia nueva, así que el cruce se dispararía y haría
+ * **parpadear datos viejos como si fueran nuevos**, justo cuando lo que hay en pantalla
+ * es lo MENOS fresco. No cambió nada: no hay nada que cruzar. Lo fija
+ * `vivo.spec.tsx` con una sonda de objeto (con una de texto, la mutación queda verde).
  */
 export function useEnVivo<T>(
   inicial: T,

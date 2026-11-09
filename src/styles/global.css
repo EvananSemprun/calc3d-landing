@@ -1504,3 +1504,59 @@ img[data-fundir][data-cargando] { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   img[data-fundir][data-cargando] { opacity: 1; }
 }
+
+/* ---------- El refresco en vivo CRUZA el dato que cambió ----------
+   La tienda se hornea en el build y al montar vuelve a preguntarle a la API (`useEnVivo`).
+   Cuando el dueño corrigió un precio, el viejo desaparecía y el nuevo aparecía de golpe.
+   Esto lo funde: `useCruce` / `<Cruce>` (`components/ui/Cruce.tsx`) marcan el elemento
+   cuyo dato cambió y el dato nuevo entra en `--dur-normal`.
+
+   ⚠️ **VA FUERA DE `@layer`**, como la «Guardia de movimiento», los estilos de sonner y
+   el fundido de las fotos: para las declaraciones normales, lo que no está en una capa le
+   gana a las capas, y así esto no queda a merced del orden de `@layer components`.
+   **Sin `!important`**: para los `!important` el orden de las capas se INVIERTE y lo que
+   está fuera de capa queda ÚLTIMO, así que uno acá le haría perder a la guardia de
+   `prefers-reduced-motion`.
+
+   ⚠️ **ES UNA `animation` Y NO UNA `transition`, y las dos razones son medibles.**
+
+   1. **Una transición de 0 a 1 necesita declarar la opacidad 0 como estado de reposo, y
+      la guardia de `reduce` NO toca los valores iniciales** (solo duraciones y retardos,
+      ver la guardia arriba). Ese mecanismo deja a quien pidió menos movimiento esperando
+      una transición para VER EL DATO: es el agujero que en las fotos hubo que tapar con
+      un techo por tiempo (`TECHO_CARGA_MS`) y una regla aparte. Acá no hay nada que
+      tapar: el reposo es opacidad 1 y el 0 vive solo DENTRO del keyframe, así que con
+      `reduce` la animación dura 0.01ms, termina en el estado base y el dato se ve. Si
+      este bloque se borrara entero, el dato también se ve.
+   2. **`transition` es un atajo y acá, fuera de capa, pisaría las transiciones encapadas
+      de sus propios blancos.** Es la misma trampa que obliga a listar `transform` en el
+      fundido de las fotos, pero PEOR: los blancos del cruce son elementos cualesquiera
+      —una insignia es el `Badge` de shadcn, que trae `transition-[color,box-shadow]` para
+      su anillo de foco— así que la lista a mantener no tendría fin. `animation` no le
+      pisa nada a nadie.
+
+   ⚠️ **Los dos nombres de keyframe no son copiar y pegar por descuido.** Una animación de
+   CSS no se reinicia si su `animation-name` no cambia: con una sola marca, un segundo
+   cambio del mismo dato no cruzaría. `useCruce` alterna entre `1` y `2`, así que cada
+   cambio estrena nombre. Hoy casi no podría pasar (`useEnVivo` pide una sola vez y no
+   reintenta), pero el defecto sería invisible para el próximo que use esto. */
+@keyframes cruce-1 { from { opacity: 0; } }
+@keyframes cruce-2 { from { opacity: 0; } }
+[data-cruce='1'] { animation: cruce-1 var(--dur-normal) var(--ease); }
+[data-cruce='2'] { animation: cruce-2 var(--dur-normal) var(--ease); }
+
+/* Con `prefers-reduced-motion` el cruce NO EXISTE: el dato nuevo aparece y se queda.
+   ⚠️ **Esto no es adorno, está medido** (2026-11-09). La guardia de movimiento baja la
+   duración a `0.01ms`, pero el keyframe igual arranca en opacidad 0 y el navegador
+   necesita un cuadro para pasar: muestreado cuadro a cuadro con `reduce` activo, el dato
+   quedaba invisible **3 cuadros (~50 ms)** antes de aparecer. O sea que quien pidió no
+   ver movimiento recibía un destello —exactamente lo contrario de lo que pidió— y ni
+   siquiera el cruce a cambio. Con `animation-name: none` no hay nada que correr: el dato
+   se ve desde el primer cuadro (medido: 12 de 12 cuadros en opacidad 1). Es la misma
+   lección que la regla de `img[data-fundir][data-cargando]` de arriba.
+   Sin `!important` (uno acá invertiría el orden de capas y le haría perder a la guardia
+   de movimiento): gana por orden, que alcanza contra una regla de la misma
+   especificidad. */
+@media (prefers-reduced-motion: reduce) {
+  [data-cruce] { animation: none; }
+}
