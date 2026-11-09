@@ -1328,3 +1328,37 @@ html[data-bl-navegado] :is(
   color: var(--ink-900);
   font-weight: 600;
 }
+
+/* ---------- Las fotos entran con un cruce corto ----------
+   ⚠️ **VA FUERA DE `@layer`**, como la «Guardia de movimiento» y los estilos de sonner:
+   para las declaraciones normales, lo que no está en una capa le gana a las capas, y así
+   esto no queda a merced del orden de `@layer components`. **Sin `!important`**: para los
+   `!important` el orden de las capas se INVIERTE y lo que está fuera de capa queda
+   ÚLTIMO, así que un `!important` acá le haría perder a la guardia de
+   `prefers-reduced-motion`, que también vive fuera de capa.
+
+   Dos atributos, y el reparto NO es casual:
+   - `data-fundir` lo pone `<Foto>` en el marcado (también en el HTML horneado) y solo
+     declara la TRANSICIÓN. Declarar una transición no esconde nada.
+   - `data-cargando` es la opacidad 0, y la pone ÚNICAMENTE el JS del cliente después de
+     montar. Si viviera en el HTML del build, Google y quien tenga el JS roto recibirían
+     las fotos invisibles: es el modo de falla de toda esta pieza.
+   Separarlos es lo que permite que el fundido exista sin que el build esconda nada: la
+   transición tiene que estar declarada en el estado FINAL (sin `data-cargando`) o quitar
+   la marca sería un salto seco en vez de un cruce.
+
+   ⚠️ **`transform` está en la lista a propósito, y sacarlo rompe algo que no falla.**
+   `.product-photo` ya declara `transition: transform var(--dur-lenta) var(--ease)` dentro
+   de `@layer components` (el zoom del `:hover` de la tarjeta). `transition` es un
+   atajo, y este bloque está fuera de capa: con solo `opacity` acá, la de `transform`
+   quedaría PISADA y el zoom del hover moriría en silencio — sin error, con el build
+   verde y `hover-con-reduce.spec.ts` igual de verde, porque ese guardián mira la guardia
+   de `reduce`, no si la transición existe.
+
+   Con `prefers-reduced-motion` la guardia de arriba baja la duración a `0.01ms`: la foto
+   aparece de golpe, que es lo correcto. Y **no cambia el valor inicial**, así que lo que
+   la vuelve visible es el techo por tiempo de `lib/foto.ts`, no el CSS. */
+img[data-fundir] {
+  transition: opacity var(--dur-normal) var(--ease), transform var(--dur-lenta) var(--ease);
+}
+img[data-fundir][data-cargando] { opacity: 0; }

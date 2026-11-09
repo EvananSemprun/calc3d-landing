@@ -1,3 +1,4 @@
+import Foto from '@/components/ui/Foto';
 import { fetchBanners } from '@/lib/api';
 import { bannerDeCategoria, enlaceBanner, type Banner } from '@/lib/banner';
 import { useEnVivo } from '@/lib/vivo';
@@ -29,7 +30,7 @@ export default function BannerCategoriaEnVivo({
   if (!datos?.imageUrl) return null;
 
   const href = enlaceBanner(datos, rutasDeCategoria);
-  const img = <img src={datos.imageUrl} alt={datos.title ?? ''} loading="lazy" />;
+  const img = <Foto src={datos.imageUrl} alt={datos.title ?? ''} loading="lazy" />;
 
   return href ? (
     <a className="banner-cat" href={href} aria-label={datos.title ? `Ver: ${datos.title}` : 'Ver más'}>

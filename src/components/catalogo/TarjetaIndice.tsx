@@ -4,6 +4,7 @@
 // Comparte clases con <TarjetaProducto>, la completa del paginado estático.
 import type { TasaApi } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import Foto from '@/components/ui/Foto';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import { rutaFicha } from '@/lib/producto';
 import type { EntradaIndice } from '@/lib/paginacion';
@@ -19,7 +20,7 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
     <article className="card product">
       <a className="product-media" href={ficha} aria-label={`Ver ${e.name}`}>
         {e.image ? (
-          <img
+          <Foto
             className="product-photo"
             src={e.image.url}
             alt={e.image.alt || e.name}

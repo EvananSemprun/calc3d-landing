@@ -12,6 +12,20 @@ import { defineConfig } from 'vitest/config';
  * | `*.spec.ts`  | `node`  | funciones puras de `lib/` (precios, rutas, filtros) |
  * | `*.spec.tsx` | `jsdom` | componentes renderizados (testing-library) |
  *
+ * ⚠️ **Y un TERCER proyecto, `dist`, que `pnpm test` NO corre** (2026-11-09):
+ * `src/dist-sin-js.spec.ts` lee el `dist/` construido, así que exige un `pnpm build`
+ * previo **y el build le pega a la API**. Atar `pnpm test` —y con él el gancho de
+ * pre-push, que hoy tarda segundos— a tener la API arriba y a un build de minutos es lo
+ * que entrena el `--no-verify`. Se corre a mano con `pnpm test:dist`, junto con
+ * `pnpm check`.
+ *
+ * Por eso los scripts filtran por proyecto en vez de por ruta:
+ * `pnpm test` = `vitest run --project=!dist` y `pnpm test:dist` = `--project=dist`.
+ * ⚠️ Excluir el archivo del proyecto `node` **y nada más** no alcanza: entonces ningún
+ * proyecto lo incluye y `vitest run <ruta>` responde «No test files found» y sale en
+ * **rojo** sin haber mirado nada (probado el 2026-11-09). Un proyecto propio es lo que
+ * lo hace ejecutable a demanda.
+ *
  * El patrón es la extensión y no una lista de rutas porque una lista hay que acordarse de
  * actualizarla: un spec de componente nuevo que no estuviera en ella correría en `node` y
  * fallaría con "document is not defined".
@@ -33,7 +47,27 @@ export default defineConfig({
       {
         // `extends: true` hereda el alias de arriba en vez de repetirlo.
         extends: true,
-        test: { name: 'node', environment: 'node', include: ['src/**/*.spec.ts'] },
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: ['src/**/*.spec.ts'],
+          // ⚠️ `dist-sin-js.spec.ts` lee `dist/`, así que exige un `pnpm build` previo —
+          // y el build le pega a la API. Atar `pnpm test` (y con él el gancho de
+          // pre-push, que hoy tarda segundos) a tener la API arriba y a un build de
+          // minutos es lo que entrena el `--no-verify`. Se corre aparte con
+          // `pnpm test:dist`, a mano, junto con `pnpm check`.
+          // No hace falta repetir los `exclude` por defecto (node_modules y compañía):
+          // el `include` de arriba solo mira dentro de `src/`.
+          exclude: ['src/dist-sin-js.spec.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dist',
+          environment: 'node',
+          include: ['src/dist-sin-js.spec.ts'],
+        },
       },
       {
         extends: true,

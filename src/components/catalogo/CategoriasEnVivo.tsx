@@ -1,3 +1,4 @@
+import Foto from '@/components/ui/Foto';
 import { fetchCategorias, fetchProductosCompletos } from '@/lib/api';
 import { categoriasDelIndice, listadosDe, raicesConProductos, rutaDeCategoria } from '@/lib/paginacion';
 import { useEnVivo } from '@/lib/vivo';
@@ -77,7 +78,7 @@ export default function CategoriasEnVivo({
                     tiene imagen en la base. Decorativa (`alt=""`): el nombre está
                     debajo y repetirlo sería ruido para quien usa lector de pantalla. */}
                 {c.portada ? (
-                  <img className="cat-card-foto" src={c.portada.url} alt="" loading="lazy" />
+                  <Foto className="cat-card-foto" src={c.portada.url} alt="" loading="lazy" />
                 ) : (
                   <div className="cat-card-foto ph" data-label="sin foto" />
                 )}

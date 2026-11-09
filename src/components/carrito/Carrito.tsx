@@ -10,6 +10,7 @@
 //     de WhatsApp sigue armado mientras el cliente lo va a tocar.
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import Foto from '@/components/ui/Foto';
 import {
   contar,
   fijarCantidad,
@@ -208,7 +209,7 @@ export default function Carrito() {
               return (
                 <div className="cart-row" key={clave}>
                   {i.imagen ? (
-                    <img className="cart-thumb" src={i.imagen.url} alt="" />
+                    <Foto className="cart-thumb" src={i.imagen.url} alt="" />
                   ) : (
                     <div className="ph cart-thumb" data-label="sin foto" />
                   )}

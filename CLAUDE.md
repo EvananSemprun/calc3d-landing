@@ -25,7 +25,8 @@ pnpm dev            # http://localhost:5182  (astro dev --strictPort)
 pnpm build          # dist/  (SSG: pega a la API en el build, ver abajo)
 pnpm preview        # sirve dist/
 pnpm check          # astro check (tipos)  ← NO lo cubre pnpm test, ver abajo
-pnpm test           # vitest (la lógica de src/lib)
+pnpm test           # vitest (la lógica de src/lib) — NO incluye el guardián de dist/
+pnpm test:dist      # guardián sobre dist/: exige un pnpm build previo, se corre A MANO
 ```
 
 ⚠️ **`pnpm test` en verde NO quiere decir `pnpm check` en verde, y la diferencia esconde
@@ -253,6 +254,62 @@ inicial *y* en cada navegación.
   directo) y las usan la portada y `/impresion-3d/` con el mismo marcado. Envolver los
   textos en un `div` más apaga la entrada **sin que nada falle**. Está avisado en
   `Hero.astro`.
+
+### Las fotos entran con un cruce corto (2026-11-09)
+
+Toda foto remota se pinta con **`components/ui/Foto.tsx`**, no con un `<img>` a mano.
+Funde al cargar, salvo las candidatas a LCP (`prioridad`).
+
+- ⚠️ **La marca de «no cargada» (`data-cargando`) la pone SOLO el JS del cliente, en un
+  efecto, después de montar.** El render que Astro hornea sale sin ella, y eso es el
+  punto: si apareciera en el HTML del build, Google, la previsualización de WhatsApp y
+  quien tenga el JS roto recibirían **las fotos invisibles**, sin un solo error. Lo
+  vigilan `components/ui/Foto.spec.tsx` (sobre `renderToStaticMarkup`, que es lo que
+  hornea Astro) y **`src/dist-sin-js.spec.ts`**, que lee el `dist/` de verdad.
+- ⚠️ **El mecanismo NO puede colgar de `<html>`.** `swapRootAttributes` borra todos los
+  atributos de `<html>` en cada navegación del router, así que una marca de «el JS está
+  vivo» puesta ahí anda en la primera página y **muere en la segunda**. Por eso vive en el
+  efecto de la propia isla: Astro rehidrata las islas de la página destino después del
+  swap y el efecto corre de nuevo. Verificado navegando con un clic.
+- ⚠️ **El techo por tiempo (`TECHO_CARGA_MS = 3000`, en `lib/foto.ts`) no es opcional.**
+  Con `prefers-reduced-motion` la guardia baja la duración a `0.01ms` pero **no cambia el
+  valor inicial**: sin el techo, una foto cuyo `load` no llega (red cortada a mitad de la
+  descarga) queda transparente **para siempre**. Hay tres salidas: `load`, `error` y el
+  techo. Y una foto con `img.complete` **no se marca**: su `load` ya pasó.
+- **`prioridad` (sin fundido):** `.pdp-main` —medido, ES el LCP de la ficha: 11,9 s con
+  red frenada en escritorio— y las **3 primeras** tarjetas de la grilla estática del
+  listado (`COLUMNAS_PRIMERA_FILA` en `Catalogo.tsx`). ⚠️ **No se le quita a
+  `.pdp-main`:** una imagen en `opacity: 0` no es candidata a LCP, así que fundirla
+  retrasa el LCP. El hero y las fotos locales siguen siendo `<img>` planas.
+- ⚠️ **El CSS va al final de `global.css` y FUERA de `@layer`, y su `transition` LISTA
+  `transform` a propósito.** `.product-photo` declara `transition: transform …` dentro de
+  `@layer components`; `transition` es un atajo y lo que está fuera de capa gana, así que
+  una lista con solo `opacity` **mata el zoom del `:hover` de la tarjeta en silencio**
+  (build verde, `hover-con-reduce.spec.ts` verde, porque ese mira la guardia de `reduce`,
+  no si la transición existe). Lo exige **`src/fotos-funden.spec.ts`**, que además pide
+  que el bloque no esté encapado y que las duraciones salgan de los tokens.
+- **Los dos atributos no son lo mismo:** `data-fundir` (lo pone `<Foto>` en el marcado,
+  también en el horneado) solo declara la transición; `data-cargando` es la opacidad 0.
+  Separarlos es lo que permite que el cruce exista sin que el build esconda nada: una
+  transición tiene que estar declarada en el estado FINAL.
+- **Límite conocido:** una foto `loading="lazy"` muy abajo no empieza a bajar al hidratar,
+  así que el techo la libera antes y **aparece sin cruce**. Nada queda invisible; el
+  fundido simplemente no llega hasta ahí.
+
+### `pnpm test` NO corre el guardián de `dist/` (y es a propósito)
+
+`vitest.config.ts` tiene un **tercer proyecto**, `dist`, con `src/dist-sin-js.spec.ts`.
+Los scripts filtran por proyecto: `pnpm test` = `vitest run --project=!dist` y
+`pnpm test:dist` = `--project=dist`.
+
+- Leer `dist/` exige un `pnpm build`, **y el build le pega a la API**. Atar el gancho de
+  pre-push (que corre `pnpm test` y hoy tarda segundos) a tener la API arriba y a un build
+  de minutos es lo que entrena el `--no-verify`. Se corre a mano, junto con `pnpm check`.
+- ⚠️ **Excluir el archivo del proyecto `node` y nada más NO alcanza:** entonces ningún
+  proyecto lo incluye y `vitest run <ruta>` responde «No test files found» y sale en
+  **rojo sin haber mirado nada**. Hace falta el proyecto propio.
+- ⚠️ **Si `dist/` no existe, el guardián falla fuerte** (los 6 tests en rojo). Nunca dice
+  «0 verificados» y sale en verde.
 
 ## Qué es y qué NO es
 - **Es** un catálogo de **solo lectura** que consume la API pública de `calc3d-api`

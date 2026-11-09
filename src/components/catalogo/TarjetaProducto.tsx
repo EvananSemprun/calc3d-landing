@@ -6,6 +6,7 @@
 // `margin-top:auto`, así las tarjetas de una misma fila se alinean aunque su texto
 // mida distinto. Los estilos (`.product*`) viven en global.css.
 import { Badge } from '@/components/ui/badge';
+import Foto from '@/components/ui/Foto';
 import { equivalenteEnMoneda } from '@/lib/precio';
 import { hayRecargo, lineaDeTarjeta, rutaFicha, textoDeEntrega, textoDeMinimo, type ProductoVitrina } from '@/lib/producto';
 import type { TasaApi } from '@/lib/api';
@@ -17,9 +18,16 @@ import { INSIGNIA_DESTACADA, INSIGNIA_NUEVO, INSIGNIA_OFERTA, INSIGNIA_SUAVE } f
 interface Props {
   producto: ProductoVitrina;
   tasa: TasaApi | null;
+  /**
+   * Apaga el fundido de la foto: para las tarjetas que pueden ser la candidata a LCP de
+   * la pantalla (la PRIMERA FILA de la grilla del listado). Una imagen en `opacity: 0` no
+   * es candidata a LCP para el navegador, así que fundirla lo RETRASA. Quien decide
+   * cuáles son es `Catalogo.tsx`, que es el único que sabe en qué posición va cada una.
+   */
+  prioridad?: boolean;
 }
 
-export default function TarjetaProducto({ producto: p, tasa }: Props) {
+export default function TarjetaProducto({ producto: p, tasa, prioridad = false }: Props) {
   const ficha = rutaFicha(p.id);
   const enOferta = !!p.compareAt && p.compareAt > p.price;
   const linea = lineaDeTarjeta(p);
@@ -32,11 +40,12 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
     <article className="card product">
       <a className="product-media" href={ficha} aria-label={`Ver ${p.name}`}>
         {p.image ? (
-          <img
+          <Foto
             className="product-photo"
             src={p.image.url}
             alt={p.image.alt || p.name}
             loading="lazy"
+            prioridad={prioridad}
             {...(p.image.width && p.image.height ? { width: p.image.width, height: p.image.height } : {})}
           />
         ) : (

@@ -47,6 +47,22 @@ import Paginacion from './Paginacion';
 import TarjetaIndice from './TarjetaIndice';
 import TarjetaProducto from './TarjetaProducto';
 
+/**
+ * Cuántas tarjetas de la grilla estática NO funden su foto.
+ *
+ * Es el ancho máximo de `.shop-grid` (3 columnas en escritorio; 2 a ≤900px y 1 a ≤560px,
+ * así que en pantallas angostas sobra y no falta). Son las que pueden ser la candidata a
+ * LCP de la pantalla: medido el 2026-11-09, el LCP del listado es el `h1` en 4 de 5
+ * corridas de escritorio, pero en la corrida lenta FUE `product-photo` — o sea que
+ * cuando la red se degrada la foto pasa a ser candidata, que es justo el caso que hay
+ * que cuidar. Cuesta poco y cubre el caso malo.
+ *
+ * ⚠️ Solo aplica a la grilla ESTÁTICA (la del HTML del build, sin filtros). La filtrada
+ * (`TarjetaIndice`) solo existe después de que el visitante toque un filtro: nunca es el
+ * primer pintado, así que ahí funden todas.
+ */
+const COLUMNAS_PRIMERA_FILA = 3;
+
 interface Props {
   /** Los productos de ESTA página (completos). */
   productos: ProductoVitrina[];
@@ -211,8 +227,13 @@ export default function Catalogo({ productos, indice, colores, info, cat, sub, p
               className={`grid shop-grid${yaEntro.current ? '' : ' entrada-grid'}`}
               id="shopGrid"
             >
-              {vivo.productos.map((p) => (
-                <TarjetaProducto key={p.id} producto={p} tasa={info.rate} />
+              {vivo.productos.map((p, i) => (
+                <TarjetaProducto
+                  key={p.id}
+                  producto={p}
+                  tasa={info.rate}
+                  prioridad={i < COLUMNAS_PRIMERA_FILA}
+                />
               ))}
             </div>
             <Paginacion actual={pagina} total={vivo.paginas} cat={cat} sub={sub} />
