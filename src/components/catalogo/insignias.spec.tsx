@@ -15,8 +15,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import TarjetaProducto from './TarjetaProducto';
-import { INSIGNIA_DESTACADA, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
+import TarjetaIndice from './TarjetaIndice';
+import { INSIGNIA_DESTACADA, INSIGNIA_NUEVO, INSIGNIA_OFERTA, INSIGNIA_SUAVE } from './insignias';
 import type { ProductoVitrina } from '@/lib/producto';
+import type { EntradaIndice } from '@/lib/paginacion';
 
 const producto = (extra: Partial<ProductoVitrina> = {}): ProductoVitrina => ({
   id: 'arbol',
@@ -33,6 +35,7 @@ const producto = (extra: Partial<ProductoVitrina> = {}): ProductoVitrina => ({
   badge: 'Nuevo',
   custom: true,
   requiresOptions: true,
+  nuevo: false,
   specs: [],
   ship: null,
   image: null,
@@ -96,5 +99,44 @@ describe('las insignias no dependen de lo que tengan detrás', () => {
     // leería como un aumento.
     render(<TarjetaProducto producto={producto({ price: 24, compareAt: 4.5 })} tasa={null} />);
     expect(screen.queryByText('Oferta')).toBeNull();
+  });
+});
+
+/**
+ * Las DOS tarjetas dibujan las mismas insignias, y hasta el 2026-11-08 solo se probaba
+ * una. La del índice —la que se ve al filtrar u ordenar— leía `e.nuevo`, un campo que el
+ * índice nunca llevó: la insignia automática desaparecía en cuanto el visitante tocaba
+ * un filtro, con la suite entera en verde y sin un error en consola.
+ */
+describe('la tarjeta del índice dibuja las mismas insignias que la del paginado', () => {
+  const entrada = (extra: Partial<EntradaIndice> = {}): EntradaIndice => ({
+    id: 'arbol',
+    name: 'Árbol',
+    price: 8,
+    colors: [],
+    image: null,
+    priceTiers: [],
+    minQty: 1,
+    requiresOptions: false,
+    badge: null,
+    nuevo: false,
+    desde: false,
+    compareAt: null,
+    ...extra,
+  });
+
+  it('«Nuevo» sobrevive al filtrado', () => {
+    render(<TarjetaIndice entrada={entrada({ nuevo: true })} tasa={null} />);
+    expect(screen.getByText('Nuevo').className).toContain(INSIGNIA_NUEVO.split(' ')[0]);
+  });
+
+  it('sin ser nuevo no la inventa', () => {
+    render(<TarjetaIndice entrada={entrada()} tasa={null} />);
+    expect(screen.queryByText('Nuevo')).toBeNull();
+  });
+
+  it('la del dueño también viaja en el índice', () => {
+    render(<TarjetaIndice entrada={entrada({ badge: 'Más vendido' })} tasa={null} />);
+    expect(llevaOpacidad(screen.getByText('Más vendido').className)).toBe(false);
   });
 });

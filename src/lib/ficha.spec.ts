@@ -19,6 +19,7 @@ function prod(parcial: Partial<ProductoVitrina>): ProductoVitrina {
     badge: null,
     custom: false,
     requiresOptions: false,
+    nuevo: false,
     specs: [],
     ship: null,
     image: null,

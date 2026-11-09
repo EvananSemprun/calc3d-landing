@@ -35,7 +35,9 @@ export default function CategoriasEnVivo({
   titulo: string;
   verTodo?: boolean;
 }) {
-  const { datos } = useEnVivo(inicial, async () => {
+  // El genérico va EXPLÍCITO: si se infiere, gana el tipo que devuelve `cargar` en el
+  // camino de `raices` —sin `hijas`— y las subcategorías dejan de tipar al leerlas.
+  const { datos } = useEnVivo<Entrada[]>(inicial, async () => {
     const [productos, categorias] = await Promise.all([fetchProductosCompletos(), fetchCategorias()]);
     const base = modo === 'indice' ? categoriasDelIndice(categorias, productos) : raicesConProductos(categorias, productos);
     if (modo !== 'indice') return base;

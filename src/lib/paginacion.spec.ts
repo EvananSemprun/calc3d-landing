@@ -18,16 +18,24 @@ describe('índice de categoría', () => {
   it('trae lo que los controles y el carrito necesitan, y nada más', () => {
     const [e] = indiceDeCategoria([completo]);
     expect(Object.keys(e).sort()).toEqual([
-      'badge', 'colors', 'compareAt', 'desde', 'id', 'image', 'minQty', 'name', 'price', 'priceTiers',
-      'requiresOptions',
+      'badge', 'colors', 'compareAt', 'desde', 'id', 'image', 'minQty', 'name', 'nuevo', 'price',
+      'priceTiers', 'requiresOptions',
     ]);
     for (const prohibido of ['desc', 'description', 'specs', 'optionGroups', 'images', 'summary']) {
       expect(e).not.toHaveProperty(prohibido);
     }
     expect(e).toEqual({
       id: 'copa', name: 'copa', price: 24, colors: ['Rojo'], image: completo.image,
-      priceTiers: [], minQty: 1, requiresOptions: false, badge: null, compareAt: null, desde: false,
+      priceTiers: [], minQty: 1, requiresOptions: false, badge: null, nuevo: false,
+      compareAt: null, desde: false,
     });
+  });
+
+  it('«Nuevo» viaja en el índice: filtrar u ordenar no se la quita al producto', () => {
+    // El 2026-11-08 `nuevo` quedó fuera del índice y la tarjeta filtrada leía
+    // `e.nuevo` → undefined: la insignia desaparecía al tocar cualquier filtro.
+    expect(indiceDeCategoria([prod('recien', { nuevo: true })])[0].nuevo).toBe(true);
+    expect(indiceDeCategoria([prod('viejo')])[0].nuevo).toBe(false);
   });
 
   it('la insignia y el precio de lista viajan en el índice (ordenar no las quita)', () => {

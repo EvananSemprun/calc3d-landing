@@ -31,6 +31,7 @@ const producto = (extra: Partial<ProductoVitrina> = {}): ProductoVitrina => ({
   badge: 'Nuevo',
   custom: true,
   requiresOptions: true,
+  nuevo: false,
   specs: [],
   ship: '3 días',
   image: null,

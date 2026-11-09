@@ -24,6 +24,9 @@ export interface EntradaIndice {
   requiresOptions: boolean;
   /** Insignia de la esquina ("Nuevo"…). Sin ella, ordenar por precio le quitaría la insignia a la tarjeta. */
   badge: string | null;
+  /** Insignia AUTOMÁTICA de recién publicado. Por la misma razón que `badge`: filtrar
+   *  por color no puede quitarle a un producto que sea nuevo. */
+  nuevo: boolean;
   /** true si alguna opción suma: la tarjeta dice «desde». */
   desde: boolean;
   /** Precio de lista, para el tachado de la oferta. */
@@ -41,6 +44,7 @@ export function indiceDeCategoria(productos: readonly ProductoVitrina[]): Entrad
     minQty: p.minQty,
     requiresOptions: p.requiresOptions,
     badge: p.badge ?? null,
+    nuevo: p.nuevo,
     compareAt: p.compareAt ?? null,
     desde: hayRecargo(p),
   }));
