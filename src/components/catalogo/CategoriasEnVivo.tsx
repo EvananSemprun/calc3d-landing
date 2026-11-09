@@ -6,6 +6,8 @@ interface Entrada {
   slug: string;
   nombre: string;
   n: number;
+  /** Foto de portada, derivada del catálogo (ver `portadaDe` en `paginacion.ts`). */
+  portada?: { url: string } | null;
   /** Nombres de las subcategorías, solo en el índice de /tienda/. */
   hijas?: string[];
 }
@@ -70,7 +72,16 @@ export default function CategoriasEnVivo({
         <ul className="grid shop-grid entrada-grid list-none p-0 m-0">
           {datos.map((c) => (
             <li key={c.slug}>
-              <a className="card block p-6 hover:border-primary" href={rutaDeCategoria(c.slug)}>
+              <a className="card cat-card block hover:border-primary" href={rutaDeCategoria(c.slug)}>
+                {/* La foto sale del catálogo, no de la categoría: `StoreCategory` no
+                    tiene imagen en la base. Decorativa (`alt=""`): el nombre está
+                    debajo y repetirlo sería ruido para quien usa lector de pantalla. */}
+                {c.portada ? (
+                  <img className="cat-card-foto" src={c.portada.url} alt="" loading="lazy" />
+                ) : (
+                  <div className="cat-card-foto ph" data-label="sin foto" />
+                )}
+                <div className="cat-card-cuerpo">
                 <h3 className="text-lg font-semibold">{c.nombre}</h3>
                 <p className="mono dim mt-1 text-sm">
                   {c.n} producto{c.n === 1 ? '' : 's'}
@@ -78,6 +89,7 @@ export default function CategoriasEnVivo({
                 {c.hijas && c.hijas.length > 0 && (
                   <p className="dim mt-2 text-sm">{c.hijas.join(' · ')}</p>
                 )}
+                </div>
               </a>
             </li>
           ))}

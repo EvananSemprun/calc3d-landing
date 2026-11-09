@@ -46,7 +46,7 @@ export default function TarjetaIndice({ entrada: e, tasa }: { entrada: EntradaIn
           <span className="price">
             {e.desde && <small className="price-desde">desde </small>}
             ${e.price.toFixed(2)}
-            <small> USD</small>
+            <small> BCV</small>
             {equivalente && (
               <span className="price-alt">
                 ≈ {equivalente} {tasa?.currencyCode}

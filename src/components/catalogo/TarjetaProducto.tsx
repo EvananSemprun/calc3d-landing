@@ -76,7 +76,7 @@ export default function TarjetaProducto({ producto: p, tasa }: Props) {
           <span className="price">
             {hayRecargo(p) && <small className="price-desde">desde </small>}
             ${p.price.toFixed(2)}
-            <small> USD</small>
+            <small> BCV</small>
             {equivalente && (
               <span className="price-alt">
                 ≈ {equivalente} {tasa?.currencyCode}

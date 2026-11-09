@@ -92,7 +92,7 @@ export default function Filtros({
           onValueChange={([v]) => onCambio({ maxPrice: v ?? tope })}
         />
         <div className="range-val mono">
-          Hasta <span>${filtros.maxPrice}</span> USD
+          Hasta <span>${filtros.maxPrice}</span> BCV
         </div>
       </div>
 

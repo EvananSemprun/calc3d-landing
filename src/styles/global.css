@@ -590,6 +590,35 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   .shop-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
   .filters-toggle { display: none; }
   .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* Destacados: cuatro por fila en escritorio y DOS en celular. Con una sola columna,
+     ocho productos eran ocho pantallas de scroll y la portada se sentía vacía igual. */
+  .shop-grid--destacados { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  /* Una colección: fila deslizable. Se espera desplazarla, así que las tarjetas tienen
+     ancho fijo y se frenan de a una (`scroll-snap`). */
+  .coleccion-fila {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 240px);
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+  .coleccion-fila > * { scroll-snap-align: start; }
+
+  /* Tarjeta de categoría CON foto: eran un nombre y un conteo sobre un rectángulo
+     vacío. La foto sale del catálogo (ver `portadaDe`). */
+  .cat-card { overflow: hidden; padding: 0; }
+  .cat-card-foto {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--surface-2, #0e1a2b);
+  }
+  .cat-card-cuerpo { padding: 14px 16px 16px; }
   .shop-state { text-align: center; padding: 60px 0; color: var(--text-dim); }
   .shop-state strong {
     display: block;
@@ -621,8 +650,13 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     .filters-close { display: inline-flex; }
     .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
+  @media (max-width: 900px) {
+    .shop-grid--destacados { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
   @media (max-width: 560px) {
     .shop-grid { grid-template-columns: minmax(0, 1fr); }
+    /* ⚠️ Destacados NO baja a una columna: el dueño pidió dos en celular. */
+    .shop-grid--destacados { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   /* ---------- Tarjeta de producto ---------- */
@@ -1210,10 +1244,14 @@ html[data-bl-navegando] { scroll-behavior: auto; }
      estar el selector atado a la clase de la portada. La ficha y el 404 NO llevan hero,
      así que no les toca nada.
      Portada: kicker + h1, lead, acciones + buscador, y el arte. */
-  .hero .hero-art-grid > div > :is(.kicker, .h1),
-  .hero .hero-art-grid > div > .lead,
-  .hero .hero-art-grid > div > :is(.hero-actions, .hero-search),
-  .hero .hero-art-grid > :is(img, a),
+  /* ⚠️ **EL HERO YA NO ENTRA CON ANIMACIÓN** (2026-11-09). Arrancaba en `opacity: 0` y
+     se iba encendiendo escalonado hasta los 180 ms, así que lo primero que veía el
+     visitante al abrir la portada era un hueco en blanco — justo arriba, justo donde
+     mira. El contenido ya está en el HTML horneado: no hay nada que esperar, así que
+     se muestra de una vez. Las demás entradas siguen, que están más abajo y entran
+     cuando el visitante ya está leyendo otra cosa.
+     Si alguna vez se quiere devolver, el selector era:
+     `.hero .hero-art-grid > div > :is(.kicker, .h1)` y sus hermanos. */
   /* Página de categoría: migas, kicker, título y salida. ⚠️ `> *` abarca CUALQUIER hijo
      futuro del encabezado (del 4º en adelante, a 180 ms): agregar un elemento ahí le suma
      la entrada; si no debe entrar, hay que excluirlo a propósito. */
@@ -1222,11 +1260,8 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   .entrada-grid > * {
     animation: entrada var(--dur-lenta) var(--ease) backwards;
   }
-  .hero .hero-art-grid > div > .lead,
   .shop-head .container > :nth-child(2) { animation-delay: 60ms; }
-  .hero .hero-art-grid > div > :is(.hero-actions, .hero-search),
   .shop-head .container > :nth-child(3) { animation-delay: 120ms; }
-  .hero .hero-art-grid > :is(img, a),
   .shop-head .container > :nth-child(n+4) { animation-delay: 180ms; }
 
   /* Tarjetas: escalonan las primeras 8; el resto comparte el retardo de la octava

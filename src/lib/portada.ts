@@ -5,8 +5,11 @@
 // `raices` a todas las páginas. Una segunda definición del mismo filtro se desincroniza.
 import type { ProductoVitrina } from './producto';
 
-/** Lugares de la franja «Destacados» de la PORTADA: una sola fila de tarjetas. */
-export const TOPE_DESTACADOS = 4;
+/**
+ * Lugares de la franja «Destacados» de la PORTADA: dos filas de cuatro.
+ * Eran 4 hasta el 2026-11-09 y la portada se veía vacía — el dueño pidió el doble.
+ */
+export const TOPE_DESTACADOS = 8;
 
 /**
  * Lugares de la franja «Destacados» del índice de la tienda (`/tienda/`): DOS filas.

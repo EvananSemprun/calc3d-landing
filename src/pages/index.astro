@@ -39,39 +39,54 @@ const rutasDeCategoria = rutasDeListados(listados);
 // mismo que lleva el pie de todas las páginas, así que no se recalcula acá.
 const destacados = destacadosDe(completos, TOPE_DESTACADOS);
 
+/**
+ * La colección de Navidad: los productos de esa categoría, para la fila deslizable que
+ * va justo debajo del hero. Es la temporada que el dueño está cargando, y la portada
+ * tenía categorías y destacados genéricos sin nada que dijera «esto es lo de ahora».
+ *
+ * ⚠️ Si la categoría no existe o se queda sin productos, `DestacadosEnVivo` no dibuja
+ * nada: la portada no muestra una franja vacía ni hay que acordarse de sacarla en enero.
+ */
+const CATEGORIA_TEMPORADA = 'navidad';
+const TITULO_TEMPORADA = 'Colección Navidad 2026';
+const navidenos = destacadosDe(
+  completos.filter((p) => p.cat === CATEGORIA_TEMPORADA),
+  TOPE_DESTACADOS,
+);
+
 const beneficios = [
-  { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargas: sin stock viejo ni sobreproducción.' },
-  { titulo: 'Atención por WhatsApp', texto: 'Coordinas directo con el taller, sin formularios eternos.' },
-  { titulo: 'Pagas al coordinar', texto: 'En dólares o en bolívares a la tasa del día, como prefieras.' },
+  { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargas. Sin stock viejo.' },
+  { titulo: 'Atención por WhatsApp', texto: 'Hablas directo con el taller.' },
+  { titulo: 'Pagas al coordinar', texto: 'En dólares o en bolívares, a la tasa del día.' },
 ];
 
 const pasos = [
-  { titulo: 'Nos cuentas', texto: 'Por WhatsApp o desde aquí. Medidas, cantidad, para cuándo — lo que tengas.' },
-  { titulo: 'Cotizamos', texto: 'Precio cerrado antes de empezar. Sin sorpresas a mitad del trabajo.' },
-  { titulo: 'Producimos', texto: 'Arranca la impresora con el alcance ya acordado.' },
-  { titulo: 'Revisas', texto: 'Te mostramos avances. Si algo no va, se corrige antes de terminar.' },
-  { titulo: 'Entregamos', texto: 'Coordinamos entrega y pago por WhatsApp, como prefieras.' },
+  { titulo: 'Nos cuentas', texto: 'Medidas, cantidad y para cuándo.' },
+  { titulo: 'Cotizamos', texto: 'Precio cerrado antes de empezar.' },
+  { titulo: 'Producimos', texto: 'Arranca la impresora.' },
+  { titulo: 'Revisas', texto: 'Te mostramos avances y se corrige a tiempo.' },
+  { titulo: 'Entregamos', texto: 'Entrega y pago por WhatsApp.' },
 ];
 
 const preguntas = [
   {
     pregunta: '¿Cuánto tarda un pedido?',
     respuesta:
-      'Depende de la pieza y la cantidad. Cada producto del catálogo dice sus días de producción; para algo a medida te lo confirmamos al cotizar.',
+      'Cada producto dice sus días en su ficha. Para algo a medida, te lo confirmamos al cotizar.',
   },
   {
     pregunta: '¿Puedo mandar mi propio archivo?',
     respuesta:
-      'Sí. Si tienes el modelo en STL, 3MF o STEP, lo imprimimos. Si no lo tienes, lo diseñamos nosotros y se cotiza aparte.',
+      'Sí: STL, 3MF o STEP. Si no lo tienes, lo diseñamos nosotros y se cotiza aparte.',
   },
   {
     pregunta: '¿Cómo se paga?',
-    respuesta: 'Se coordina por WhatsApp. Trabajamos en dólares y también en bolívares a la tasa del día.',
+    respuesta: 'Por WhatsApp, en dólares o en bolívares a la tasa del día.',
   },
   {
     pregunta: '¿Hay cantidad mínima?',
     respuesta:
-      'Algunos productos sí, y está indicado en su ficha. Para trabajos a medida no hay mínimo fijo: se cotiza según el caso.',
+      'Algunos productos sí, y lo dice su ficha. A medida no hay mínimo fijo.',
   },
 ];
 ---
@@ -83,6 +98,17 @@ const preguntas = [
   categorias={raices}
 >
   <HeroEnVivo slidesIniciales={slidesDelHero} rutasDeCategoria={rutasDeCategoria} arte={{ src: bananoHola.src, width: bananoHola.width, height: bananoHola.height }} client:load />
+
+  <DestacadosEnVivo
+    inicial={navidenos}
+    tope={TOPE_DESTACADOS}
+    tasa={info.rate}
+    titulo={TITULO_TEMPORADA}
+    categoria={CATEGORIA_TEMPORADA}
+    fila
+    verTodo
+    client:load
+  />
 
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mira por categoría" verTodo client:load />
 
@@ -98,7 +124,7 @@ const preguntas = [
     <div class="container">
       <h2 class="h2 text-balance mb-2">Cómo trabajamos</h2>
       <p class="lead max-w-[52ch]">
-        Primero entendemos qué necesitas, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.
+        Primero entendemos qué necesitas, después ponemos precio.
       </p>
       <Pasos pasos={pasos} />
     </div>

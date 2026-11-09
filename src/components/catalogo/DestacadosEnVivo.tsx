@@ -22,35 +22,50 @@ export default function DestacadosEnVivo({
   tasa,
   titulo = 'Destacados',
   verTodo = false,
+  categoria,
+  fila = false,
 }: {
   inicial: ProductoVitrina[];
   tope: number;
   tasa: TasaApi | null;
   titulo?: string;
   verTodo?: boolean;
+  /** Si viene, la franja muestra SOLO esa categoría (la colección de Navidad). */
+  categoria?: string;
+  /** Fila deslizable en vez de grilla: para una colección, donde se espera desplazar. */
+  fila?: boolean;
 }) {
-  const { datos } = useEnVivo(inicial, async () => destacadosDe(await fetchProductosCompletos(), tope));
+  const { datos } = useEnVivo(inicial, async () => {
+    const todos = await fetchProductosCompletos();
+    return destacadosDe(categoria ? todos.filter((p) => p.cat === categoria) : todos, tope);
+  });
+  // ⚠️ Un id fijo se repetiría al haber DOS franjas en la portada, y `aria-labelledby`
+  // apuntaría siempre a la primera.
+  const idTitulo = `franja-${(categoria ?? 'destacados').replace(/[^a-z0-9]+/gi, '-')}`;
 
   if (datos.length === 0) return null;
 
   return (
-    <section className="section pt-0" aria-labelledby="destacados-titulo">
+    <section className="section pt-0" aria-labelledby={idTitulo}>
       <div className="container">
         {verTodo ? (
           <div className="eyebrow-row mb-6">
-            <h2 className="h2" id="destacados-titulo">
+            <h2 className="h2" id={idTitulo}>
               {titulo}
             </h2>
-            <a href="/tienda/" className="text-sm font-semibold text-primary hover:underline">
+            <a
+              href={categoria ? `/tienda/${categoria}/` : '/tienda/'}
+              className="text-sm font-semibold text-primary hover:underline"
+            >
               Ver todo →
             </a>
           </div>
         ) : (
-          <h2 className="h2 mb-6" id="destacados-titulo">
+          <h2 className="h2 mb-6" id={idTitulo}>
             {titulo}
           </h2>
         )}
-        <div className="grid shop-grid">
+        <div className={fila ? 'coleccion-fila' : 'grid shop-grid shop-grid--destacados'}>
           {datos.map((p) => (
             <TarjetaProducto key={p.id} producto={p} tasa={tasa} />
           ))}

@@ -24,11 +24,12 @@ describe('destacadosDe', () => {
     expect(destacadosDe([], 4)).toEqual([]);
   });
 
-  it('el tope por defecto de la portada son 4', () => {
-    expect(TOPE_DESTACADOS).toBe(4);
+  it('el tope de la portada son 8: dos filas de cuatro (2026-11-09)', () => {
+    // Eran 4 y la portada se veía vacía. El dueño pidió el doble.
+    expect(TOPE_DESTACADOS).toBe(8);
   });
 
-  it('el tope del índice de la tienda son 8 (dos filas, no una)', () => {
+  it('el tope del índice de la tienda son 8', () => {
     expect(TOPE_DESTACADOS_TIENDA).toBe(8);
   });
 

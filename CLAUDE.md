@@ -614,6 +614,43 @@ vuelve a aparecer una forma de voseo en texto visible. Tres cosas que no hay que
 ⚠️ **Los textos que vienen de la API son DATOS** (las descripciones que escribe el
 dueño): no se traducen desde acá ni los mira el guardián.
 
+## La portada, después del 2026-11-09
+
+Cinco cambios que pidió el dueño porque «se veía vacía». Lo que no hay que deshacer:
+
+- ⚠️ **El hero YA NO entra con animación.** Arrancaba en `opacity: 0` y se encendía
+  escalonado hasta los 180 ms: lo primero que veía el visitante era un hueco en blanco,
+  justo arriba. El contenido ya está horneado, no hay nada que esperar. Las demás
+  entradas siguen, que están más abajo. El selector viejo quedó anotado en el CSS por si
+  alguna vez se quiere devolver.
+- **La franja de temporada** (`Colección Navidad 2026`) es `DestacadosEnVivo` con
+  `categoria` y `fila`: una sola definición para las dos franjas de la portada. Si esa
+  categoría se queda sin productos, no dibuja nada — **en enero no hay que acordarse de
+  sacarla**, pero sí de cambiar `CATEGORIA_TEMPORADA` si la temporada es otra.
+  - ⚠️ El `id` del título se deriva de la categoría: con un id fijo, las dos franjas de
+    la portada lo repetirían y `aria-labelledby` apuntaría siempre a la primera.
+- **Destacados son 8** (`TOPE_DESTACADOS`), en 4 columnas y **2 en celular**:
+  `.shop-grid--destacados` no baja a una columna, porque 8 productos en una columna son
+  ocho pantallas de scroll y la portada se sigue sintiendo vacía.
+- **Las tarjetas de categoría llevan foto**, y sale del CATÁLOGO (`portadaDe`, en
+  `paginacion.ts`): `StoreCategory` no tiene campo de imagen en la base y no se va a
+  agregar — sería una migración más y una subida por categoría. Si ninguna pieza de la
+  categoría tiene foto, la tarjeta va sin imagen y NO con la de otra categoría.
+
+## La moneda que se muestra: BCV, no USD (2026-11-09)
+
+El precio publicado está en **dólares BCV**, que no es el dólar del costeo (ese es USDT;
+ver el CLAUDE.md de la API). La etiqueta decía «USD» en todas partes.
+
+⚠️ **Se cambió en la ficha y el carrito, y las TARJETAS se quedaron en USD**: el catálogo
+y la ficha del mismo producto nombraban monedas distintas para el mismo número. Por eso
+existe `components/catalogo/moneda.spec.tsx`, que falla si un lugar nuevo vuelve a
+escribir «USD» en texto visible.
+
+⚠️ La excepción es `product:price:currency` de los datos estructurados, que pide un
+**código ISO** y no existe uno para «dólar BCV». Ahí queda `USD` a propósito: inventar
+un código rompería los resultados enriquecidos de Google.
+
 ## Despliegue (Cloudflare Pages) — dominio `bananolab-3d.com`
 
 El dominio se compró el 2026-11-07 (sin `www`, decisión del dueño). El panel se

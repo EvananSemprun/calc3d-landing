@@ -3,6 +3,15 @@ import type { Categoria } from './catalogo';
 import type { TramoPrecio } from './precio';
 import { hayRecargo, type FotoApi, type ProductoVitrina } from './producto';
 
+/** Una categoría tal como la listan la portada y el índice de /tienda/. */
+export interface EntradaCategoria {
+  slug: string;
+  nombre: string;
+  n: number;
+  /** Derivada del catálogo (ver `portadaDe`); `null` si ninguna pieza tiene foto. */
+  portada: FotoApi | null;
+}
+
 /** Tarjetas por página de categoría. */
 export const POR_PAGINA = 24;
 
@@ -176,23 +185,51 @@ export function rutasDeListados(listados: readonly Listado[]): Record<string, st
  * un enlace de relleno al pie del sitio entero. Ese listado aparece solo en el índice de
  * /tienda/ (ver `categoriasDelIndice`).
  */
+/**
+ * La foto de portada de una categoría: la primera pieza suya que tenga una.
+ *
+ * ⚠️ `StoreCategory` NO tiene campo de imagen en la base y no se va a agregar: una foto
+ * por categoría sería una migración más y una subida más para el dueño por cada
+ * categoría nueva. Derivarla del catálogo no cuesta nada y se actualiza sola.
+ *
+ * `null` cuando ninguna pieza tiene foto: mejor la tarjeta sin imagen que la imagen de
+ * otra categoría.
+ */
+function portadaDe(productos: readonly ProductoVitrina[]): FotoApi | null {
+  for (const p of productos) {
+    const foto = p.image ?? p.images?.[0];
+    if (foto) return foto;
+  }
+  return null;
+}
+
 export function raicesConProductos(
   categorias: readonly Categoria[],
   productos: readonly ProductoVitrina[],
-): { slug: string; nombre: string; n: number }[] {
+): EntradaCategoria[] {
   return listadosDe(categorias, productos)
     .filter((l) => l.sub === null && !l.sinCategoria)
-    .map((l) => ({ slug: l.cat, nombre: l.nombre, n: l.productos.length }));
+    .map((l) => ({
+      slug: l.cat,
+      nombre: l.nombre,
+      n: l.productos.length,
+      portada: portadaDe(l.productos),
+    }));
 }
 
 /** Lo que lista el índice de /tienda/: las raíces y, si hay, "Sin categoría" al final. */
 export function categoriasDelIndice(
   categorias: readonly Categoria[],
   productos: readonly ProductoVitrina[],
-): { slug: string; nombre: string; n: number }[] {
+): EntradaCategoria[] {
   return listadosDe(categorias, productos)
     .filter((l) => l.sub === null)
-    .map((l) => ({ slug: l.cat, nombre: l.nombre, n: l.productos.length }));
+    .map((l) => ({
+      slug: l.cat,
+      nombre: l.nombre,
+      n: l.productos.length,
+      portada: portadaDe(l.productos),
+    }));
 }
 
 /** Ruta del listado de una categoría cualquiera (raíz o hija), a partir de su slug. */
