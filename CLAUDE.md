@@ -359,6 +359,37 @@ descripción y su JSON-LD. La suposición de que Cloudflare sirve primero el arc
 estático es falsa para ese caso. La 404, en cambio, solo se sirve cuando no hay archivo.
 ⚠️ Y no se puede probar en local: `astro preview` no lee `_redirects`.
 
+**La pestaña dice el nombre del producto (2026-11-09).** El rescate mostraba el producto
+entero pero dejaba la cabecera del cartel, así que la pestaña decía «Página no
+encontrada» encima de un reno. Lo corrige `lib/titulo.ts` (`tituloDeFicha`), que aplica
+`FichaEnVivo` en un efecto, y la 404 deja solo la marca antes de pintar para que no
+parpadee el título de error.
+
+- ⚠️ **`tituloDeFicha` devuelve `null` mientras no se sabe** (la respuesta viaja, o solo
+  hay horneado). Devolver siempre un texto es el mismo bug con otro disfraz: en una
+  ficha de verdad el título horneado ya es el correcto.
+- ⚠️ **La mutación que hay que recordar**: romper solo el efecto de `FichaEnVivo` deja
+  los tests de función pura en VERDE y la pestaña mintiendo. Por eso hay tests en las
+  dos capas (`lib/titulo.spec.ts` y `FichaEnVivo.spec.tsx`); medido el 2026-11-09:
+  3 de pantalla en rojo, 0 de función pura.
+- La marca sale de `meta[property="og:site_name"]`, que ya está en la cabecera: no se
+  escribe «Banano Lab» una segunda vez en el script.
+
+⚠️ **DECISIÓN DEL DUEÑO (2026-11-09): el SEO de un producto nuevo se pierde a
+propósito.** Se le ofrecieron las tres salidas —deploy hook de Pages, reconstruir a mano,
+o renderizar la ficha en el servidor con el adaptador de Cloudflare (que no costaba el
+SEO)— y eligió **ninguna**: no quiere reconstruir el sitio ni esperar un build cada vez
+que carga productos. O sea que hasta el próximo despliegue, una ficha nueva:
+
+- responde **404** (el visitante igual la ve completa, y ahora con su título);
+- se comparte por WhatsApp con la tarjeta del cartel de error (`og:title` = «Página no
+  encontrada»), que es el costo real de esto, no la pestaña;
+- no la indexa Google.
+
+Medido ese día antes de decidir: **13 productos en la API, 3 en el sitemap** — 10 fichas
+respondiendo 404. Un `git push` a este repo las hornea todas; el problema vuelve con el
+siguiente producto. **No reabrir el tema sin que lo pida el dueño.**
+
 ## Tramos de mayoreo: DOS formas, y el recargo va aparte (2026-11-08)
 
 `lib/precio.ts` **reimplementa** `precioConTramos` (la tienda no importa shared),

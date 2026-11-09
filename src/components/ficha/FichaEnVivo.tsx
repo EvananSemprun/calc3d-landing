@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import Ficha from './Ficha';
 import { fetchProducto, type InfoApi } from '@/lib/api';
 import { useEnVivo } from '@/lib/vivo';
+import { tituloDeFicha } from '@/lib/titulo';
 import type { ProductoVitrina } from '@/lib/producto';
 
 /**
@@ -54,6 +55,14 @@ export default function FichaEnVivo({
         : '',
     [datos],
   );
+
+  // La pestaña acompaña al producto. En una ficha de verdad esto no cambia nada (el
+  // título horneado ya es ese); el que lo necesita es el rescate de la 404, que
+  // muestra el producto debajo de la cabecera del cartel de error.
+  const titulo = tituloDeFicha(datos, noExiste, info.businessName);
+  useEffect(() => {
+    if (titulo) document.title = titulo;
+  }, [titulo]);
 
   // ⚠️ Esta guarda va ANTES de la de `!datos` y pisa a lo horneado a propósito: la
   // API dijo que no existe, así que la ficha del build es la de un producto muerto.

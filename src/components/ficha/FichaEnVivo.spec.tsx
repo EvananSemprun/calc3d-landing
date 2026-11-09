@@ -103,3 +103,45 @@ describe('FichaEnVivo — borrado y caída de red no son lo mismo', () => {
     expect(screen.queryByText(/ya no está disponible/i)).toBeNull();
   });
 });
+
+/**
+ * LA PESTAÑA DICE EL NOMBRE DEL PRODUCTO (2026-11-09).
+ *
+ * El rescate de la 404 mostraba el producto entero pero dejaba la cabecera del cartel
+ * de error, así que la pestaña decía «Página no encontrada». La cuenta vive en
+ * `lib/titulo.ts` y tiene sus tests; acá se fija que el COMPONENTE la aplique.
+ */
+describe('FichaEnVivo — la pestaña acompaña al producto', () => {
+  it('rescatado sin página propia: la pestaña deja de decir «Página no encontrada»', async () => {
+    document.title = 'Página no encontrada — Banano Lab';
+    fetchProducto.mockResolvedValue(horneado({ id: 'reno-de-navidad', name: 'Reno de Navidad' }));
+    render(<FichaEnVivo inicial={null} slug="reno-de-navidad" info={info} />);
+
+    await waitFor(() => expect(document.title).toBe('Reno de Navidad — Banano Lab'));
+  });
+
+  it('mientras la respuesta viaja NO pisa el título', async () => {
+    document.title = 'Página no encontrada — Banano Lab';
+    fetchProducto.mockReturnValue(new Promise(() => {}));
+    render(<FichaEnVivo inicial={null} slug="fantasma" info={info} />);
+
+    await screen.findByText(/Cargando el producto/i);
+    expect(document.title).toBe('Página no encontrada — Banano Lab');
+  });
+
+  it('si la API dice que el producto ya no está, la pestaña lo dice', async () => {
+    document.title = 'Árbol de Navidad — Banano Lab';
+    fetchProducto.mockRejectedValue(new NoExiste('/x'));
+    render(<FichaEnVivo inicial={horneado()} slug="arbol-de-navidad" info={info} />);
+
+    await waitFor(() => expect(document.title).toBe('Producto no disponible — Banano Lab'));
+  });
+
+  it('un nombre corregido se ve también en la pestaña', async () => {
+    document.title = 'Árbol de Navidad — Banano Lab';
+    fetchProducto.mockResolvedValue(horneado({ name: 'Árbol corregido' }));
+    render(<FichaEnVivo inicial={horneado()} slug="arbol-de-navidad" info={info} />);
+
+    await waitFor(() => expect(document.title).toBe('Árbol corregido — Banano Lab'));
+  });
+});

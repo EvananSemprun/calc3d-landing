@@ -48,6 +48,12 @@ const { info } = await cargarTienda();
   // esperar a ningún evento, justo por eso.
   if (/^\/producto\/[^/]+\/?$/.test(location.pathname)) {
     document.getElementById('cartel-404')?.setAttribute('hidden', '');
+    // La pestaña, por el mismo motivo: `FichaEnVivo` le pone el nombre del producto
+    // apenas la API contesta, pero hasta entonces diría «Página no encontrada». Se
+    // deja solo la marca, que se toma de la etiqueta que ya está en la cabecera para
+    // no escribirla dos veces.
+    var marca = document.querySelector('meta[property="og:site_name"]');
+    if (marca) document.title = marca.getAttribute('content');
   }
 </script>
 
