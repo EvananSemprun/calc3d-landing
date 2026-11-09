@@ -185,8 +185,9 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     /* También el retardo, o una transición de 0.01ms sigue esperando el suyo. El caso
-       real es `.filters` (`visibility 0s 0.3s`): con `reduce` el panel salía de pantalla
-       al instante pero seguía 300 ms enfocable, así que el teclado entraba a controles
+       real es `.filters` (`visibility 0s var(--dur-panel)`): con `reduce` el panel salía
+       de pantalla al instante pero seguía enfocable todo lo que durara el deslizamiento
+       (300 ms cuando se midió, hoy `--dur-panel`), así que el teclado entraba a controles
        que ya no se veían. */
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
@@ -340,7 +341,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     font-size: 15px;
     font-weight: 600;
     color: var(--text-dim);
-    transition: color 0.2s, background 0.2s;
+    transition: color var(--dur-rapida), background var(--dur-rapida);
   }
   .nav-links a:hover { color: var(--text); background: rgba(255, 255, 255, 0.035); }
   .nav-links a[aria-current="page"] { color: var(--yellow); }
@@ -372,7 +373,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     text-transform: uppercase;
     color: var(--yellow);
   }
-  .footer a { display: block; padding: 5px 0; font-size: 15px; color: var(--text-dim); transition: color 0.2s; }
+  .footer a { display: block; padding: 5px 0; font-size: 15px; color: var(--text-dim); transition: color var(--dur-rapida); }
   .footer a:hover { color: var(--text); }
   .footer .brand { display: inline-flex; padding: 0; }
   .footer .brand-logo { width: 38px; }
@@ -402,7 +403,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
       background: var(--ink-800);
       border-bottom: 1px solid var(--card-line);
       transform: translateY(-120%);
-      transition: transform 0.35s var(--ease);
+      transition: transform var(--dur-panel) var(--ease);
       visibility: hidden;
       pointer-events: none;
     }
@@ -496,7 +497,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border-radius: 999px;
     background: transparent;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background var(--dur-rapida), border-color var(--dur-rapida);
   }
   .hero-punto[aria-selected='true'] { background: var(--yellow); border-color: var(--yellow); }
   /* El foco se ve: son los únicos controles del carrusel. */
@@ -521,7 +522,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border: 1px solid var(--card-line-strong);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
-    transition: transform 0.3s var(--ease), border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    transition: transform var(--dur-normal) var(--ease), border-color var(--dur-normal), background var(--dur-normal), box-shadow var(--dur-normal);
   }
   @media (hover: hover) {
     .card:hover { border-color: var(--card-line-hover); }
@@ -665,7 +666,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     background: transparent;
     color: var(--text-dim);
     cursor: pointer;
-    transition: all 0.18s;
+    transition: all var(--dur-rapida);
   }
   .chip:hover { border-color: var(--card-line-strong); color: var(--text); }
   .chip[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--ink-900); }
@@ -678,7 +679,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border: 2px solid var(--card-line);
     position: relative;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
+    transition: transform var(--dur-rapida), border-color var(--dur-rapida);
   }
   /* Solo con puntero real: en un teléfono el :hover se queda pegado tras tocar
      (y acá se queda pegado AGRANDADO). Su `transform` se anula en la guardia de
@@ -746,7 +747,11 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   @media (max-width: 900px) {
     .shop-layout { grid-template-columns: minmax(0, 1fr); }
     /* Panel lateral deslizable. Cerrado queda fuera de la tabulación (visibility),
-       si no el teclado entraría a controles que no se ven. */
+       si no el teclado entraría a controles que no se ven.
+       ⚠️ En `visibility 0s var(--dur-panel)` el segundo tiempo es un RETRASO, y lleva el
+       mismo token que la duración del `transform` a propósito: el panel tiene que seguir
+       visible hasta que termine de salir. Con dos números distintos, desaparecía antes de
+       llegar al borde o se quedaba enfocable después. */
     .filters {
       position: fixed;
       inset: 0 auto 0 0;
@@ -757,10 +762,10 @@ html[data-bl-navegando] { scroll-behavior: auto; }
       padding: 24px;
       transform: translateX(-100%);
       visibility: hidden;
-      transition: transform 0.3s var(--ease), visibility 0s 0.3s;
+      transition: transform var(--dur-panel) var(--ease), visibility 0s var(--dur-panel);
       overflow-y: auto;
     }
-    .filters.open { transform: none; visibility: visible; transition: transform 0.3s var(--ease), visibility 0s; }
+    .filters.open { transform: none; visibility: visible; transition: transform var(--dur-panel) var(--ease), visibility 0s; }
     .filters-toggle { display: inline-flex; }
     .filters-close { display: inline-flex; }
     .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -825,7 +830,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   /* Alto fijo para ~2 líneas: un título de 1 línea y otro de 2 reservan el mismo
      espacio, así el resto del contenido de las tarjetas queda nivelado. */
   .product h3 { font-size: 18px; line-height: 1.25; min-height: 2.5em; }
-  .product h3 a { transition: color 0.2s; }
+  .product h3 a { transition: color var(--dur-rapida); }
   .product h3 a:hover { color: var(--yellow); }
   .product-line { font-size: 12px; color: var(--text-faint); margin: -4px 0 0; letter-spacing: 0.04em; }
   .product-desc {
@@ -969,7 +974,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border: 1.5px solid var(--card-line);
     background: transparent;
     color: var(--text-dim);
-    transition: all 0.18s var(--ease);
+    transition: all var(--dur-rapida) var(--ease);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -1187,7 +1192,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     background: transparent;
     color: var(--text);
     cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
+    transition: border-color var(--dur-rapida), color var(--dur-rapida);
   }
   .cart-btn:hover { border-color: var(--yellow); color: var(--yellow); }
   .cart-count {
@@ -1222,7 +1227,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     backdrop-filter: blur(3px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity var(--dur-panel);
     z-index: 200;
   }
   .cart-overlay.open { opacity: 1; pointer-events: auto; }
@@ -1236,7 +1241,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border-left: 1px solid var(--card-line);
     z-index: 201;
     transform: translateX(100%);
-    transition: transform 0.38s var(--ease);
+    transition: transform var(--dur-panel) var(--ease);
     display: flex;
     flex-direction: column;
   }
@@ -1258,7 +1263,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     height: 36px;
     border-radius: 9px;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: background var(--dur-rapida), color var(--dur-rapida);
   }
   .cart-x:hover { background: var(--card); color: var(--text); }
   .cart-items { flex: 1; overflow-y: auto; padding: 16px 22px; display: flex; flex-direction: column; gap: 16px; }
@@ -1313,7 +1318,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     border-radius: 10px;
     padding: 10px 12px;
     width: 100%;
-    transition: border-color 0.18s;
+    transition: border-color var(--dur-rapida);
   }
   .checkout input:focus, .checkout textarea:focus { outline: none; border-color: var(--yellow); }
   .checkout textarea { resize: vertical; min-height: 44px; }
@@ -1352,7 +1357,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     font-size: 15px;
     background: #25d366;
     color: #04210f;
-    transition: background 0.2s, transform 0.2s;
+    transition: background var(--dur-rapida), transform var(--dur-rapida);
   }
   /* Solo con puntero real: es el botón de WhatsApp del cajón y del modal —la última
      pantalla del embudo— y en un teléfono quedaba pegado 2px arriba tras tocarlo.
