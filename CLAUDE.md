@@ -310,6 +310,43 @@ rescata la 404, ver abajo — pero responde con estado 404.
 una API distinta hay que **reconstruir**: una corrida apuntando a producción parece
 demostrar que el refresco no anda.
 
+### El producto BORRADO deja de ofrecerse (2026-11-08)
+
+Borrar o despublicar un producto no se veía hasta el próximo despliegue, por dos
+caminos distintos:
+
+- **La ficha.** `getJson` lanzaba el **mismo `Error`** para un 404 que para un
+  corte de red, así que `useEnVivo` se quedaba con lo horneado y la página decía
+  *«no pudimos conectar con el catálogo»* —falso— encima del producto muerto, con
+  su precio y su botón de comprar. Ahora el 404 es **`NoExiste`** (`lib/api.ts`),
+  `useEnVivo` devuelve **`noExiste`** aparte de `error`, y `FichaEnVivo` muestra
+  «Este producto ya no está disponible».
+  - ⚠️ **Esa guarda va ANTES de la de `!datos` y PISA lo horneado, a propósito.**
+    Conservarlo es justo lo que no hay que mostrar. Es la única diferencia entre
+    los dos estados: si la API no contesta, lo horneado es lo mejor que hay; si
+    la API contesta que no está, lo horneado es la ficha de algo que no se vende.
+  - ⚠️ El dato para distinguirlos **ya llegaba**: la API pública devuelve 404
+    para lo borrado **y para lo despublicado** (filtra por `visible`).
+- **Los relacionados.** Se elegían dentro del `getStaticPaths` de
+  `producto/[slug].astro` y nunca se refrescaban. La regla salió a
+  **`lib/relacionados.ts`** (`relacionadosDe`), que ahora usan el **build Y la
+  isla** (`RelacionadosEnVivo`, `client:visible`): con dos caminos, el sitio
+  ofrecería una cosa recién construido y otra un minuto después.
+  - ⚠️ Pide el catálogo **COMPLETO**: la tarjeta dice «desde» cuando alguna
+    opción suma y los recargos solo vienen en esa respuesta. Con la liviana el
+    «desde» desaparecería al refrescar, que es peor que no refrescar.
+
+⚠️ **Esto arregla lo que ve el VISITANTE, no lo que ve Google.** El HTML horneado
+sigue teniendo el `og:title` y el JSON-LD del producto muerto hasta el próximo
+despliegue. Se evaluó un deploy hook de Pages y **el dueño eligió el arreglo en
+vivo primero**; el hook queda disponible si algún día molesta lo de Google.
+
+⚠️ **Una mutación mintió y hay que saberlo**: los tests de pantalla de la ficha
+moquean `fetchProducto` y lanzan `NoExiste` ellos mismos, así que **nunca pasan
+por `getJson`** — romper la detección del 404 los dejaba a los 5 en verde. Por
+eso existe `lib/api.spec.ts`, que prueba el único lugar donde se decide cuál de
+los dos errores es.
+
 ### El enlace de un producto que todavía no tiene página
 
 Lo resuelve **la 404** (`RescatarProducto.tsx`): si la ruta es `/producto/<algo>/`, en vez
@@ -321,6 +358,37 @@ fichas que sí existían**: todas pasaron a devolver la cáscara y perdieron su 
 descripción y su JSON-LD. La suposición de que Cloudflare sirve primero el archivo
 estático es falsa para ese caso. La 404, en cambio, solo se sirve cuando no hay archivo.
 ⚠️ Y no se puede probar en local: `astro preview` no lee `_redirects`.
+
+## Tramos de mayoreo: DOS formas, y el recargo va aparte (2026-11-08)
+
+`lib/precio.ts` **reimplementa** `precioConTramos` (la tienda no importa shared),
+así que tiene que cobrar **lo mismo** o la ficha diría un número y el pedido
+llegaría con otro.
+
+| Forma | Campo | Cuándo |
+|---|---|---|
+| Precio fijo | `unitPriceUsd` | La nueva. Es la única que permite un precio redondo. |
+| Descuento | `discountPct` | La vieja. ⚠️ **No se puede retirar**: hay fichas publicadas guardadas así. |
+
+- ⚠️ **`recargos` es un parámetro OBLIGATORIO**, no opcional con default 0. Un
+  precio fijo reemplaza al precio de **LISTA** y los recargos de opción se cobran
+  **encima**; con un default, un llamador que se olvide muestra el tramo pelado
+  mientras el servidor cobra tramo + recargo, y el cliente ve **menos** de lo que
+  se le cobra. Que el compilador obligue a decidir en cada llamada es la
+  protección — lo pidió la revisión de seguridad, y tenía razón: el servidor ya
+  lo pasaba y la ficha y el carrito no.
+- Quien de verdad quiere el precio de lista pasa **0**, y así **se lee que lo
+  decidió**: la tabla de tramos de la ficha lo hace, porque muestra el «desde N u,
+  $X c/u» del producto y no el de la combinación que el visitante tenga elegida.
+- **El carrito DENORMALIZA `recargo`** al agregar, como ya hacía con los tramos y
+  el mínimo: su `unit` viene congelado y ya sumado, así que sin ese dato no podría
+  separarlos. ⚠️ Un carrito guardado **antes** del 2026-11-08 no lo tiene y vale
+  0, que es exactamente lo que valía para esos productos.
+- **`descuentoDeTramo`** deriva el «−17 %» de la tabla: hay **un** número
+  guardado, no dos que mantener de acuerdo.
+- ⚠️ Medido en producción ese día: **ninguna ficha tiene tramos Y recargos a la
+  vez** (el único con tramos no tiene recargos). O sea que el agujero habría
+  quedado latente hasta que el árbol de Navidad llevara mayoreo.
 
 ## Carrito → WhatsApp: la única escritura (y sus reglas)
 `api-escritura.ts` (`enviarPedido`, `enviarConsulta`) es lo único que **escribe**:
