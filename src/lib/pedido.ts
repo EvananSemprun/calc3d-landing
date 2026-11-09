@@ -52,7 +52,7 @@ export function describirOpciones(opts: Record<string, string> | undefined): str
 /** Precio unitario del renglón: su `unit` (base + opciones, congelado al agregar)
  *  con el tramo por su cantidad ACTUAL. Los tramos van denormalizados en el renglón. */
 export function precioRenglon(i: ItemCarrito): number {
-  return precioConTramos(i.unit, i.qty, i.priceTiers ?? []);
+  return precioConTramos(i.unit, i.qty, i.priceTiers ?? [], i.recargo ?? 0);
 }
 
 /** Total del pedido en USD: la suma de los renglones, cada uno redondeado a

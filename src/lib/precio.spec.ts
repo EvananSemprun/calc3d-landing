@@ -14,31 +14,31 @@ describe('precioConTramos', () => {
   ];
 
   it('aplica el mayor tramo aplicable', () => {
-    expect(precioConTramos(10, 9, t)).toBe(10);
-    expect(precioConTramos(10, 10, t)).toBeCloseTo(9, 9);
-    expect(precioConTramos(10, 30, t)).toBeCloseTo(8, 9);
-    expect(precioConTramos(5, 100, [])).toBe(5);
+    expect(precioConTramos(10, 9, t, 0)).toBe(10);
+    expect(precioConTramos(10, 10, t, 0)).toBeCloseTo(9, 9);
+    expect(precioConTramos(10, 30, t, 0)).toBeCloseTo(8, 9);
+    expect(precioConTramos(5, 100, [], 0)).toBe(5);
   });
 
   it('no depende del orden en que vienen los tramos', () => {
     const alReves = [...t].reverse();
-    expect(precioConTramos(10, 30, alReves)).toBeCloseTo(8, 9);
-    expect(precioConTramos(10, 10, alReves)).toBeCloseTo(9, 9);
+    expect(precioConTramos(10, 30, alReves, 0)).toBeCloseTo(8, 9);
+    expect(precioConTramos(10, 10, alReves, 0)).toBeCloseTo(9, 9);
   });
 
   it('el límite es inclusivo: qty === minQty ya aplica el tramo', () => {
-    expect(precioConTramos(10, 25, t)).toBeCloseTo(8, 9);
-    expect(precioConTramos(10, 24, t)).toBeCloseTo(9, 9);
+    expect(precioConTramos(10, 25, t, 0)).toBeCloseTo(8, 9);
+    expect(precioConTramos(10, 24, t, 0)).toBeCloseTo(9, 9);
   });
 
   it('sin tramos (null/undefined) devuelve el unitario base', () => {
-    expect(precioConTramos(7.25, 50, null)).toBe(7.25);
-    expect(precioConTramos(7.25, 50, undefined)).toBe(7.25);
+    expect(precioConTramos(7.25, 50, null, 0)).toBe(7.25);
+    expect(precioConTramos(7.25, 50, undefined, 0)).toBe(7.25);
   });
 
   it('el descuento es una FRACCIÓN y redondea a 4 decimales', () => {
     // 3.3333 * (1 - 0.15) = 2.833305 -> 2.8333
-    expect(precioConTramos(3.3333, 5, [{ minQty: 5, discountPct: 0.15 }])).toBe(2.8333);
+    expect(precioConTramos(3.3333, 5, [{ minQty: 5, discountPct: 0.15 }], 0)).toBe(2.8333);
   });
 
   it('no muta el arreglo de tramos recibido', () => {
@@ -46,7 +46,7 @@ describe('precioConTramos', () => {
       { minQty: 25, discountPct: 0.2 },
       { minQty: 10, discountPct: 0.1 },
     ];
-    precioConTramos(10, 30, original);
+    precioConTramos(10, 30, original, 0);
     expect(original.map((x) => x.minQty)).toEqual([25, 10]);
   });
 });
@@ -119,14 +119,14 @@ describe('tramos por precio fijo (la copia de la tienda)', () => {
       { minQty: 10, discountPct: 0.17 },
       { minQty: 20, discountPct: 0.266 },
     ];
-    expect(precioConTramos(1.5, 10, viejos)).toBe(1.245);
-    expect(precioConTramos(1.5, 20, viejos)).toBe(1.101);
+    expect(precioConTramos(1.5, 10, viejos, 0)).toBe(1.245);
+    expect(precioConTramos(1.5, 20, viejos, 0)).toBe(1.101);
   });
 
   it('el precio fijo se cobra exacto', () => {
     const nuevos = [{ minQty: 10, unitPriceUsd: 1.25 }];
-    expect(precioConTramos(1.5, 9, nuevos)).toBe(1.5);
-    expect(precioConTramos(1.5, 10, nuevos)).toBe(1.25);
+    expect(precioConTramos(1.5, 9, nuevos, 0)).toBe(1.5);
+    expect(precioConTramos(1.5, 10, nuevos, 0)).toBe(1.25);
   });
 
   it('el recargo de opción se suma al precio fijo, no se lo come', () => {
@@ -135,7 +135,7 @@ describe('tramos por precio fijo (la copia de la tienda)', () => {
   });
 
   it('con los dos campos manda el precio fijo', () => {
-    expect(precioConTramos(1.5, 10, [{ minQty: 10, discountPct: 0.5, unitPriceUsd: 1.25 }])).toBe(1.25);
+    expect(precioConTramos(1.5, 10, [{ minQty: 10, discountPct: 0.5, unitPriceUsd: 1.25 }], 0)).toBe(1.25);
   });
 
   it('descuentoDeTramo lo deriva para mostrarlo', () => {

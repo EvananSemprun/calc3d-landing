@@ -48,7 +48,11 @@ export default function Ficha({ producto: p, info }: Props) {
   const grupoFoto = useMemo(() => p.optionGroups.find((g) => g.drivesPhoto), [p.optionGroups]);
   const fotos = useMemo(() => fotosDeOpcion(p, elegido), [p, elegido]);
   const precioBase = precioBaseConOpciones(p, elegido);
-  const precioUnit = precioConTramos(precioBase, cantidad, p.priceTiers);
+  // Lo que aportan las opciones elegidas. Va APARTE porque un tramo por precio fijo
+  // reemplaza al precio de lista y el recargo se cobra encima: sin esto, la ficha
+  // mostraría menos de lo que el servidor cobra.
+  const recargo = precioBase - p.price;
+  const precioUnit = precioConTramos(precioBase, cantidad, p.priceTiers, recargo);
   const equivalente = equivalenteEnMoneda(precioUnit, info.rate);
   // Lo que va a pagar por lo que tiene elegido AHORA. El unitario de arriba ya se
   // mueve solo al cruzar un tramo, pero cambia lejos del contador y sin decir que
@@ -95,6 +99,7 @@ export default function Ficha({ producto: p, info }: Props) {
       qty: cantidad,
       opts,
       unit: precioBase,
+      recargo,
       nombre: p.name,
       imagen: p.image,
       priceTiers: p.priceTiers,
@@ -166,7 +171,10 @@ export default function Ficha({ producto: p, info }: Props) {
               {p.priceTiers.map((t) => (
                 <tr key={t.minQty}>
                   <th scope="row">Desde {t.minQty} u</th>
-                  <td>${precioConTramos(p.price, t.minQty, p.priceTiers).toFixed(2)} c/u</td>
+                  {/* Sobre el precio de LISTA (recargo 0): es el «desde N u, $X c/u»
+                      del producto, no el de la combinación que el visitante tenga
+                      elegida ahora. */}
+                  <td>${precioConTramos(p.price, t.minQty, p.priceTiers, 0).toFixed(2)} c/u</td>
                   <td className="dim">{textoDeDescuento(p.price, t)}</td>
                 </tr>
               ))}

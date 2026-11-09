@@ -45,3 +45,17 @@ describe('quitar', () => {
     expect(leer(a).map((i) => i.id)).toEqual(['llavero']);
   });
 });
+
+describe('el recargo de las opciones viaja en el renglón', () => {
+  it('se guarda al agregar, para que el tramo por precio fijo no se lo coma', () => {
+    const a = almacenFalso();
+    agregar({ id: 'p1', qty: 1, unit: 3, recargo: 1.5 }, a);
+    expect(leer(a)[0].recargo).toBe(1.5);
+  });
+
+  it('sin recargo no ensucia el renglón guardado', () => {
+    const a = almacenFalso();
+    agregar({ id: 'p1', qty: 1, unit: 1.5 }, a);
+    expect(leer(a)[0].recargo).toBeUndefined();
+  });
+});

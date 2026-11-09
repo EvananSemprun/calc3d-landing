@@ -32,6 +32,11 @@ export interface ItemCarrito {
   qty: number;
   opts: Record<string, string>;
   unit: number;
+  /** La parte de `unit` que aportan las opciones elegidas, denormalizada al agregar.
+   *  Un tramo por precio fijo reemplaza al precio de LISTA y el recargo se cobra encima:
+   *  sin este dato el cajón mostraría menos de lo que el servidor cobra. Opcional porque
+   *  un carrito guardado antes del 2026-11-08 no lo tiene (y ahí valía 0). */
+  recargo?: number;
   customNote?: string;
   customImageKey?: string;
   /** Datos de display DENORMALIZADOS al agregar, para que el cajón no tenga que
@@ -48,6 +53,11 @@ export interface EntradaCarrito {
   qty: number;
   opts?: Record<string, string>;
   unit: number;
+  /** La parte de `unit` que aportan las opciones elegidas, denormalizada al agregar.
+   *  Un tramo por precio fijo reemplaza al precio de LISTA y el recargo se cobra encima:
+   *  sin este dato el cajón mostraría menos de lo que el servidor cobra. Opcional porque
+   *  un carrito guardado antes del 2026-11-08 no lo tiene (y ahí valía 0). */
+  recargo?: number;
   customNote?: string;
   customImageKey?: string;
   nombre?: string;
@@ -124,6 +134,8 @@ export function agregar(
     existente.qty += entrada.qty;
   } else {
     const nuevo: ItemCarrito = { id: entrada.id, qty: entrada.qty, opts, unit: entrada.unit };
+    // Solo si suma: un recargo en 0 es el default y no hace falta guardarlo.
+    if (entrada.recargo) nuevo.recargo = entrada.recargo;
     if (entrada.customNote) nuevo.customNote = entrada.customNote;
     if (entrada.customImageKey) nuevo.customImageKey = entrada.customImageKey;
     if (entrada.nombre) nuevo.nombre = entrada.nombre;

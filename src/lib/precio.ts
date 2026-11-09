@@ -22,22 +22,37 @@ export interface ProductoConPrecio {
   priceTiers?: TramoPrecio[] | null;
 }
 
-/** Un renglón del carrito: `unit` es el unitario SIN tramo (base + recargos de opción). */
+/**
+ * Un renglón del carrito: `unit` es el unitario SIN tramo (base + recargos de opción).
+ *
+ * `recargo` es la PARTE de `unit` que aportan las opciones elegidas, denormalizada al
+ * agregar. Hace falta porque un tramo por precio fijo reemplaza al precio de LISTA y los
+ * recargos se cobran encima: sin este dato, el cajón mostraría menos de lo que el
+ * servidor cobra. ⚠️ Es opcional porque un carrito guardado ANTES del 2026-11-08 no lo
+ * tiene; ahí vale 0, que es exactamente lo que valía para esos productos.
+ */
 export interface RenglonPrecio {
   unit?: number;
   qty: number;
+  recargo?: number;
 }
 
 /**
  * Precio unitario tras el mayor tramo aplicable (minQty <= qty). Sin tramos,
  * baseUnit. Reimplementa precioConTramos de @calc3d/shared: la tienda no
  * importa shared.
+ *
+ * ⚠️ `recargos` es OBLIGATORIO a propósito (2026-11-08): con un default de 0, un
+ * llamador que se olvide muestra el precio del tramo pelado mientras el servidor cobra
+ * el tramo MÁS el recargo, y el cliente ve MENOS de lo que se le cobra. Que el
+ * compilador obligue a decidir en cada llamada es la protección; quien de verdad quiere
+ * el precio de lista pasa 0, y así se lee que lo decidió.
  */
 export function precioConTramos(
   baseUnit: number,
   qty: number,
   tiers: readonly TramoPrecio[] | null | undefined,
-  recargos = 0,
+  recargos: number,
 ): number {
   const t = (tiers || []).filter((x) => qty >= x.minQty).sort((a, b) => b.minQty - a.minQty)[0];
   if (!t) return baseUnit;
@@ -71,7 +86,7 @@ export function precioUnitarioItem(
   product: ProductoConPrecio | null | undefined,
 ): number {
   const base = typeof item.unit === 'number' ? item.unit : (product?.price ?? 0);
-  return precioConTramos(base, item.qty, product?.priceTiers ?? []);
+  return precioConTramos(base, item.qty, product?.priceTiers ?? [], item.recargo ?? 0);
 }
 
 /**
