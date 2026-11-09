@@ -24,9 +24,16 @@ pnpm install        # instala deps
 pnpm dev            # http://localhost:5182  (astro dev --strictPort)
 pnpm build          # dist/  (SSG: pega a la API en el build, ver abajo)
 pnpm preview        # sirve dist/
-pnpm check          # astro check (tipos)
+pnpm check          # astro check (tipos)  ← NO lo cubre pnpm test, ver abajo
 pnpm test           # vitest (la lógica de src/lib)
 ```
+
+⚠️ **`pnpm test` en verde NO quiere decir `pnpm check` en verde, y la diferencia esconde
+bugs de verdad.** Vitest transpila sin chequear tipos: un campo que no existe se lee como
+`undefined` y el test pasa igual. El 2026-11-08 `pnpm check` acumuló **8 errores** que
+nadie corrió, y uno era un bug real (la insignia «Nuevo» del catálogo filtrado). **Correr
+`pnpm check` antes de dar por terminado un cambio**, sobre todo si tocó un tipo
+compartido: el hook de pre-push corre los tests, **no** el chequeo de tipos.
 
 ⚠️ **El puerto 5182 está fijado y debe coincidir** (`astro.config.mjs` `server.port`
 y `.claude/launch.json`). La API valida este origen exacto en CORS (`STORE_ORIGIN`): en
@@ -354,10 +361,35 @@ ruido. ⚠️ 6 **no** es «una fila»: `.shop-grid` son 3 columnas en escritori
 filtro u orden** la isla trabaja sobre el **índice liviano** de TODA la categoría
 (`EntradaIndice`) y pinta `TarjetaIndice`. ⚠️ Ese índice viaja entero a la isla, así que
 cada campo que se le agregue se multiplica por el tamaño de la categoría: lleva lo mínimo
-(nombre, precio, foto, colores, tramos, `badge`, `compareAt`) y **tiene prohibido** `desc`,
-`description`, `specs`, `optionGroups`, `images` y `summary` — su test exige las claves
-exactas. `badge` y `compareAt` están para que ordenar por precio no le quite a la tarjeta
-su insignia ni su tachado de oferta.
+(nombre, precio, foto, colores, tramos, `badge`, `nuevo`, `compareAt`) y **tiene prohibido**
+`desc`, `description`, `specs`, `optionGroups`, `images` y `summary` — su test exige las
+claves exactas. `badge`, `nuevo` y `compareAt` están para que ordenar por precio no le quite
+a la tarjeta su insignia ni su tachado de oferta.
+
+⚠️ **Las DOS tarjetas tienen que dibujar lo mismo, y es fácil que no lo hagan.**
+`TarjetaProducto` (paginado estático) y `TarjetaIndice` (filtrado) son dos componentes con
+el mismo aspecto, así que una insignia agregada a una no aparece en la otra y **nadie se
+entera**: el visitante solo ve la segunda después de tocar un filtro. Pasó el 2026-11-08
+con «Nuevo» — `TarjetaIndice` leía `e.nuevo` y el índice no lo llevaba, así que valía
+`undefined`. **Todo test de insignia cubre las dos** (`insignias.spec.tsx`), porque cubrir
+una sola fue exactamente lo que dejó pasar esto.
+
+## El precio de la ficha: unitario Y total (2026-11-08)
+
+La ficha muestra el unitario grande y, **debajo del botón**, el renglón
+«N × precio = total». No es decoración: sin él, subir la cantidad **no cambiaba nada
+visible**. El unitario sí se movía al cruzar un tramo, pero cambia arriba de todo —lejos
+del contador, que está al final— y sin decir que es por unidad. El precio grande agrega
+**«c/u»** en cuanto hay más de una unidad, por lo mismo.
+
+- El renglón aparece solo con **cantidad > 1**: con una sola, el precio grande YA es el
+  total y repetirlo es ruido.
+- **`totalRenglon(unit, qty)`** (en `precio.ts`) redondea a centavos y la usan la ficha
+  **y** el pie del carrito. Es a propósito: con dos cuentas distintas, lo que el cliente
+  vio antes de agregar no coincidía con lo que ve en el cajón. El redondeo va **por
+  renglón** y no al final de la suma, o el pie no cuadra con lo que está escrito arriba.
+- Lo cubre **`Ficha.spec.tsx`** (pantalla), no la función pura: borrar el renglón del JSX
+  deja a `totalRenglon` perfectamente verde.
 
 ## Personalización (productos `custom`)
 Nota opcional + foto opcional. La foto **solo** si la API reporta `storageReady` (R2
