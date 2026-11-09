@@ -292,9 +292,39 @@ números **no** son comparables con estos de a uno).
 | CLS portada móvil | 0,0357 | **0,0167 (−53 %)** |
 | Peticiones a Google por carga | 5 (1 CSS + 4 woff2) | **0** |
 | Ventana con la fuente de respaldo en pantalla (portada) | 514 ms | **0 ms** (llega 170 ms antes del primer pintado) |
-| LCP portada | 764 / 748 ms | 792 / 788 ms → **+28 / +40 ms**, bajo el umbral de 50 ms |
+| LCP portada | 764 / 748 ms | 772 / 712 ms (móvil / escritorio) |
 | LCP ficha | 4.120 / 11.452 ms | 4.116 / **11.296** ms |
 | LCP listado (ventana larga) | 9.692 / 30.340 ms | 9.672 / 30.084 ms |
+
+### ⚠️ La precarga de fuente: el costo real, y cómo me lo medí mal
+
+La precarga del woff2 del peso 900 **cuesta 20 ms de LCP en móvil y 76 ms en escritorio**, con
+las dos ramas bajo el mismo tratamiento. Se repone igual, por decisión del dueño: lo que compra
+es cerrar la ventana de ~540 ms en la que el titular se ve en la familia de respaldo. **No se
+mueve de lugar** — 148,3 × 335 px y el mismo quiebre en 4 líneas, con y sin Poppins, verificado
+con captura — pero se ve **fino en vez de negro**, y es el titular principal de la portada.
+
+⚠️ **La trampa del arnés, que es lo que vale para la Tarea 8.** Una medición anterior dio
+−150/−220 ms y era del **arnés, no de la página**: comparó una rama interceptada con
+`route.fulfill` de Playwright contra una sin interceptar, y `route.fulfill` entrega el documento
+**sin pasar por el freno de red de CDP**. Medido con el cuerpo devuelto **byte por byte
+idéntico** y la intercepción como única variable:
+
+| | `responseEnd` del documento |
+|---|---|
+| Interceptado (`route.fulfill`) | **64 ms** (24·27·64·105·118) |
+| Sin interceptar (`route.continue`) | **259 ms** (252·257·259·268·322) |
+
+Sin solaparse. **Interceptar regala ~195 ms**, más que cualquier efecto que este plan pueda
+tener. Regla para la Tarea 8: **interceptar las dos ramas o ninguna**, nunca mezclar.
+
+⚠️ **Y para medir geometría** (Tarea 5): esperar a que `getAnimations()` quede quieto antes de
+leer, o se mide la animación de **entrada** todavía corriendo y se le echa la culpa a otra cosa
+(pasó: 12 px de desplazamiento que no eran del cambio).
+
+⚠️ **Bloquear una fuente para ver el respaldo exige bloquear `.woff2` Y `.woff`.** El
+`@font-face` de `@fontsource` lista las dos y bloquear una sola deja pasar la otra: la página
+carga Poppins igual y se mide el estado equivocado creyendo que es el respaldo.
 
 Sin medir, y dicho a propósito: **Android y macOS**. El `size-adjust` se calibró contra
 Arial, que es lo que resuelve en Windows; en Android `local('Arial')` cae a Roboto y la
