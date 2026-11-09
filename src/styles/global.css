@@ -1536,12 +1536,17 @@ img[data-fundir][data-cargando] { opacity: 0; }
    necesita un cuadro para pasar: muestreado cuadro a cuadro con `reduce` activo, el dato
    quedaba invisible **3 cuadros (~50 ms)** antes de aparecer. O sea que quien pidió no
    ver movimiento recibía un destello —exactamente lo contrario de lo que pidió— y ni
-   siquiera el cruce a cambio. Con `animation-name: none` no hay nada que correr: el dato
-   se ve desde el primer cuadro (medido: 12 de 12 cuadros en opacidad 1). Es la misma
-   lección que la regla de `img[data-fundir][data-cargando]` de arriba.
+   siquiera el cruce a cambio. Con `animation: none` no hay nada que correr —el atajo deja
+   `animation-name` en `none`— y el dato se ve desde el primer cuadro (medido: 12 de 12
+   cuadros en opacidad 1). Es la misma lección que la regla de
+   `img[data-fundir][data-cargando]` de arriba.
    Sin `!important` (uno acá invertiría el orden de capas y le haría perder a la guardia
-   de movimiento): gana por orden, que alcanza contra una regla de la misma
-   especificidad. */
+   de movimiento).
+   ⚠️ **Entonces esta guardia gana SOLO POR ORDEN, y por eso va acá abajo y fuera de
+   capa.** `[data-cruce]` y `[data-cruce='1']` pesan lo mismo (0,1,0: una clase y un
+   atributo suman en la misma columna), así que moverla a un `@layer` o unas líneas más
+   arriba devuelve el destello sin que nada se vea roto. Lo exige `cruce-funde.spec.ts`,
+   que compara la posición en el archivo. */
 @media (prefers-reduced-motion: reduce) {
   [data-cruce] { animation: none; }
 }

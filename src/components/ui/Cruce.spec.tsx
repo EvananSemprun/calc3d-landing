@@ -19,12 +19,22 @@ import { describe, expect, it } from 'vitest';
 import Cruce, { useCruce } from './Cruce';
 import TarjetaProducto from '@/components/catalogo/TarjetaProducto';
 import TarjetaIndice from '@/components/catalogo/TarjetaIndice';
+import Ficha from '@/components/ficha/Ficha';
 import type { ProductoVitrina } from '@/lib/producto';
 import type { EntradaIndice } from '@/lib/paginacion';
-import type { TasaApi } from '@/lib/api';
+import type { InfoApi, TasaApi } from '@/lib/api';
 
 /** Sonda de `useCruce`: las props se esparcen sobre un elemento que YA existe. */
 function Precio({ valor }: { valor: string }) {
+  return (
+    <span className="price" data-testid="precio" {...useCruce(valor)}>
+      {valor}
+    </span>
+  );
+}
+
+/** La misma sonda con un valor que no es texto, para el caso del `0`. */
+function Valor({ valor }: { valor: number }) {
   return (
     <span className="price" data-testid="precio" {...useCruce(valor)}>
       {valor}
@@ -84,6 +94,43 @@ describe('<Cruce>', () => {
     expect(segunda).not.toBe(primera);
   });
 
+  /**
+   * **Lo que APARECE o SE VA no cruza: es un cambio de ALTO y va seco.**
+   *
+   * No es teórico en dos de los tres blancos: la insignia del dueño de la ficha vive en
+   * `.pdp-badges`, un flex EN FLUJO justo encima del `<h1>` (aparecer empuja la ficha
+   * entera hacia abajo), y `.price-alt` es `display: block`, así que aparecer le cambia
+   * el alto a `.product-foot`. En las tarjetas `.product-badges` es `position: absolute`
+   * y no mueve nada, pero la regla no puede depender de cuál de los blancos sea.
+   */
+  describe('lo que aparece o se va va SECO', () => {
+    it('un valor que APARECE no cruza', () => {
+      const { container, rerender } = render(<Precio valor="" />);
+      rerender(<Precio valor="$9.50" />);
+      expect(container.querySelector('[data-cruce]')).toBeNull();
+    });
+
+    it('uno que SE VA tampoco', () => {
+      const { container, rerender } = render(<Precio valor="$9.50" />);
+      rerender(<Precio valor="" />);
+      expect(container.querySelector('[data-cruce]')).toBeNull();
+    });
+
+    it('pero el cambio siguiente, ya con el dato en pantalla, SÍ cruza', () => {
+      // Si no, «apareció» se volvería «no cruza nunca más» para ese elemento.
+      const { container, rerender } = render(<Precio valor="" />);
+      rerender(<Precio valor="$9.50" />);
+      rerender(<Precio valor="$10.00" />);
+      expect(container.querySelector('[data-cruce]')).toHaveTextContent('$10.00');
+    });
+
+    it('un `0` NO cuenta como ausente: un precio de cero es un dato', () => {
+      const { container, rerender } = render(<Valor valor={12} />);
+      rerender(<Valor valor={0} />);
+      expect(container.querySelector('[data-cruce]')).not.toBeNull();
+    });
+  });
+
   it('sobre un elemento que ya existe NO agrega ningún nodo', () => {
     const { container, rerender } = render(<Precio valor="$8.00" />);
     const antes = container.querySelectorAll('*').length;
@@ -101,7 +148,7 @@ describe('<Cruce>', () => {
   it('alrededor de un nodo de texto suelto agrega UN solo elemento, en línea', () => {
     // El precio de la tarjeta es un nodo de texto dentro de `<span class="price">`: no
     // tiene elemento propio que marcar, así que hace falta envolverlo.
-    const { container } = render(<PrecioSuelto valor="$8.00" />);
+    render(<PrecioSuelto valor="$8.00" />);
     const envoltorio = screen.getByTestId('precio').firstElementChild;
     expect(envoltorio?.tagName).toBe('SPAN');
     expect(envoltorio?.textContent).toBe('$8.00');
@@ -211,6 +258,21 @@ describe.each(Object.entries(tarjetas))('la tarjeta %s cruza lo que el dueño co
     expect(screen.getByText('Último')).toHaveAttribute('data-cruce');
   });
 
+  it('una insignia que APARECE no cruza (eso mueve, y va seco)', () => {
+    const { container, rerender } = render(dibujar({ price: 8, badge: null }));
+    rerender(dibujar({ price: 8, badge: 'Más vendido' }));
+    expect(screen.getByText('Más vendido')).not.toHaveAttribute('data-cruce');
+    expect(container.querySelectorAll('[data-cruce]')).toHaveLength(0);
+  });
+
+  it('el equivalente que APARECE tampoco (`.price-alt` es `display: block`)', () => {
+    // Sin tasa no hay `.price-alt`; cuando la tasa llega, el renglón aparece y le cambia
+    // el alto a `.product-foot`. Fundirlo sería fundir un cambio de alto.
+    const { container, rerender } = render(dibujar({ price: 8, tasa: null }));
+    rerender(dibujar({ price: 8, tasa: BS }));
+    expect(container.querySelector('.price-alt')).not.toHaveAttribute('data-cruce');
+  });
+
   it('y NO cruza nada cuando el refresco trae lo mismo', () => {
     const caso: Caso = { price: 8, compareAt: 12, badge: 'Más vendido', tasa: BS };
     const { container, rerender } = render(dibujar(caso));
@@ -220,5 +282,45 @@ describe.each(Object.entries(tarjetas))('la tarjeta %s cruza lo que el dueño co
       'Cruzó algo con el refresco trayendo lo mismo. Es el caso que más ocurre: la ' +
         'tarjeta entera parpadearía al abrir cualquier página.',
     ).toHaveLength(0);
+  });
+});
+
+/**
+ * **La ficha es el caso donde «lo que aparece» MUEVE DE VERDAD**, así que se cubre
+ * aparte de las tarjetas. La insignia del dueño vive en `.pdp-badges`, que es
+ * `display: flex` en flujo normal dentro de `.pdp-info` (un flex en columna con
+ * `gap: 16px`) y está justo encima del `<h1>`: una insignia que aparece empuja la ficha
+ * entera hacia abajo. En las tarjetas, en cambio, `.product-badges` es absoluto.
+ */
+describe('la ficha', () => {
+  const info: InfoApi = {
+    businessName: 'Banano Lab',
+    whatsappPhone: null,
+    currency: 'USD',
+    rate: null,
+    storageReady: false,
+  };
+  const ficha = (extra: Partial<ProductoVitrina>) => (
+    <Ficha producto={producto({ price: 1.5, ...extra })} info={info} />
+  );
+
+  it('cruza el precio que el dueño corrigió', () => {
+    const { container, rerender } = render(ficha({ price: 1.5 }));
+    expect(container.querySelector('.pdp-price[data-cruce]')).toBeNull();
+    rerender(ficha({ price: 2.5 }));
+    expect(container.querySelector('.pdp-price[data-cruce]')).toHaveTextContent('$2.50');
+  });
+
+  it('pero una insignia que APARECE no cruza: empuja el h1 hacia abajo', () => {
+    const { container, rerender } = render(ficha({ badge: null }));
+    rerender(ficha({ badge: 'Más vendido' }));
+    expect(screen.getByText('Más vendido')).not.toHaveAttribute('data-cruce');
+    expect(container.querySelectorAll('.pdp-badges [data-cruce]')).toHaveLength(0);
+  });
+
+  it('y una que cambia de texto SÍ cruza: ahí no se mueve nada', () => {
+    const { rerender } = render(ficha({ badge: 'Más vendido' }));
+    rerender(ficha({ badge: 'Último' }));
+    expect(screen.getByText('Último')).toHaveAttribute('data-cruce');
   });
 });

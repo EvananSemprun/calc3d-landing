@@ -156,6 +156,28 @@ describe('el CSS del cruce del refresco en vivo', () => {
         'movimiento ve el dato desaparecer unos cuadros: pierde sin ganar.',
     ).toBe(1);
     expect(conReduce[0]?.cuerpo).toMatch(/animation:\s*none/);
+
+    // ⚠️ **Y que exista no alcanza: esta guardia gana SOLO POR ORDEN.** Las tres reglas
+    // pesan lo mismo (`[data-cruce]` y `[data-cruce='1']` son 0,1,0 las dos: una clase y
+    // un atributo suman en la misma columna), así que lo único que la pone por encima es
+    // estar fuera de capa y venir DESPUÉS. Moverla a un `@layer`, o unas líneas más
+    // arriba, devuelve el destello de 3 cuadros **sin que nada falle**.
+    expect(
+      conReduce[0]?.envoltorios.filter((e) => e.startsWith('@layer')),
+      'La guardia de `reduce` del cruce quedó dentro de un `@layer`. Las reglas del ' +
+        'cruce están fuera de capa, y lo que no está en una capa le gana a las capas: ' +
+        'encapada, la guardia pierde y el destello vuelve.',
+    ).toEqual([]);
+
+    const guardia = conReduce[0]?.desde ?? -1;
+    for (const sel of MARCAS) {
+      expect(
+        guardia,
+        `La guardia de \`reduce\` está ANTES de \`${sel}\` en el archivo. Con la misma ` +
+          'especificidad gana la última: así escrita, la marca le pisa la guardia y, con ' +
+          '`reduce`, el dato vuelve a desaparecer unos cuadros.',
+      ).toBeGreaterThan(reglaDe(sel)[0]?.desde ?? Infinity);
+    }
   });
 
   it('no usa `!important`, o la guardia de `reduce` perdería', () => {
