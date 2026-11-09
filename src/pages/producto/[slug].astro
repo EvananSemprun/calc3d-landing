@@ -7,12 +7,13 @@
 import Base from '../../layouts/Base.astro';
 import FichaEnVivo from '../../components/ficha/FichaEnVivo';
 import Ficha from '../../components/ficha/Ficha';
-import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
+import RelacionadosEnVivo from '../../components/ficha/RelacionadosEnVivo';
 import { cargarTienda } from '../../lib/tienda-build';
 import BannerCategoriaEnVivo from '../../components/banners/BannerCategoriaEnVivo';
 import { bannerDeCategoria } from '../../lib/banner';
 import { jsonLdDeProducto } from '../../lib/ficha';
 import { rutaDeSlug } from '../../lib/paginacion';
+import { relacionadosDe } from '../../lib/relacionados';
 import { rutaFicha, type ProductoVitrina } from '../../lib/producto';
 import type { InfoApi } from '../../lib/api';
 import type { Categoria } from '../../lib/catalogo';
@@ -24,14 +25,13 @@ export async function getStaticPaths() {
   // dueño edite una categoría a mitad del build.
   const { completos: lista, info, categorias, raices } = await cargarTienda();
 
-  return lista.map((producto) => {
-    let otros = lista.filter((x) => x.id !== producto.id && producto.cat && x.cat === producto.cat);
-    if (!otros.length) otros = lista.filter((x) => x.id !== producto.id);
-    return {
-      params: { slug: producto.id },
-      props: { producto, info, relacionados: otros.slice(0, 3), categorias, raices },
-    };
-  });
+  // La elección sale de `relacionadosDe`, la MISMA función que usa la isla al
+  // refrescar: con la regla escrita acá a mano, el sitio ofrecía una cosa recién
+  // construido y otra un minuto después.
+  return lista.map((producto) => ({
+    params: { slug: producto.id },
+    props: { producto, info, relacionados: relacionadosDe(lista, producto), categorias, raices },
+  }));
 }
 
 interface Props {
@@ -88,19 +88,10 @@ const jsonLd = jsonLdDeProducto(p, {
     <FichaEnVivo inicial={p} slug={p.id} info={info} client:load />
   </main>
 
-  {relacionados.length > 0 && (
-    <section class="section pdp-related">
-      <div class="container">
-        <div class="eyebrow-row">
-          <h2 class="h2">También te puede servir</h2>
-          <a href="/tienda/" class="text-sm font-semibold text-primary hover:underline">Ver todo el catálogo →</a>
-        </div>
-        <div class="grid shop-grid">
-          {relacionados.map((r) => (
-            <TarjetaProducto producto={r} tasa={info.rate} client:visible />
-          ))}
-        </div>
-      </div>
-    </section>
-  )}
+  <RelacionadosEnVivo
+    inicial={relacionados}
+    actual={{ id: p.id, cat: p.cat }}
+    tasa={info.rate}
+    client:visible
+  />
 </Base>

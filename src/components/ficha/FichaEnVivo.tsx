@@ -18,6 +18,10 @@ import type { ProductoVitrina } from '@/lib/producto';
  *    compartido funciona igual. Era la condición que puso el dueño: los enlaces
  *    personalizados tienen que seguir andando.
  *
+ * 3. **Decir que un producto ya no está.** Si la API contesta 404 —borrado o
+ *    despublicado— se muestra «Producto no disponible», AUNQUE haya ficha horneada.
+ *    Conservarla mostraría la ficha de algo que no se vende, con su botón de comprar.
+ *
  * ⚠️ **`key` cuelga de la ESTRUCTURA de opciones.** `Ficha` arranca su selección y su
  * cantidad del producto en el primer render; si las opciones cambiaran bajo sus pies,
  * quedaría eligiendo un color que ya no existe. Con la key, cambia la estructura y el
@@ -41,7 +45,7 @@ export default function FichaEnVivo({
     (typeof location !== 'undefined'
       ? decodeURIComponent(location.pathname.replace(/^\/producto\//, '').replace(/\/+$/, ''))
       : '');
-  const { datos, error } = useEnVivo(inicial, () => fetchProducto(elSlug));
+  const { datos, error, noExiste } = useEnVivo(inicial, () => fetchProducto(elSlug));
 
   const clave = useMemo(
     () =>
@@ -51,14 +55,28 @@ export default function FichaEnVivo({
     [datos],
   );
 
+  // ⚠️ Esta guarda va ANTES de la de `!datos` y pisa a lo horneado a propósito: la
+  // API dijo que no existe, así que la ficha del build es la de un producto muerto.
+  if (noExiste) {
+    return (
+      <div className="pdp-aviso">
+        <p className="lead">Este producto ya no está disponible.</p>
+        <p>
+          Puede que lo hayamos sacado del catálogo. Mirá el <a href="/tienda/">catálogo</a> o
+          escribinos por WhatsApp y vemos qué tenemos parecido.
+        </p>
+      </div>
+    );
+  }
+
   if (!datos) {
-    // Sin ficha horneada: o está viajando, o el producto no existe.
+    // Sin ficha horneada y sin respuesta todavía: o está viajando, o la API no contesta.
     return error ? (
       <div className="pdp-aviso">
         <p className="lead">No pudimos cargar este producto.</p>
         <p>
-          Puede que ya no esté disponible. Mirá el <a href="/tienda/">catálogo</a> o escribinos por
-          WhatsApp y lo vemos.
+          Probá de nuevo en un momento. Mientras tanto, mirá el <a href="/tienda/">catálogo</a> o
+          escribinos por WhatsApp.
         </p>
       </div>
     ) : (

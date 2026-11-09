@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { NoExiste } from './api';
 
 /**
  * Datos EN VIVO sobre lo horneado.
@@ -16,10 +17,19 @@ import { useEffect, useRef, useState } from 'react';
  * ⚠️ **No reintenta.** Un catálogo que se repregunta solo golpea una API con tope de
  * 120 peticiones por minuto, y acá el costo de fallar es ver datos de hace un rato, no
  * perder nada. Quien quiera reintentar, recarga.
+ *
+ * ⚠️ **`error` y `noExiste` son estados DISTINTOS y conservar lo horneado solo vale
+ * para el primero.** Si la API no contesta, lo del último build es lo mejor que hay. Si
+ * la API contesta que el producto ya no está, lo horneado es justamente lo que NO hay
+ * que mostrar: es la ficha de algo que no se vende. Mezclarlos fue el bug.
  */
-export function useEnVivo<T>(inicial: T, cargar: () => Promise<T>): { datos: T; error: boolean } {
+export function useEnVivo<T>(
+  inicial: T,
+  cargar: () => Promise<T>,
+): { datos: T; error: boolean; noExiste: boolean } {
   const [datos, setDatos] = useState(inicial);
   const [error, setError] = useState(false);
+  const [noExiste, setNoExiste] = useState(false);
   // La función de carga suele venir como literal: sin la ref, cambiaría en cada render y
   // el efecto volvería a pedir en bucle.
   const cargarRef = useRef(cargar);
@@ -32,13 +42,15 @@ export function useEnVivo<T>(inicial: T, cargar: () => Promise<T>): { datos: T; 
       .then((d) => {
         if (vivo) setDatos(d);
       })
-      .catch(() => {
-        if (vivo) setError(true);
+      .catch((e) => {
+        if (!vivo) return;
+        if (e instanceof NoExiste) setNoExiste(true);
+        else setError(true);
       });
     return () => {
       vivo = false;
     };
   }, []);
 
-  return { datos, error };
+  return { datos, error, noExiste };
 }

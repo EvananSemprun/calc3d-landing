@@ -24,8 +24,25 @@ export interface InfoApi {
 
 const BASE = (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001/api').replace(/\/+$/, '');
 
+/**
+ * La API contestó que ESO NO EXISTE (404). No es lo mismo que no poder hablar con ella.
+ *
+ * ⚠️ Hasta el 2026-11-08 las dos cosas eran el mismo `Error` y la ficha no podía
+ * distinguirlas: un producto borrado mostraba «no pudimos conectar con el catálogo»
+ * —un mensaje falso— encima de la ficha horneada, o sea del producto muerto, como si
+ * siguiera a la venta. El dato para separarlos ya llegaba: la API pública devuelve 404
+ * para lo borrado **y para lo despublicado** (filtra por `visible`).
+ */
+export class NoExiste extends Error {
+  constructor(path: string) {
+    super(`La API dice que no existe: ${path}`);
+    this.name = 'NoExiste';
+  }
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(BASE + path);
+  if (res.status === 404) throw new NoExiste(path);
   if (!res.ok) throw new Error(`La API respondió ${res.status}`);
   return (await res.json()) as T;
 }
