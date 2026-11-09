@@ -208,8 +208,14 @@ describe('la precarga de la fuente', () => {
     expect(deFuente).toHaveLength(1);
   });
 
-  it('no hay otra precarga que no sea la de la fuente', () => {
-    expect(precargas().filter((p) => !/as="font"/.test(p))).toEqual([]);
+  it('no se precarga ningún otro woff2 por otro camino', () => {
+    // El invariante es «una sola precarga de FUENTE», no «ninguna precarga de nada»: la
+    // portada MÓVIL tiene por elemento del LCP a `hero-art`, una imagen, y precargarla
+    // sería una mejora legítima de otra tarea — que se encontraría con un rojo cuyo
+    // nombre se lee como una prohibición deliberada. Lo que no puede volver es un segundo
+    // woff2 precargado colado con otro `as`.
+    const otras = precargas().filter((p) => !/as="font"/.test(p));
+    expect(otras.filter((p) => /\.woff2?\b/.test(p))).toEqual([]);
   });
 
   it('lleva `type="font/woff2"` y `crossorigin`', () => {
@@ -285,8 +291,11 @@ describe('la familia de respaldo con las métricas de Poppins', () => {
     expect(rangos.length, 'alguna cara de respaldo no declara `font-weight`').toBe(
       carasDeRespaldo().length,
     );
-    // Un peso fuera de todo rango cae a `system-ui` SIN ajustar: el salto vuelve justo
-    // para ese texto, y nada lo delata.
+    // ⚠️ Un peso fuera de todo rango NO se cae a `system-ui`: el emparejado de fuentes de
+    // CSS acota el peso DENTRO de la familia y usa la cara más cercana (solo pasa a la
+    // familia siguiente si la familia no tiene ninguna cara). O sea que un hueco no deja
+    // ese texto sin ajustar, lo deja con el ajuste EQUIVOCADO —123 % donde correspondía
+    // 104 %—, que agrega salto en vez de dejar el de antes. Nada lo delata.
     expect(rangos[0][0]).toBeLessThanOrEqual(100);
     expect(rangos[rangos.length - 1][1]).toBeGreaterThanOrEqual(1000);
     for (let i = 1; i < rangos.length; i++) {

@@ -79,9 +79,14 @@
    Dos caras y no una porque el respaldo rinde las MISMAS glifas en todos los pesos (una
    fuente estática con rango declarado no se emboldece sola), mientras Poppins Black es
    mucho más ancha que Poppins Regular: con un solo número, el que sirve para los títulos
-   ensancha el texto corrido y le suma una línea al párrafo largo de la ficha. Los rangos
-   cubren 100–1000 sin huecos a propósito: un peso fuera de rango se caería a `system-ui`
-   sin ajustar. */
+   ensancha el texto corrido y le suma una línea al párrafo largo de la ficha.
+
+   ⚠️ Los rangos cubren 100–1000 **sin huecos** a propósito, y el motivo no es el que
+   parece: un peso fuera de rango NO se cae a `system-ui`. El emparejado de fuentes de CSS
+   acota el peso **dentro de la familia** y usa la cara más cercana —solo pasa a la familia
+   siguiente si la familia no tiene ninguna cara—, así que un hueco no deja ese texto sin
+   ajustar: lo deja con el ajuste **equivocado** (123 % donde correspondía 104 %), que es
+   peor, porque agrega salto en vez de dejar el de antes. */
 @font-face {
   font-family: 'Poppins respaldo';
   font-weight: 100 600;

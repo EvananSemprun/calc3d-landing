@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reglaDe, reglas, reglasCon, sinComentarios } from './css';
+import { bloques, bloquesAt, reglaDe, reglas, reglasCon, sinComentarios } from './css';
 
 /**
  * El parser de CSS que comparten los tres guardianes de `global.css`
@@ -32,8 +32,32 @@ describe('el parser de global.css', () => {
     expect(r.map((x) => x.selector)).toEqual(['.a']);
   });
 
+  it('un at-rule SIN bloque DENTRO de un @layer tampoco se come la regla siguiente', () => {
+    // ⚠️ La misma trampa que el caso de arriba, un nivel más abajo, y la protección
+    // estuvo a punto de quedar valiendo solo en el nivel de arriba (2026-11-09): si el
+    // `;` no corta acá, el selector sale `@import "x"; .a` y **`.a` desaparece** de
+    // `reglas()`. Los tres guardianes de `global.css` saldrían VERDES sin haber mirado
+    // esa regla, que es exactamente el modo de falla que este archivo viene a atajar.
+    const r = reglas('@layer components { @import "x"; .a { color: red } }');
+    expect(r.map((x) => x.selector)).toEqual(['.a']);
+    expect(r[0].cuerpo).toBe('color: red');
+    expect(r[0].envoltorios).toEqual(['@layer components']);
+  });
+
   it('los `;` del cuerpo NO cortan: una regla con varias declaraciones llega entera', () => {
     expect(reglas('.a { color: red; opacity: 0 }')[0].cuerpo).toBe('color: red; opacity: 0');
+  });
+
+  it('los `;` de un at-rule de DECLARACIONES tampoco cortan: llega entero', () => {
+    // La otra mitad del mismo arreglo: `@font-face` y `@theme` contienen declaraciones, no
+    // reglas, así que su cuerpo tiene que llegar completo. Es lo que lee el guardián de
+    // fuentes (`src/fuentes.spec.ts`); si el `;` cortara acá, solo vería la última
+    // declaración y daría por ausentes los overrides de métrica.
+    const cara = bloquesAt(bloques("@font-face { font-family: 'X'; size-adjust: 104% }"), '@font-face');
+    expect(cara).toHaveLength(1);
+    expect(cara[0].cuerpo).toBe("font-family: 'X'; size-adjust: 104%");
+    const tema = bloquesAt(bloques('@theme inline { --a: 1; --b: 2 }'), '@theme');
+    expect(tema[0].cuerpo).toBe('--a: 1; --b: 2');
   });
 
   it('`reglaDe` junta los cuerpos de todas las reglas del mismo selector', () => {
