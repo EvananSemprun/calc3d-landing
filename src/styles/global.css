@@ -393,7 +393,11 @@ html[data-bl-navegando] { scroll-behavior: auto; }
 
   /* ---------- Banner de categoría ---------- */
   .banner-cat { display: block; margin-bottom: 26px; border-radius: var(--radius-lg); overflow: hidden; }
-  .banner-cat img { display: block; width: 100%; height: auto; }
+  /* El banner es REMOTO (R2): sus medidas no se conocen en el build, así que con
+     `height: auto` mide 0 hasta que la foto baja y EMPUJA todo lo de abajo. Se le reserva
+     16:9 —lo que el panel ya muestra en su vista previa y recomienda al subirlo— y `cover`
+     recorta en vez de estirar (el `fill` por defecto deformaría uno de otra proporción). */
+  .banner-cat img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 
   /* ---------- Tarjetas ---------- */
   /* El borde en REPOSO es el fuerte: sobre un fondo casi negro el relleno no alcanza
