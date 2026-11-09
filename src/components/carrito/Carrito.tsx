@@ -163,7 +163,7 @@ export default function Carrito() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo enviar.';
       const conPunto = /[.!?]$/.test(msg.trim()) ? msg.trim() : `${msg.trim()}.`;
-      setError(`${conPunto} Podés mandarlo igual por WhatsApp.`);
+      setError(`${conPunto} Puedes mandarlo igual por WhatsApp.`);
     } finally {
       setEnviando(false);
     }
@@ -286,7 +286,7 @@ export default function Carrito() {
               <div className="checkout-done">
                 <strong>Recibimos tu pedido</strong>
                 <p className="dim">
-                  Ya está en nuestra bandeja. Confirmalo por WhatsApp y coordinamos pago y entrega.
+                  Ya está en nuestra bandeja. Confírmalo por WhatsApp y coordinamos pago y entrega.
                 </p>
               </div>
             )}

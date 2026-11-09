@@ -50,7 +50,7 @@ export default function PiezaAMedida() {
     if (enviando) return;
     const problema =
       validarContacto(datos) ||
-      (datos.description.trim().length < 10 ? 'Contanos un poco más de lo que necesitás.' : null);
+      (datos.description.trim().length < 10 ? 'Cuéntanos un poco más de lo que necesitas.' : null);
     if (problema) return setError(problema);
 
     setEnviando(true);
@@ -61,7 +61,7 @@ export default function PiezaAMedida() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo enviar.';
       const conPunto = /[.!?]$/.test(msg.trim()) ? msg.trim() : `${msg.trim()}.`;
-      setError(`${conPunto} Podés escribirnos por WhatsApp.`);
+      setError(`${conPunto} Puedes escribirnos por WhatsApp.`);
     } finally {
       setEnviando(false);
     }
@@ -84,7 +84,7 @@ export default function PiezaAMedida() {
 
         {!hecho ? (
           <form className="checkout" onSubmit={enviar} noValidate>
-            <p className="dim custom-intro">Contanos qué necesitás y te pasamos un precio. Sin compromiso.</p>
+            <p className="dim custom-intro">Cuéntanos qué necesitas y te pasamos un precio. Sin compromiso.</p>
             <label>
               Tu nombre
               <input
@@ -111,7 +111,7 @@ export default function PiezaAMedida() {
               />
             </label>
             <label>
-              Qué necesitás
+              Qué necesitas
               <textarea
                 name="description"
                 rows={4}
@@ -130,7 +130,7 @@ export default function PiezaAMedida() {
         ) : (
           <div className="checkout-done">
             <strong>Recibimos tu consulta</strong>
-            <p className="dim">Te escribimos con el precio. Si querés adelantar, mandanos un WhatsApp.</p>
+            <p className="dim">Te escribimos con el precio. Si quieres adelantar, mándanos un WhatsApp.</p>
             {urlWa && (
               <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
                 Escribir por WhatsApp

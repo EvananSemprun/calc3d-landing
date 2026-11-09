@@ -71,8 +71,8 @@ export default function FichaEnVivo({
       <div className="pdp-aviso">
         <p className="lead">Este producto ya no está disponible.</p>
         <p>
-          Puede que lo hayamos sacado del catálogo. Mirá el <a href="/tienda/">catálogo</a> o
-          escribinos por WhatsApp y vemos qué tenemos parecido.
+          Puede que lo hayamos sacado del catálogo. Mira el <a href="/tienda/">catálogo</a> o
+          escríbenos por WhatsApp y vemos qué tenemos parecido.
         </p>
       </div>
     );
@@ -84,8 +84,8 @@ export default function FichaEnVivo({
       <div className="pdp-aviso">
         <p className="lead">No pudimos cargar este producto.</p>
         <p>
-          Probá de nuevo en un momento. Mientras tanto, mirá el <a href="/tienda/">catálogo</a> o
-          escribinos por WhatsApp.
+          Prueba de nuevo en un momento. Mientras tanto, mira el <a href="/tienda/">catálogo</a> o
+          escríbenos por WhatsApp.
         </p>
       </div>
     ) : (

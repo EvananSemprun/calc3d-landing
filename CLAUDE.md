@@ -585,6 +585,31 @@ Navy + amarillo, Poppins, oscuro siempre (`<html class="dark">`). Paleta en
   `connect-src`, y mal puesto no avisa — deja las fotos en blanco. Y el bloque de caché
   de `/_astro/*` que está debajo **no es decorativo**: al editar ese archivo, conservarlo.
 
+## El texto habla de TÚ, no de vos (2026-11-09)
+
+El sitio nació con voseo argentino y el negocio es venezolano: el cliente leía a alguien
+de otro país. Se tradujeron los 36 textos de cara al usuario (portada, ficha, catálogo,
+carrito, FAQ, 404, impresión 3D) a «tú», y «acá» pasó a «aquí».
+
+Lo que lo sostiene es **`src/idioma.spec.ts`**, que lee el código fuente y falla si
+vuelve a aparecer una forma de voseo en texto visible. Tres cosas que no hay que deshacer:
+
+- ⚠️ **Mira el FUENTE, no una pantalla renderizada.** Lo que hay que atajar es el texto
+  recién escrito, antes de que lo vea un cliente.
+- ⚠️ **La lista de formas es A MANO.** Un patrón general («cualquier palabra terminada
+  en -ás») se come «además», «después», «atrás» y «quizás»; un guardián que grita por
+  todo termina desactivado.
+- ⚠️ **`` NO funciona junto a una vocal acentuada en JavaScript.** Un `/acá/` no
+  encuentra «desde acá»: después de la «á» no hay frontera de palabra. La primera
+  versión de este test pasó en VERDE con «desde acá» escrito en la portada. Van miradas
+  laterales explícitas (`(?<![a-záéíóúñ])`).
+- Los comentarios del código se saltan (de línea Y de bloque): están en el español de
+  quien los escribió y no los lee ningún cliente. Validado con dos mutaciones el
+  2026-11-09: voseo en texto visible → rojo; el mismo voseo en un comentario → verde.
+
+⚠️ **Los textos que vienen de la API son DATOS** (las descripciones que escribe el
+dueño): no se traducen desde acá ni los mira el guardián.
+
 ## Despliegue (Cloudflare Pages) — dominio `bananolab-3d.com`
 
 El dominio se compró el 2026-11-07 (sin `www`, decisión del dueño). El panel se

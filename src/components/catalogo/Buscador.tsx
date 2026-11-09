@@ -73,7 +73,7 @@ export default function Buscador() {
       <Input
         type="search"
         value={consulta}
-        placeholder="¿Qué buscás? Ej.: soporte de celular, llavero…"
+        placeholder="¿Qué buscas? Ej.: soporte de celular, llavero…"
         aria-label="Buscar productos"
         role="combobox"
         aria-expanded={abierto && hayConsulta}

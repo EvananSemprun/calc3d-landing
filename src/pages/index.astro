@@ -40,16 +40,16 @@ const rutasDeCategoria = rutasDeListados(listados);
 const destacados = destacadosDe(completos, TOPE_DESTACADOS);
 
 const beneficios = [
-  { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargás: sin stock viejo ni sobreproducción.' },
-  { titulo: 'Atención por WhatsApp', texto: 'Coordinás directo con el taller, sin formularios eternos.' },
-  { titulo: 'Pagás al coordinar', texto: 'En dólares o en bolívares a la tasa del día, como prefieras.' },
+  { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargas: sin stock viejo ni sobreproducción.' },
+  { titulo: 'Atención por WhatsApp', texto: 'Coordinas directo con el taller, sin formularios eternos.' },
+  { titulo: 'Pagas al coordinar', texto: 'En dólares o en bolívares a la tasa del día, como prefieras.' },
 ];
 
 const pasos = [
-  { titulo: 'Nos contás', texto: 'Por WhatsApp o desde acá. Medidas, cantidad, para cuándo — lo que tengas.' },
+  { titulo: 'Nos cuentas', texto: 'Por WhatsApp o desde aquí. Medidas, cantidad, para cuándo — lo que tengas.' },
   { titulo: 'Cotizamos', texto: 'Precio cerrado antes de empezar. Sin sorpresas a mitad del trabajo.' },
   { titulo: 'Producimos', texto: 'Arranca la impresora con el alcance ya acordado.' },
-  { titulo: 'Revisás', texto: 'Te mostramos avances. Si algo no va, se corrige antes de terminar.' },
+  { titulo: 'Revisas', texto: 'Te mostramos avances. Si algo no va, se corrige antes de terminar.' },
   { titulo: 'Entregamos', texto: 'Coordinamos entrega y pago por WhatsApp, como prefieras.' },
 ];
 
@@ -62,7 +62,7 @@ const preguntas = [
   {
     pregunta: '¿Puedo mandar mi propio archivo?',
     respuesta:
-      'Sí. Si tenés el modelo en STL, 3MF o STEP, lo imprimimos. Si no lo tenés, lo diseñamos nosotros y se cotiza aparte.',
+      'Sí. Si tienes el modelo en STL, 3MF o STEP, lo imprimimos. Si no lo tienes, lo diseñamos nosotros y se cotiza aparte.',
   },
   {
     pregunta: '¿Cómo se paga?',
@@ -98,7 +98,7 @@ const preguntas = [
     <div class="container">
       <h2 class="h2 text-balance mb-2">Cómo trabajamos</h2>
       <p class="lead max-w-[52ch]">
-        Primero entendemos qué necesitás, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.
+        Primero entendemos qué necesitas, después ponemos precio. Lo mismo para una pieza suelta que para una tanda.
       </p>
       <Pasos pasos={pasos} />
     </div>
@@ -112,8 +112,8 @@ const preguntas = [
   </section>
 
   <CtaCotizar
-    titulo="¿Tenés una idea? La convertimos en producto."
-    texto="Contanos qué necesitás y te respondemos con un precio."
+    titulo="¿Tienes una idea? La convertimos en producto."
+    texto="Cuéntanos qué necesitas y te respondemos con un precio."
     boton="Cotizar ahora"
   />
 </Base>

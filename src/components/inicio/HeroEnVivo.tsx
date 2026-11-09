@@ -60,10 +60,10 @@ export default function HeroEnVivo({
         <div className="container hero-art-grid">
           <div>
             <span className="kicker">Impresión 3D</span>
-            <h1 className="h1 text-balance">De la idea a la pieza. La imprimimos por vos.</h1>
+            <h1 className="h1 text-balance">De la idea a la pieza. La imprimimos por ti.</h1>
             <p className="lead">
-              Producimos por encargo en nuestro taller, desde una sola unidad. Vos nos decís qué
-              necesitás y nosotros resolvemos cómo hacerla.
+              Producimos por encargo en nuestro taller, desde una sola unidad. Tú nos dices qué
+              necesitas y nosotros resolvemos cómo hacerla.
             </p>
             <div className="hero-actions">
               <a href="/tienda/" className={buttonVariants({ size: 'lg' })}>

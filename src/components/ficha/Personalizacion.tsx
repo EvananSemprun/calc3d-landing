@@ -50,7 +50,7 @@ export default function Personalizacion({ storageReady, nota, onNota, foto, onEl
       <textarea
         maxLength={500}
         rows={2}
-        placeholder="Contanos qué querés (nombre, logo, color…)."
+        placeholder="Cuéntanos qué quieres (nombre, logo, color…)."
         value={nota}
         onChange={(e) => onNota(e.target.value)}
       />
