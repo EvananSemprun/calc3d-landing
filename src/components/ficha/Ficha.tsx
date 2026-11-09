@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { agregar as agregarAlCarrito } from '@/lib/carrito';
 import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
 import { fotosDeOpcion } from '@/lib/galeria';
-import { equivalenteEnMoneda, precioConTramos } from '@/lib/precio';
+import { equivalenteEnMoneda, precioConTramos, totalRenglon } from '@/lib/precio';
 import { pedirUrlDeFoto } from '@/lib/subir-foto';
 import type { InfoApi } from '@/lib/api';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -43,6 +43,11 @@ export default function Ficha({ producto: p, info }: Props) {
   const precioBase = precioBaseConOpciones(p, elegido);
   const precioUnit = precioConTramos(precioBase, cantidad, p.priceTiers);
   const equivalente = equivalenteEnMoneda(precioUnit, info.rate);
+  // Lo que va a pagar por lo que tiene elegido AHORA. El unitario de arriba ya se
+  // mueve solo al cruzar un tramo, pero cambia lejos del contador y sin decir que
+  // es por unidad: sin esta cuenta, subir la cantidad no muestra nada.
+  const total = totalRenglon(precioUnit, cantidad);
+  const equivalenteTotal = equivalenteEnMoneda(total, info.rate);
 
   const elegir = (grupo: string, valor: string) => {
     setElegido((prev) => ({ ...prev, [grupo]: valor }));
@@ -140,7 +145,7 @@ export default function Ficha({ producto: p, info }: Props) {
 
         <div className="pdp-price">
           ${precioUnit.toFixed(2)}
-          <small> USD</small>
+          <small> USD{cantidad > 1 && ' c/u'}</small>
           {equivalente && (
             <span className="price-alt">
               ≈ {equivalente} {info.rate?.currencyCode}
@@ -190,6 +195,16 @@ export default function Ficha({ producto: p, info }: Props) {
             {subiendo ? 'Subiendo foto…' : agregado ? 'Agregado ✓' : 'Agregar al pedido'}
           </Button>
         </div>
+        {cantidad > 1 && (
+          <p className="pdp-total">
+            {cantidad} × ${precioUnit.toFixed(2)} = <strong>${total.toFixed(2)}</strong> USD
+            {equivalenteTotal && (
+              <span className="price-alt">
+                ≈ {equivalenteTotal} {info.rate?.currencyCode}
+              </span>
+            )}
+          </p>
+        )}
         {error && (
           <p className="pdp-custom-error" role="alert">
             {error}

@@ -7,7 +7,7 @@
 // agregar), así el cajón no necesita re-traer el catálogo.
 import type { ItemCarrito } from './carrito';
 import type { InfoApi } from './api';
-import { equivalenteEnMoneda, precioConTramos } from './precio';
+import { equivalenteEnMoneda, precioConTramos, totalRenglon } from './precio';
 
 /** Un renglón tal como se manda a `/public/store/orders`. SIN precio. */
 export interface LineaPedido {
@@ -55,9 +55,11 @@ export function precioRenglon(i: ItemCarrito): number {
   return precioConTramos(i.unit, i.qty, i.priceTiers ?? []);
 }
 
-/** Total del pedido en USD. */
+/** Total del pedido en USD: la suma de los renglones, cada uno redondeado a
+ *  centavos por `totalRenglon` — la misma cuenta que la ficha muestra al elegir
+ *  la cantidad, así lo que vio antes de agregar es lo que ve en el carrito. */
 export function totalPedido(items: ItemCarrito[]): number {
-  return items.reduce((s, i) => s + precioRenglon(i) * i.qty, 0);
+  return items.reduce((s, i) => s + totalRenglon(precioRenglon(i), i.qty), 0);
 }
 
 /** Mensaje de WhatsApp con el detalle del pedido, el total y el equivalente a la tasa. */

@@ -60,3 +60,19 @@ export function equivalenteEnMoneda(
   if (!tasa) return null;
   return (usd * tasa.rate).toLocaleString('es-VE', { maximumFractionDigits: 2 });
 }
+
+/**
+ * Total de un renglón en USD: unitario (ya con su tramo) por cantidad, redondeado
+ * a centavos.
+ *
+ * ⚠️ El redondeo es POR RENGLÓN y no al final de la suma, porque es el número que
+ * el cliente ve línea por línea: multiplicar flotantes sin redondear deja totales
+ * como 3.7500000000000004, y sumarlos hace que el pie del carrito no coincida con
+ * la suma de lo que está escrito arriba.
+ *
+ * Es la MISMA definición que usa la ficha al mostrar «N × precio = total» y el
+ * carrito al sumar el pedido: si se separan, los dos números dejan de cuadrar.
+ */
+export function totalRenglon(unit: number, qty: number): number {
+  return Math.round(unit * qty * 100) / 100;
+}

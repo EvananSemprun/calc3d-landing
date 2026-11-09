@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { equivalenteEnMoneda, precioConTramos, precioUnitarioItem } from './precio';
+import { equivalenteEnMoneda, precioConTramos, precioUnitarioItem, totalRenglon } from './precio';
 
 describe('precioConTramos', () => {
   const t = [
@@ -81,5 +81,25 @@ describe('equivalenteEnMoneda', () => {
   it('multiplica por la tasa y formatea a la venezolana, máx. 2 decimales', () => {
     expect(equivalenteEnMoneda(10, { rate: 36.5 })).toBe('365');
     expect(equivalenteEnMoneda(9.5, { rate: 36.123 })).toBe('343,17');
+  });
+});
+
+describe('totalRenglon', () => {
+  it('multiplica unitario por cantidad', () => {
+    expect(totalRenglon(1.5, 6)).toBe(9);
+    expect(totalRenglon(1.25, 10)).toBe(12.5);
+    expect(totalRenglon(8, 1)).toBe(8);
+  });
+
+  it('redondea a CENTAVOS: el cliente no ve 3.7500000000000004', () => {
+    // 0.1 * 3 en coma flotante da 0.30000000000000004
+    expect(totalRenglon(0.1, 3)).toBe(0.3);
+    expect(totalRenglon(1.1, 7)).toBe(7.7);
+    // Un unitario con 4 decimales (lo que deja precioConTramos) cierra en centavos
+    expect(totalRenglon(2.8333, 3)).toBe(8.5);
+  });
+
+  it('cantidad cero o negativa no inventa plata', () => {
+    expect(totalRenglon(9.99, 0)).toBe(0);
   });
 });

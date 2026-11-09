@@ -885,6 +885,13 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   }
 
   .pdp-buy { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .pdp-total {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 10px 0 0;
+  }
+  .pdp-total strong { color: var(--text); font-weight: 600; font-size: 15px; }
   .qty { display: inline-flex; align-items: center; gap: 8px; }
   .qty button {
     width: 32px;
