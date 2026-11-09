@@ -706,23 +706,67 @@ debe bloquear a ninguna otra.
 - Consumes: nada.
 - Produces: nada.
 
+⚠️ **Corregido el 2026-11-09, antes de despachar.** La versión anterior de esta tarea la
+trataba como un reemplazo mecánico y **habría roto dos cosas**. Medido sobre el
+`global.css` de hoy:
+
+| Valor | Veces | Qué es |
+|---|---|---|
+| `0.2s` | 12 | duración de transición |
+| `0.3s` | 8 | duración de transición |
+| `0.18s` | 3 | duración de transición |
+| `0.15s` | 2 | duración de transición |
+| `0.35s`, `0.38s` | 1 c/u | duración de transición |
+| `0s` ×4, `0.01ms` ×2 | 6 | **la guardia de `prefers-reduced-motion` — NO SE TOCAN** |
+| `60`…`450ms` | 11 | **`animation-delay`: el escalonado de entrada — NO SON DURACIONES** |
+
+1. **Los `0s` y `0.01ms` son la guardia de movimiento misma** (`global.css:184,191`).
+   Tokenizarlos no tiene sentido y el `0.01ms` es un valor mágico deliberado.
+2. **La escalera 60→450 ms son `animation-delay`** (`global.css:1421-1434`): una
+   **secuencia** que escalona la entrada de la cabecera y de las primeras 8 tarjetas.
+   Meterlas en dos tokens destruye el efecto. Un `transition`/`animation` en atajo incluye
+   el retraso, así que un guardián escrito como decía el plan **las marcaría a las once**.
+
 - [ ] **Step 1: Escribir el guardián**
 
 ```ts
-it('ninguna duración de global.css está escrita a mano', () => {
-  // toda `transition`/`animation` usa var(--dur-*); el mensaje de error nombra la línea
+it('ninguna DURACIÓN de global.css está escrita a mano', () => {
+  // solo duraciones: ni `*-delay`, ni el bloque de `prefers-reduced-motion`.
+  // El mensaje de error nombra la línea y el valor encontrado.
 });
+it('el escalonado de entrada sigue siendo una secuencia creciente', …);
 ```
 
-- [ ] **Step 2: Correr para verificar que falla** → FAIL (hoy hay 4 usos de `var(--dur` y el resto a mano).
+El segundo existe porque la escalera queda **exenta** del primero: sin él, exenta pasa a
+significar «sin vigilar», y el día que alguien desordene los retrasos no falla nada.
 
-- [ ] **Step 3: Migrar las duraciones a `--dur-normal` / `--dur-lenta`**
+- [ ] **Step 2: Correr para verificar que falla** → FAIL (hoy hay **8** usos de `var(--dur`
+  y **28** duraciones a mano en 33 reglas).
 
-**Prohibido crear tokens nuevos.** Si al revisar `--dur-lenta: 420ms` sigue pareciendo
-largo para lo que lo usa (`.product-photo` al pasar el mouse), se ajusta **el token**, con
-el resto de sus usos a la vista — no se le pone un número propio a un componente. Si hace
-falta una duración corta, vuelve `--dur-rapida`, pero **solo con usos reales ese mismo
-día**: se borró el 2026-11-07 justo por no tenerlos.
+- [ ] **Step 3: Migrar las duraciones a tokens**
+
+⚠️ **Esto NO es un buscar-y-reemplazar: cambia cómo se siente el sitio entero.** Hay seis
+valores reales (150, 180, 200, 300, 350, 380 ms) y solo dos tokens. Forzarlos a `240`/`420`
+movería 28 reglas que ninguna tarea de este plan miró: un `0.15s` pasando a 240 ms es un
+**60 % más lento**, y el pedido original decía «sutiles y **rápidas**».
+
+**La regla que lo acota: ninguna regla puede cambiar su duración más de un 20 %.** Proponé
+el **conjunto mínimo de tokens** que cumpla eso y entregá la **tabla completa** de antes y
+después, regla por regla. Si alguna no entra en el 20 %, dejala como está y nombrala en el
+reporte en vez de acomodarla.
+
+**`--dur-rapida` puede volver**, y hoy sí califica: el plan pedía «usos reales ese mismo
+día» y hay **17** (12 × 200 ms + 3 × 180 ms + 2 × 150 ms). Se borró el 2026-11-07 por no
+tener ninguno; eso ya no es cierto. Cualquier token nuevo más allá de ese **se justifica
+con su cuenta de usos en el reporte**, o no va.
+
+Si al revisar `--dur-lenta: 420ms` sigue pareciendo largo para lo que lo usa, se ajusta **el
+token**, con el resto de sus usos a la vista — no se le pone un número propio a un
+componente.
+
+⚠️ Hay **una** utilidad `duration-200` de Tailwind fuera del CSS
+(`src/components/ui/dialog.tsx:62`). Queda **fuera de alcance**: es un componente de
+shadcn y el guardián lee `global.css`. Anotalo en el reporte, no lo toques.
 
 - [ ] **Step 4: Correr los tests** → PASS
 
