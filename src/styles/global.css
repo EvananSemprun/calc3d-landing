@@ -1155,9 +1155,15 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   /* Un párrafo no termina justo en el margen. */
   .esq-renglon:last-child { width: 64%; }
 
+  /* El alto es el del botón del contador (`.qty button`); el ancho es el del `.qty`
+     entero (32 + 8 + 24 + 8 + 32), que no sale de una sola declaración. */
   .esq-cantidad { width: 104px; height: 32px; }
-  /* El botón de la ficha es `h-11` (44 px) y mide 176 px con «Agregar al pedido». */
-  .esq-boton { width: 176px; height: 44px; }
+  /* El alto es LITERALMENTE lo que emite `h-11` de Tailwind, que es lo que lleva el botón
+     de la ficha: `calc(var(--spacing) * 11)`. Escrito así y no «44px», el día que el
+     proyecto cambie `--spacing` las dos cosas se mueven juntas. El ancho, en cambio,
+     depende del texto del botón y es una medida y nada más (176 px con «Agregar al
+     pedido»). */
+  .esq-boton { width: 176px; height: calc(var(--spacing) * 11); }
 
   @media (max-width: 900px) {
     .pdp { grid-template-columns: 1fr; }

@@ -5,17 +5,9 @@
  * golpe. Ahora la marca el cruce de la Tarea 5 (`useCruce`, `components/ui/Cruce.tsx`) y
  * entra fundida en `--dur-normal`.
  *
- * ⚠️ **Es `useCruce` y NO el fundido de las fotos (`data-fundir`), y las dos razones
- * están medidas.** El fundido deja el elemento en `opacity: 0` **en reposo** mientras
- * carga, y `.pdp-main` va con `prioridad` justamente para no estar nunca escondida: ES el
- * elemento del LCP de la ficha (11,9 s con la red frenada en escritorio). El cruce, en
- * cambio, reposa en opacidad 1 y el 0 vive solo dentro del keyframe. Y la regla del
- * fundido es `img[data-fundir]`, con ese selector fijado textualmente en
- * `src/fotos-funden.spec.ts:40`: ampliarla pondría rojo un guardián ajeno.
- *
- * ⚠️ **El cambio de foto es una INTERACCIÓN, no una carga**, y por eso cruzar acá es
- * gratis: el LCP ya ocurrió. Lo que no se puede es quitarle `prioridad` a `.pdp-main`
- * para fundir su carga inicial — son dos disparadores distintos y ése cuesta el LCP.
+ * **El porqué de todo esto —`useCruce` y no el fundido de `data-fundir`, `prioridad`
+ * intacta, cruzar sin esperar el `load`— vive en la cabecera de `Galeria.tsx`, y vive
+ * ahí SOLO.** Lo que sigue es lo que le toca a un archivo de tests.
  *
  * ⚠️ **Acá se amarra la ESTRUCTURA, no la geometría.** jsdom no aplica CSS y no hace
  * layout, así que un test de este archivo que midiera «la foto no cambia de alto entre
@@ -128,7 +120,7 @@ describe('Galeria — la foto principal cruza al cambiar', () => {
 
     // `data-fundir` es lo que `<Foto>` deja de poner cuando lleva `prioridad`. Quitárselo
     // a `.pdp-main` para «fundirla también al cargar» retrasa el LCP de la ficha (medido:
-    // 11,9 s con la red frenada en escritorio), que es causa de reversión declarada en el
+    // 11,4 s con la red frenada en escritorio), que es causa de reversión declarada en el
     // plan. Cruzar al CAMBIAR de foto es gratis; fundir su CARGA INICIAL no lo es.
     //
     // ⚠️ `dist-sin-js.spec.ts` ya lo vigila, pero sobre el `dist/` construido, y ése NO lo

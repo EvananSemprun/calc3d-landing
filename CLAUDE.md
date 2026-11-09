@@ -281,7 +281,7 @@ componente). Funden al cargar, salvo las candidatas a LCP (`prioridad`).
 - **Con `prefers-reduced-motion` la foto no se esconde NUNCA**: una regla aparte en el
   mismo bloque la deja en opacidad 1. Si no, quien pidió no ver movimiento pagaba la
   ventana invisible y no recibía el cruce a cambio: perdía sin ganar.
-- **`prioridad` (sin fundido):** `.pdp-main` —medido, ES el LCP de la ficha: 11,9 s con
+- **`prioridad` (sin fundido):** `.pdp-main` —medido, ES el LCP de la ficha: 11,4 s con
   red frenada en escritorio— y las **3 primeras** tarjetas de la grilla estática del
   listado (`COLUMNAS_PRIMERA_FILA` en `Catalogo.tsx`). ⚠️ **No se le quita a
   `.pdp-main`:** una imagen en `opacity: 0` no es candidata a LCP, así que fundirla

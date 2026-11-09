@@ -5,13 +5,13 @@ import { marcarCargando } from '@/lib/foto';
 import type { PropsDeCruce } from '@/components/ui/Cruce';
 
 /**
- * ⚠️ **`Props` extiende `PropsDeCruce` y NO reenvía props sueltas.** La galería de la
- * ficha marca su foto principal con `useCruce` para que cruce al elegir otra miniatura, y
- * para eso el `data-cruce` tiene que llegar al `<img>`. Se ensancha esta interfaz a mano,
- * explícitamente, en vez de abrirla con un `{...rest}`: con el `rest` cualquier atributo
- * pasaría sin que nadie lo decida, incluido un `className` que pisara el de arriba o un
- * `data-cargando` escrito a mano, que es justo la marca que este componente promete poner
- * SOLO desde el JS del cliente.
+ * ⚠️ **`Props` extiende `PropsDeCruce` y NO reenvía props sueltas.** Se ensancha a mano,
+ * con una sola clave tipada, en vez de abrirla con un `{...rest}`: con el `rest`
+ * cualquier atributo pasaría sin que nadie lo decida, incluido un `className` que pisara
+ * el de arriba o un `data-cargando` escrito a mano, que es justo la marca que este
+ * componente promete poner SOLO desde el JS del cliente.
+ *
+ * Quién usa esto y por qué: `components/ficha/Galeria.tsx`, en su cabecera.
  */
 interface Props extends PropsDeCruce {
   src: string;
