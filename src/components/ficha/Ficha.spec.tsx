@@ -11,8 +11,8 @@
  * tramos que BAJAN el precio a partir de 10 unidades, así el test cubre el caso tibio
  * —sumar dentro del mismo tramo— y el que cruza al siguiente.
  */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Ficha from './Ficha';
 import type { InfoApi } from '@/lib/api';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -173,6 +173,36 @@ describe('Ficha — el total se mueve con la cantidad', () => {
     fireEvent.click(screen.getByRole('button', { name: '30 cm' }));
     expect(screen.getByText(/Listo en 5 días/)).toBeTruthy();
     expect(screen.queryByText(/Listo en 2 días/)).toBeNull();
+  });
+
+  it('al agregar avisa y deja a mano el camino al pedido (2026-11-09)', () => {
+    render(<Ficha producto={producto()} info={info} />);
+    expect(screen.queryByRole('button', { name: 'Ver pedido' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Agregar al pedido/ }));
+
+    const ver = screen.getByRole('button', { name: 'Ver pedido' });
+    // Es el mismo enganche que usa el encabezado para abrir el cajón.
+    expect(ver.getAttribute('data-bl')).toBe('cart-open');
+    expect(screen.getByText('Ya está en tu pedido')).toBeTruthy();
+    // El botón también confirma, pero el suyo dura 1,8 s.
+    expect(screen.getByRole('button', { name: 'Agregado ✓' })).toBeTruthy();
+  });
+
+  it('el aviso NO se va a los dos segundos, como sí hace el botón', () => {
+    // ⚠️ El «Agregado ✓» del botón dura 1,8 s. Si el camino al pedido se fuera con él,
+    // el visitante que miró la foto un momento se queda sin saber qué hacer.
+    vi.useFakeTimers();
+    try {
+      render(<Ficha producto={producto()} info={info} />);
+      fireEvent.click(screen.getByRole('button', { name: /Agregar al pedido/ }));
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(screen.getByRole('button', { name: 'Ver pedido' })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sin tasa configurada NO muestra un bolívar inventado', () => {

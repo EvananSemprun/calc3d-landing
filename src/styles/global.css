@@ -790,6 +790,33 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   .pdp-unit .price-alt-inline { color: var(--text-dim); font-weight: 400; }
   /* El aviso de mayoreo va en el color de marca: es una buena noticia, no una nota al pie. */
   .pdp-mayoreo { color: var(--yellow); font-weight: 600; }
+  /* El aviso de que la pieza entró al pedido, con el camino para verlo. */
+  .pdp-agregado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .pdp-agregado-ok { color: var(--yellow); font-weight: 600; }
+  .pdp-ver-pedido {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font: inherit;
+  }
+  .cart-row-unit { font-weight: 400; }
+  .cart-seguir {
+    display: inline-block;
+    margin-top: 10px;
+    color: var(--yellow);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
   .pdp-lead { font-size: 17px; }
 
   .pdp-opt-group { display: flex; flex-direction: column; gap: 10px; }

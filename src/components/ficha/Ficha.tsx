@@ -50,6 +50,10 @@ export default function Ficha({ producto: p, info }: Props) {
   const [foto, setFoto] = useState<File | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [agregado, setAgregado] = useState(false);
+  // Se enciende con el primer agregado y NO se apaga: el «Agregado ✓» del botón dura
+  // 1,8 s y el visitante que mira la foto se lo pierde. Esto le deja el camino al
+  // pedido a la vista mientras sigue en la ficha.
+  const [enElPedido, setEnElPedido] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -109,7 +113,10 @@ export default function Ficha({ producto: p, info }: Props) {
       unit: precioBase,
       recargo,
       nombre: p.name,
-      imagen: p.image,
+      // La foto de la VARIANTE, no la del producto: el carrito mostraba el verde
+      // aunque el visitante hubiera elegido el rojo. Misma función que la galería, para
+      // que no haya dos reglas de qué foto corresponde.
+      imagen: fotosDeOpcion(p, elegido)[0] ?? p.image,
       priceTiers: p.priceTiers,
       minQty: p.minQty,
       ...extra,
@@ -119,6 +126,7 @@ export default function Ficha({ producto: p, info }: Props) {
     setNota('');
     setFoto(null);
     setAgregado(true);
+    setEnElPedido(true);
     clearTimeout(temporizador.current);
     temporizador.current = setTimeout(() => setAgregado(false), 1800);
   };
@@ -248,6 +256,22 @@ export default function Ficha({ producto: p, info }: Props) {
         {cantidad > 1 && (
           <p className="pdp-total">
             {cantidad} × ${precioUnit.toFixed(2)} = <strong>${total.toFixed(2)}</strong> BCV
+          </p>
+        )}
+        {/*
+          El aviso de que entró al pedido, con el camino para verlo. NO se abre el cajón
+          solo: el visitante que está armando un pedido de varias piezas tendría que
+          cerrarlo en cada una. `data-bl="cart-open"` es el enganche que ya usa el
+          encabezado para abrirlo.
+        */}
+        {enElPedido && (
+          <p className="pdp-agregado" role="status">
+            {/* No repite el «Agregado ✓» del botón: los dos a la vez en pantalla se
+                leen como dos avisos distintos del mismo hecho. */}
+            <span className="pdp-agregado-ok">Ya está en tu pedido</span>
+            <button type="button" data-bl="cart-open" className="pdp-ver-pedido">
+              Ver pedido
+            </button>
           </p>
         )}
         {error && (

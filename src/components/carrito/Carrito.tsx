@@ -29,7 +29,7 @@ import {
   totalPedido,
   validarContacto,
 } from '@/lib/pedido';
-import { equivalenteEnMoneda } from '@/lib/precio';
+import { equivalenteEnMoneda, totalRenglon } from '@/lib/precio';
 import { urlWhatsapp } from '@/lib/telefono';
 
 const claveDe = (i: ItemCarrito) => claveDeItem(i.id, i.opts, i.customNote, i.customImageKey);
@@ -189,7 +189,12 @@ export default function Carrito() {
         <div className="cart-items">
           {items.length === 0 ? (
             <div className="cart-empty">
-              <p className="dim">Tu carrito está vacío.</p>
+              <p className="dim">Todavía no agregaste nada a tu pedido.</p>
+              {/* Un carrito vacío sin salida es un callejón: el visitante cierra el
+                  cajón y se queda donde estaba. */}
+              <a className="cart-seguir" href="/tienda/">
+                Seguir comprando
+              </a>
             </div>
           ) : (
             items.map((i) => {
@@ -206,7 +211,13 @@ export default function Carrito() {
                     <div className="cart-row-name">{i.nombre ?? i.id}</div>
                     {detalle && <div className="dim cart-row-opts">{detalle}</div>}
                     {i.customNote && <div className="dim cart-row-opts">Nota: {i.customNote}</div>}
-                    <div className="cart-row-price">${precioRenglon(i).toFixed(2)} USD</div>
+                    {/* El unitario YA trae el mayoreo y los recargos; el subtotal es
+                        lo que ese renglón suma al total. Antes solo estaba el unitario,
+                        así que con 10 unidades no había forma de ver cuánto pesaba. */}
+                    <div className="cart-row-price">
+                      <strong>${totalRenglon(precioRenglon(i), i.qty).toFixed(2)}</strong>
+                      <span className="dim cart-row-unit"> · ${precioRenglon(i).toFixed(2)} c/u</span>
+                    </div>
                     <div className="qty cart-row-qty">
                       <button type="button" onClick={() => bajar(i)} aria-label="menos">
                         –
@@ -231,7 +242,7 @@ export default function Carrito() {
             <div className="cart-total">
               <span className="dim">Total</span>
               <span className="cart-total-val">
-                ${total.toFixed(2)} USD
+                ${total.toFixed(2)} BCV
                 {equivalenteEnMoneda(total, info?.rate) && (
                   <span className="price-alt">
                     ≈ {equivalenteEnMoneda(total, info?.rate)} {info?.rate?.currencyCode}
