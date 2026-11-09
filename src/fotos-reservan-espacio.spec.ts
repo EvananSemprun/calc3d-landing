@@ -55,7 +55,8 @@ describe('toda foto remota reserva su espacio antes de cargar', () => {
     const cuerpo = reglaDe(sel);
     expect(cuerpo, `No encontré la regla \`${sel}\` en global.css`).not.toBe('');
     const reserva =
-      declara(cuerpo, 'aspect-ratio') ||
+      // Una proporción REAL: `aspect-ratio: auto` existe pero no reserva nada (alto 0).
+      declara(cuerpo, 'aspect-ratio', String.raw`\d+(?:\.\d+)?(?:\s*/\s*\d+(?:\.\d+)?)?\s*(?:;|$)`) ||
       (declara(cuerpo, 'width', String.raw`\d+px`) && declara(cuerpo, 'height', String.raw`\d+px`));
     expect(
       reserva,
@@ -68,5 +69,12 @@ describe('toda foto remota reserva su espacio antes de cargar', () => {
   it('.banner-cat img recorta, no deforma', () => {
     // Sin `object-fit` el valor por defecto (`fill`) ESTIRA el banner en vez de recortarlo.
     expect(reglaDe('.banner-cat img')).toMatch(/object-fit:\s*cover/);
+  });
+
+  it('.banner-cat img reserva 16 / 9', () => {
+    // DECISIÓN DEL DUEÑO, no una sugerencia: es la proporción que el panel ya muestra en su
+    // vista previa (`aspect-[16/9]` + `object-cover`) y que recomienda al subir el banner.
+    // Cambiarla deja a la tienda contradiciendo lo que el panel promete.
+    expect(reglaDe('.banner-cat img')).toMatch(/aspect-ratio:\s*16\s*\/\s*9\s*(?:;|$)/);
   });
 });
