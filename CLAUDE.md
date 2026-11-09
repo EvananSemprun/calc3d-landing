@@ -515,6 +515,43 @@ del contador, que está al final— y sin decir que es por unidad. El precio gra
 - Lo cubre **`Ficha.spec.tsx`** (pantalla), no la función pura: borrar el renglón del JSX
   deja a `totalRenglon` perfectamente verde.
 
+## Avisos flotantes: sonner, y sus DOS trampas (2026-11-09)
+
+Al agregar al pedido sale un **aviso flotante** (`toast.success` de **sonner**) con
+«Agregado a tu pedido», la pieza y la cantidad, y un botón «Ver pedido». Reemplazó al
+cartel fijo «Ya está en tu pedido» que vivía debajo del botón (`​.pdp-agregado`, borrado).
+
+- **sonner es la ÚNICA librería de avisos del repo.** No sumar otra: dos sistemas de
+  toasts conviviendo es el problema, no la solución.
+- El aviso **no abre el cajón solo**: quien arma un pedido de varias piezas tendría que
+  cerrarlo en cada una. El botón «Ver pedido» dispara **`abrirCarrito()`**
+  (`lib/carrito.ts`), que emite el evento global **`cart:open`** que `Carrito` escucha.
+  No usa `[data-bl="cart-open"]` porque el aviso vive en un **portal**, fuera del árbol
+  de la ficha.
+
+**Trampa 1 — el aviso que no se ve.** `toast()` empuja a un store global que SOLO se
+pinta si hay un **`<Toaster />` montado**. La isla es `components/ui/Avisos.tsx` y va en
+**`Base.astro`**. Si desaparece de ahí, cada aviso del sitio se vuelve un **no-op
+silencioso**: sin error en consola, sin fallar el build, con los tipos compilando. Lo
+cuida **`components/ui/avisos.spec.ts`**, que lee la FUENTE del layout (un `.astro` no se
+puede renderizar desde vitest). Por lo mismo, `Ficha.spec.tsx` monta su propio
+`<Toaster />` y busca el **texto en pantalla**: un test con `vi.mock('sonner')` quedaría
+verde justo con el defecto puesto.
+
+**Trampa 2 — el CSS de marca que pierde en silencio.** sonner **inyecta sus estilos en
+tiempo de ejecución**, sin `@layer`, así que:
+1. Un bloque dentro de `@layer components` **pierde siempre**, por mucha especificidad
+   que tenga (lo que no está en capa le gana a cualquier capa). Por eso los estilos del
+   aviso viven **al final de `global.css` y FUERA de capa**, como la «Guardia de
+   movimiento».
+2. Una **clase y un atributo pesan lo mismo**: `[data-sonner-toaster].bl-toaster` empata
+   con `[data-sonner-toaster][data-sonner-theme="dark"]` y **pierde por orden**. Hay que
+   sumar un selector más (`[data-sonner-theme]`).
+Lo que se pisa son sus **variables** (`--normal-bg`, `--normal-text`, `--normal-border`…),
+no sus clases: así una versión nueva de sonner no rompe el color. Medido el 2026-11-09
+con cada paso mal: el aviso salía **negro con el botón blanco**, con el CSS cargado,
+escrito y sin un solo error.
+
 ## Personalización (productos `custom`)
 Nota opcional + foto opcional. La foto **solo** si la API reporta `storageReady` (R2
 configurado): se sube en dos pasos (`subir-foto.ts` → `/uploads/custom-url` → PUT firmado)

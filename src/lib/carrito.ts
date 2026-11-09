@@ -182,3 +182,14 @@ export function quitar(clave: string, almacen: Almacen | null = almacenPorDefect
   escribir(items, almacen);
   return items;
 }
+
+/** Evento que abre el cajón del pedido desde cualquier isla (lo escucha `Carrito`).
+ *  Existe para que un aviso flotante —que vive en un portal fuera del árbol de la
+ *  ficha— pueda ofrecer "Ver pedido" sin depender de que haya un
+ *  `[data-bl="cart-open"]` en pantalla. */
+export const EVENTO_ABRIR_CARRITO = 'cart:open';
+
+/** Pide que se abra el cajón del pedido. No-op fuera del navegador (SSR/build). */
+export function abrirCarrito(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_ABRIR_CARRITO));
+}

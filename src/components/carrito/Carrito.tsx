@@ -17,6 +17,7 @@ import {
   quitar,
   vaciar,
   claveDeItem,
+  EVENTO_ABRIR_CARRITO,
   type ItemCarrito,
 } from '@/lib/carrito';
 import { enviarPedido } from '@/lib/api-escritura';
@@ -94,6 +95,9 @@ export default function Carrito() {
       if (e.key === 'Escape') setAbierto(false);
     };
     window.addEventListener('cart:change', onChange);
+    // Segunda puerta al cajon, para quien no tiene un `[data-bl="cart-open"]` a mano:
+    // el aviso flotante de "agregado" vive en un portal, fuera del arbol de la ficha.
+    window.addEventListener(EVENTO_ABRIR_CARRITO, abrir);
     document.addEventListener('click', onClickDoc);
     document.addEventListener('keydown', onKey);
     // ⚠️ La insignia es HTML ESTÁTICO del Header (`[data-bl="cart-count"]`), no parte de
@@ -103,6 +107,7 @@ export default function Carrito() {
     document.addEventListener('astro:page-load', sincronizarInsignia);
     return () => {
       window.removeEventListener('cart:change', onChange);
+      window.removeEventListener(EVENTO_ABRIR_CARRITO, abrir);
       document.removeEventListener('click', onClickDoc);
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('astro:page-load', sincronizarInsignia);

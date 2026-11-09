@@ -12,7 +12,8 @@
  * —sumar dentro del mismo tramo— y el que cruza al siguiente.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Toaster, toast } from 'sonner';
 import Ficha from './Ficha';
 import type { InfoApi } from '@/lib/api';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -24,6 +25,10 @@ const info: InfoApi = {
   rate: null,
   storageReady: false,
 };
+
+// Los avisos viven en un store GLOBAL del módulo (no en el árbol de React): sin esto,
+// el aviso de un test sigue en pie en el siguiente.
+afterEach(() => toast.dismiss());
 
 const producto = (extra: Partial<ProductoVitrina> = {}): ProductoVitrina => ({
   id: 'identificadores-para-lapices',
@@ -175,31 +180,58 @@ describe('Ficha — el total se mueve con la cantidad', () => {
     expect(screen.queryByText(/Listo en 2 días/)).toBeNull();
   });
 
-  it('al agregar avisa y deja a mano el camino al pedido (2026-11-09)', () => {
-    render(<Ficha producto={producto()} info={info} />);
-    expect(screen.queryByRole('button', { name: 'Ver pedido' })).toBeNull();
+  it('al agregar SE VE un aviso flotante con el camino al pedido (2026-11-09)', async () => {
+    // ⚠️ Se monta el `<Toaster />` a propósito y se busca el TEXTO EN PANTALLA, no
+    // una llamada espiada: `toast()` sin Toaster montado es un no-op silencioso (no
+    // hay error, no falla el build, no pasa nada). Un test con `vi.mock('sonner')`
+    // quedaría verde justo con ese defecto puesto.
+    render(
+      <>
+        <Ficha producto={producto()} info={info} />
+        <Toaster />
+      </>,
+    );
+    expect(screen.queryByText('Agregado a tu pedido')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Agregar al pedido/ }));
 
-    const ver = screen.getByRole('button', { name: 'Ver pedido' });
-    // Es el mismo enganche que usa el encabezado para abrir el cajón.
-    expect(ver.getAttribute('data-bl')).toBe('cart-open');
-    expect(screen.getByText('Ya está en tu pedido')).toBeTruthy();
-    // El botón también confirma, pero el suyo dura 1,8 s.
-    expect(screen.getByRole('button', { name: 'Agregado ✓' })).toBeTruthy();
+    expect(await screen.findByText('Agregado a tu pedido')).toBeTruthy();
+    // Dice QUÉ entró: el aviso aparece lejos del botón y sin esto no se sabe de
+    // cuál pieza habla.
+    expect(screen.getByText('1 × Identificadores para lápices')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ver pedido' })).toBeTruthy();
   });
 
-  it('el aviso NO se va a los dos segundos, como sí hace el botón', () => {
-    // ⚠️ El «Agregado ✓» del botón dura 1,8 s. Si el camino al pedido se fuera con él,
-    // el visitante que miró la foto un momento se queda sin saber qué hacer.
+  it('«Ver pedido» del aviso pide abrir el cajón', async () => {
+    // El aviso vive en un portal, fuera del árbol de la ficha: no le sirve el
+    // `[data-bl="cart-open"]` del encabezado, usa el evento global.
+    const visto = vi.fn();
+    window.addEventListener('cart:open', visto);
+    try {
+      render(
+        <>
+          <Ficha producto={producto()} info={info} />
+          <Toaster />
+        </>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Agregar al pedido/ }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver pedido' }));
+      expect(visto).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('cart:open', visto);
+    }
+  });
+
+  it('el botón confirma solo un rato: el aviso no depende de él', () => {
     vi.useFakeTimers();
     try {
       render(<Ficha producto={producto()} info={info} />);
       fireEvent.click(screen.getByRole('button', { name: /Agregar al pedido/ }));
+      expect(screen.getByRole('button', { name: 'Agregado ✓' })).toBeTruthy();
       act(() => {
-        vi.advanceTimersByTime(5000);
+        vi.advanceTimersByTime(2000);
       });
-      expect(screen.getByRole('button', { name: 'Ver pedido' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Agregar al pedido/ })).toBeTruthy();
     } finally {
       vi.useRealTimers();
     }

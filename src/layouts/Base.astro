@@ -22,6 +22,7 @@ import { cargarTienda } from '../lib/tienda-build';
 import { textoDeBanner } from '../lib/banner';
 import Carrito from '../components/carrito/Carrito';
 import PiezaAMedida from '../components/carrito/PiezaAMedida';
+import Avisos from '../components/ui/Avisos';
 
 interface Props {
   title: string;
@@ -305,5 +306,8 @@ const textoDeLaFranja = textoDeBanner(banners);
     <WhatsappCotizar />
     <Carrito client:load />
     <PiezaAMedida client:idle />
+    {/* Avisos flotantes (sonner). Isla GLOBAL y OBLIGATORIA: sin ella cada
+        `toast()` del sitio no pinta nada y falla en silencio. */}
+    <Avisos client:idle />
   </body>
 </html>

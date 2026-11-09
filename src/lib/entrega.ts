@@ -21,7 +21,9 @@ import type { GrupoOpcionesApi } from './producto';
  */
 export function diasDeEntrega(
   producto: { leadTimeDays?: number | null; optionGroups?: GrupoOpcionesApi[] },
-  elegido: Record<string, string>,
+  // Acepta huecos: la ficha arrastra un grupo sin elegir como `undefined`, y el
+  // cuerpo ya lo saltea. Pedirlo sin `undefined` deja `pnpm check` en rojo.
+  elegido: Record<string, string | undefined>,
 ): number | null {
   const propios: number[] = [];
   for (const grupo of producto.optionGroups ?? []) {

@@ -60,6 +60,22 @@ const abrir = async () => {
 };
 
 describe('el cajón del pedido', () => {
+  it('abre con el evento global, no solo con un clic en el enganche', async () => {
+    // Lo usa el «Ver pedido» del aviso flotante, que vive en un portal y no tiene a
+    // mano ningún `[data-bl="cart-open"]`.
+    sembrar([RENGLON]);
+    render(<Carrito />);
+    // El cajón está siempre en el HTML y se abre con la clase: lo que se mide es si
+    // está ABIERTO, no si su contenido existe.
+    const cajon = screen.getByLabelText('Carrito');
+    expect(cajon.className).not.toContain('open');
+
+    fireEvent(window, new Event('cart:open'));
+
+    await waitFor(() => expect(cajon.className).toContain('open'));
+    expect(cajon.getAttribute('aria-hidden')).toBe('false');
+  });
+
   it('muestra el SUBTOTAL del renglón, no solo el unitario', async () => {
     sembrar([RENGLON]);
     await abrir();

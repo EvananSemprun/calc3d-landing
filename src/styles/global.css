@@ -825,24 +825,6 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   /* El aviso de mayoreo va en el color de marca: es una buena noticia, no una nota al pie. */
   .pdp-mayoreo { color: var(--yellow); font-weight: 600; }
   /* El aviso de que la pieza entró al pedido, con el camino para verlo. */
-  .pdp-agregado {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    font-size: 14px;
-  }
-  .pdp-agregado-ok { color: var(--yellow); font-weight: 600; }
-  .pdp-ver-pedido {
-    background: none;
-    border: 0;
-    padding: 0;
-    color: var(--text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    cursor: pointer;
-    font: inherit;
-  }
   .cart-row-unit { font-weight: 400; }
   .cart-seguir {
     display: inline-block;
@@ -1299,3 +1281,46 @@ html[data-bl-navegado] :is(
 /* El «desde» del precio: más chico y apagado que la cifra, porque es un matiz y no el
    dato. Va en la misma línea para que no empuje el alto de la tarjeta. */
 .price-desde { font-size: 0.72em; font-weight: 600; color: var(--text-dim); }
+
+
+/* ---------- Avisos flotantes (sonner) ----------
+   ⚠️ **VA FUERA DE `@layer`, Y ÉSA ES LA PIEZA QUE NO ES OBVIA.** sonner inyecta sus
+   estilos en tiempo de ejecución y SIN capa; para las declaraciones normales, lo que no
+   está en una capa le gana a cualquier capa por mucha especificidad que tenga. Con este
+   bloque dentro de `@layer components` las tres reglas de abajo perdían en silencio:
+   medido el 2026-11-09, el aviso salía negro (#000) con el botón blanco, nada que ver
+   con la marca, y el CSS estaba ahí, cargado y bien escrito. Mismo motivo por el que la
+   «Guardia de movimiento» vive fuera de capa.
+
+   Lo que se pisa son las VARIABLES de sonner (`--normal-*`), no sus clases: así un
+   cambio de versión suyo no rompe el color.
+
+   ⚠️ Los atributos de más en cada selector TAMPOCO son adorno: son para GANARLE EN
+   ESPECIFICIDAD a las reglas de sonner, que no son de una clase sola.
+     suya:  [data-sonner-toaster][data-sonner-theme="dark"]        -> 0,2,0
+     mía:   [data-sonner-toaster][data-sonner-theme].bl-toaster    -> 0,3,0  ✓
+   ⚠️ Una CLASE y un ATRIBUTO pesan lo MISMO (las dos suman en la misma columna), así
+   que `[data-sonner-toaster].bl-toaster` empata en 0,2,0 y pierde por orden: sonner
+   inyecta sus reglas después. Probado el 2026-11-09: con el empate, el fondo seguía
+   negro mientras el botón y la descripción (que sí ganaban) ya eran de la marca.
+     suya:  [data-sonner-toast][data-styled="true"] [data-button]   -> 0,3,0
+     mía:   .bl-toaster [data-sonner-toast][data-styled] [data-button] -> 0,4,0  ✓
+   Medido el 2026-11-09 con un `.bl-toaster` a secas: el aviso salía NEGRO con el
+   botón blanco. El CSS estaba cargado y bien escrito; simplemente perdía. */
+[data-sonner-toaster][data-sonner-theme].bl-toaster {
+  --normal-bg: var(--ink-700);
+  --normal-text: var(--text);
+  --normal-border: var(--card-line-strong);
+  --success-bg: var(--ink-700);
+  --success-text: var(--text);
+  --success-border: var(--card-line-strong);
+}
+.bl-toaster [data-sonner-toast][data-styled] [data-title] { font-weight: 600; }
+.bl-toaster [data-sonner-toast][data-styled] [data-description] { color: var(--text-dim); }
+.bl-toaster [data-sonner-toast][data-styled] [data-icon] { color: var(--yellow); }
+/* El único botón del aviso es «Ver pedido»: es LA acción, va en amarillo. */
+.bl-toaster [data-sonner-toast][data-styled] [data-button] {
+  background: var(--yellow);
+  color: var(--ink-900);
+  font-weight: 600;
+}
