@@ -20,7 +20,7 @@
 | Herramienta | Playwright, no el panel del navegador |
 | Red | CDP `Network.emulateNetworkConditions`: **150 ms de latencia, 1,6 Mbps bajada, 750 kbps subida** |
 | Caché | **Fría en cada corrida** (contexto nuevo del navegador por corrida) |
-| Espera | ⚠️ **`load` + una ventana más larga que el candidato más lento de ESA pantalla** (ver hallazgo 5). La línea base usó `load` + 2.500 ms y eso **cortó el LCP del listado**. Mínimos comprobados: portada y ficha 2.500 ms alcanzan; **listado necesita 12 s en móvil y 33 s en escritorio** |
+| Espera | `load` + 2.500 ms. **Medido el 09/11: alcanza en las tres pantallas** con el `dist/` actual, porque `load` dispara a los 11,6 s en el listado (espera a la foto, aunque sea `lazy`). La ventana de 12 s da el **mismo** número. Se dejó en 12 s para el listado igual, como seguro barato — **no como arreglo**: ver hallazgo 5 |
 | Elemento del LCP | **Se anota junto a cada número, siempre.** Un número sin su elemento no se puede comparar: si el elemento cambia entre dos tablas, no midieron lo mismo |
 | Pantallas | `/` · `/tienda/navidad/` · `/producto/arbol-de-navidad-con-nombres/` |
 | Tamaños | **390×844** y **1280×800** |
@@ -49,7 +49,7 @@ Por eso se usó Playwright, donde `visibilityState` siempre es `visible`.
 
 Elemento del LCP en móvil, que la línea base no había anotado y se midió después: **`hero-art`** (la imagen) en 5 de 5 en la portada. En escritorio es el `h1`.
 
-| Listado `navidad` | ~~1.244 ms~~ **9.692 ms** | ❌ **artefacto** (9.796 · 1.244 · 1.228 · 1.388 · 1.136) → re-medido con ventana de 12 s: 9.644 · 9.680 · **9.692** · 9.700 · 9.780 | **0,0097** | 0,0097 en las 5 |
+| Listado `navidad` | ~~1.244 ms~~ **9.692 ms** | ❌ **no es el LCP de esa pantalla** (9.796 · 1.244 · 1.228 · 1.388 · 1.136) → re-medido con ventana de 12 s: 9.644 · 9.680 · **9.692** · 9.700 · 9.780 | **0,0097** | 0,0097 en las 5 |
 | Ficha | **4.128 ms** | 4.188 · 4.132 · 4.108 · 4.128 · 4.116 | **0,0739** | 0,0739 en las 5 |
 
 ### Escritorio (1280×800)
@@ -57,7 +57,7 @@ Elemento del LCP en móvil, que la línea base no había anotado y se midió des
 | Pantalla | LCP mediana | LCP corridas crudas | CLS mediana | Elemento del LCP |
 |---|---|---|---|---|
 | Portada | **800 ms** | 804 · 760 · 800 · 776 · 832 | **0,0081** | `h1` (texto) en las 5 |
-| Listado `navidad` | ~~1.272 ms~~ **30.340 ms** | ❌ **artefacto** (1.272 · 1.408 · **30.064** · 1.200 · 1.116) → re-medido con ventana de 33 s: 30.292 · **30.340** · 30.380 | **0,0081** | **`product-photo` en todas.** El `h1` que la base anotó en 4 de 5 era el candidato que quedaba cuando el reloj cortaba |
+| Listado `navidad` | ~~1.272 ms~~ **30.340 ms** | ❌ **no es el LCP de esa pantalla** (1.272 · 1.408 · **30.064** · 1.200 · 1.116) → re-medido con ventana de 33 s: 30.292 · **30.340** · 30.380 | **0,0081** | **`product-photo` en todas.** El `h1` que la base anotó en 4 de 5 era el candidato que quedaba cuando el reloj cortaba |
 | Ficha | **11.394 ms** (n=4) | **timeout >60 s** · 11.388 · 11.388 · 11.488 · 11.400 | **0,0350** | **`pdp-main`** en las 4 |
 
 ⚠️ **La ficha de escritorio tiene n=4, no 5:** la primera corrida pasó los **60 s** de
@@ -146,43 +146,60 @@ Las fotos no aparecen entre los culpables, lo cual **confirma** que la reserva d
 estaba bien (13 de 14, §2 del diseño). El CLS que queda viene de la hidratación de las
 opciones, que **ninguna tarea de este plan toca**. Queda anotado para el dueño.
 
-### 5. ⚠️ Dos de los tres «outliers» eran la medición CORRECTA, y la mediana los tapó
+### 5. ⚠️ La fila del listado de la línea base es falsa, y la causa NO es la que escribí
 
-**Este hallazgo decía lo contrario y estaba mal.** Decía que los tres valores lentos
-(9.796 ms, 30.064 ms y un timeout de 60 s) eran outliers que «la mediana absorbió sin
-problema», y lo presentaba como prueba de que el método funcionaba. Es al revés: en el
-listado, **esas corridas lentas eran las únicas que medían el LCP de verdad**, y la mediana
-de 5 las descartó justamente por ser correctas.
+Este hallazgo ha estado mal **dos veces**, y las dos versiones equivocadas quedan escritas
+porque el valor está en por qué fallaron.
 
-**La causa, verificada en el código y no solo en una medición.** El arnés esperaba
-`waitUntil: 'load'` más 2.500 ms. `load` espera a las imágenes **eager**, y nada más:
+**Versión 1 (la línea base), mal.** Decía que los tres valores lentos (9.796 ms, 30.064 ms y
+un timeout de 60 s) eran outliers que «lа mediana absorbió sin problema», y lo presentaba
+como prueba de que el método funcionaba.
 
-| Pantalla | Foto que define el LCP | Cómo carga | ¿La espera `load`? |
-|---|---|---|---|
-| Portada | `hero-art` | `loading="eager"` ([HeroEnVivo.tsx:93](../../../src/components/inicio/HeroEnVivo.tsx)) | **Sí** → la fila es válida |
-| Ficha | `.pdp-main` | con `prioridad`, o sea eager ([Galeria.tsx:25](../../../src/components/ficha/Galeria.tsx)) | **Sí** → la fila es válida |
-| **Listado** | `.product-photo` | **`loading="lazy"`** ([TarjetaProducto.tsx:47](../../../src/components/catalogo/TarjetaProducto.tsx)) | **NO** → la fila es un artefacto |
+**Versión 2 (mía, al cerrar la Tarea 4), también mal.** Escribí que la causa era la ventana
+de 2.500 ms: `load` espera solo a las imágenes *eager*, la foto del catálogo es `lazy`, así
+que la ventana se agotaba antes de que llegara. Lo armé con una tabla de `file:line` que
+se veía rigurosa — y los datos de esa tabla son ciertos (la foto del catálogo **es** `lazy`,
+`TarjetaProducto.tsx:47`; la del hero y la de la ficha **son** eager). **Lo que es falso es
+que eso explique la observación.**
 
-O sea que el defecto golpea **exactamente** a la pantalla cuyas fotos son perezosas, y a
-ninguna otra. `load` disparaba sin la foto, los 2.500 ms se agotaban antes de que llegara, y
-el observador se quedaba con el candidato anterior: un `h1` o un `product-desc` de 1,2 s.
-Las corridas «lentas» eran las que, por azar de red, alcanzaban a pintar la foto dentro de
-la ventana.
+**Lo medido el 09/11 contra el `dist/` actual (5 corridas, 390×844, misma red):**
 
-**Aislando la variable** (reproducir el estado anterior dentro del `dist/` ya construido y
-medir con ventana larga): listado móvil **9.692 → 9.672 ms** y escritorio
-**30.340 → 30.084 ms**. El LCP real de esa pantalla **no se movió** con el trabajo de la
-Tarea 4; lo único que cambió fue que entra en la ventana de medición.
+| | |
+|---|---|
+| `loadEventEnd` | **11.625–11.660 ms** → `load` **SÍ espera** a la foto, aunque sea `lazy` |
+| Último candidato del LCP al disparar `load` | **`product-photo`** a 9.604–9.704 ms, en **5 de 5** |
+| Con la ventana corta de la línea base (2.500 ms) | **9.6 s, `product-photo`** |
+| Con la ventana larga (12 s) | **9.6 s, `product-photo`** — idéntico |
 
-**La lección, que es la que vale para la Tarea 8 y para el `CLAUDE.md`:** una mediana solo
-promedia mediciones del mismo fenómeno. Cuando la dispersión no es ruido de red sino **dos
-fenómenos distintos** —el LCP real y el reloj cortando—, la mediana elige el fenómeno
-equivocado por mayoría y lo hace sin avisar. El control que lo habría cazado en la línea
-base es barato y ahora está en el método: **anotar el elemento del LCP junto a cada
-número**. Las corridas decían `h1` en unas y `product-photo` en otras; eso solo no es
-dispersión, es la señal de que no se estaba midiendo lo mismo.
+O sea que, con este `dist/`, el arnés de la línea base **habría reportado 9,6 s**, no 1,2 s.
+Alargar la ventana no cambia nada. Mi explicación estaba desmentida por la primera medición
+que la puso a prueba.
 
----
+**Qué queda en firme, y qué no:**
+
+- ✅ **La fila de 1.244 ms no describe el LCP de esa pantalla.** Su elemento era `h1` o
+  `product-desc`; el elemento real es `product-photo`, 83.145 px² contra 10.897. Eso no es
+  una diferencia de medición, es otro objeto.
+- ✅ **El LCP real del listado es ~9,6 s en móvil y ~30 s en escritorio**, y no lo movió el
+  trabajo de la Tarea 4 (9.692 → 9.672 ms aislando la variable en el `dist/` construido).
+- ❌ **La causa de que la línea base leyera 1,2 s no está identificada.** Quedan dos
+  candidatos y no elegí entre ellos sin medir: (1) la línea base corrió contra un `dist/`
+  anterior a las Tareas 1-3, y (2) corrió con **otro binario de Chromium** (el de ahora es
+  156.0.8078.81), y que una imagen `lazy` bloquee o no el evento `load` depende de la
+  versión. La Tarea 8 lo resuelve gratis, porque re-mide la base **y** el después con el
+  mismo binario: si ahí la base vuelve a dar 1,2 s, es el `dist/`; si da 9,6 s, era el
+  binario.
+
+**La lección, que sobrevive a las dos versiones equivocadas:** el control que caza esto es
+**anotar el elemento del LCP junto a cada número**, y es el único de todos los que
+probé que funciona sin saber la causa. Las corridas de la línea base decían `h1` en unas y
+`product-photo` en otras; eso solo ya dice que no se estaba midiendo lo mismo, sin que haga
+falta entender por qué. Una mediana, en cambio, promedia lo que le den: cuando la dispersión
+no es ruido sino **dos fenómenos distintos**, elige el que tenga mayoría y no avisa.
+
+Y la segunda, más incómoda: un mecanismo que explica los datos **y** cita código real puede
+estar igual de equivocado que una corazonada. Lo que lo separó de la verdad fue una sola
+medición de `loadEventEnd` — quince segundos de trabajo que no hice antes de escribirlo.
 
 ## El script exacto, para que la Tarea 8 mida IGUAL
 
