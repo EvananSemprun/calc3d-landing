@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { equivalenteEnMoneda, precioConTramos, precioUnitarioItem, totalRenglon } from './precio';
+import {
+  descuentoDeTramo,
+  equivalenteEnMoneda,
+  precioConTramos,
+  precioUnitarioItem,
+  totalRenglon,
+} from './precio';
 
 describe('precioConTramos', () => {
   const t = [
@@ -101,5 +107,40 @@ describe('totalRenglon', () => {
 
   it('cantidad cero o negativa no inventa plata', () => {
     expect(totalRenglon(9.99, 0)).toBe(0);
+  });
+});
+
+describe('tramos por precio fijo (la copia de la tienda)', () => {
+  // ⚠️ Esta copia tiene que cobrar lo MISMO que `shared`: es el precio que el visitante
+  // ve antes de que el servidor le cobre. Si divergen, la ficha dice un número y el
+  // pedido llega con otro.
+  it('los tramos VIEJOS por porcentaje siguen andando', () => {
+    const viejos = [
+      { minQty: 10, discountPct: 0.17 },
+      { minQty: 20, discountPct: 0.266 },
+    ];
+    expect(precioConTramos(1.5, 10, viejos)).toBe(1.245);
+    expect(precioConTramos(1.5, 20, viejos)).toBe(1.101);
+  });
+
+  it('el precio fijo se cobra exacto', () => {
+    const nuevos = [{ minQty: 10, unitPriceUsd: 1.25 }];
+    expect(precioConTramos(1.5, 9, nuevos)).toBe(1.5);
+    expect(precioConTramos(1.5, 10, nuevos)).toBe(1.25);
+  });
+
+  it('el recargo de opción se suma al precio fijo, no se lo come', () => {
+    const nuevos = [{ minQty: 10, unitPriceUsd: 1.25 }];
+    expect(precioConTramos(3, 10, nuevos, 1.5)).toBe(2.75);
+  });
+
+  it('con los dos campos manda el precio fijo', () => {
+    expect(precioConTramos(1.5, 10, [{ minQty: 10, discountPct: 0.5, unitPriceUsd: 1.25 }])).toBe(1.25);
+  });
+
+  it('descuentoDeTramo lo deriva para mostrarlo', () => {
+    expect(descuentoDeTramo(1.5, { minQty: 10, unitPriceUsd: 1.25 })).toBeCloseTo(0.1667, 4);
+    expect(descuentoDeTramo(1.5, { minQty: 10, discountPct: 0.266 })).toBe(0.266);
+    expect(descuentoDeTramo(0, { minQty: 10, unitPriceUsd: 1.25 })).toBeNull();
   });
 });

@@ -2,10 +2,18 @@
 // presentación y se calculan al mostrar, este módulo NO convierte moneda.
 // Los porcentajes son FRACCIONES (0.1 = 10 %).
 
-/** Tramo de mayoreo: desde `minQty` unidades, `discountPct` de descuento sobre el precio final. */
+/**
+ * Tramo de mayoreo: desde `minQty` unidades.
+ *
+ * **Dos formas**, y hay que aceptar las dos: `unitPriceUsd` es el precio unitario de
+ * lista para ese tramo (la nueva, 2026-11-08, la que permite precios redondos) y
+ * `discountPct` el descuento en fracción (la vieja, viva en fichas ya publicadas).
+ * Quitar la segunda deja esos productos sin mayoreo sin un solo error.
+ */
 export interface TramoPrecio {
   minQty: number;
-  discountPct: number;
+  discountPct?: number;
+  unitPriceUsd?: number;
 }
 
 /** Lo mínimo que necesita saber del producto el cálculo del renglón. */
@@ -29,10 +37,27 @@ export function precioConTramos(
   baseUnit: number,
   qty: number,
   tiers: readonly TramoPrecio[] | null | undefined,
+  recargos = 0,
 ): number {
   const t = (tiers || []).filter((x) => qty >= x.minQty).sort((a, b) => b.minQty - a.minQty)[0];
   if (!t) return baseUnit;
-  return Math.round(baseUnit * (1 - t.discountPct) * 10000) / 10000;
+  // El precio fijo reemplaza al de LISTA; los recargos de opción se cobran encima. Si
+  // reemplazara todo, a partir del tramo el tamaño grande saldría gratis.
+  if (t.unitPriceUsd !== undefined) {
+    return Math.round((t.unitPriceUsd + recargos) * 10000) / 10000;
+  }
+  return Math.round(baseUnit * (1 - (t.discountPct ?? 0)) * 10000) / 10000;
+}
+
+/**
+ * El descuento de un tramo, en fracción, PARA MOSTRARLO (el "−17 %" de la ficha). Nunca
+ * para cobrar. Con un tramo por precio fijo lo deriva del precio de lista, así no hay un
+ * segundo número que mantener de acuerdo con el primero. `null` si no se puede.
+ */
+export function descuentoDeTramo(precioLista: number, tramo: TramoPrecio): number | null {
+  if (tramo.unitPriceUsd === undefined) return tramo.discountPct ?? null;
+  if (!(precioLista > 0)) return null;
+  return Math.round((1 - tramo.unitPriceUsd / precioLista) * 10000) / 10000;
 }
 
 /**

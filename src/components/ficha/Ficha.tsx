@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { agregar as agregarAlCarrito } from '@/lib/carrito';
 import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
 import { fotosDeOpcion } from '@/lib/galeria';
-import { equivalenteEnMoneda, precioConTramos, totalRenglon } from '@/lib/precio';
+import { descuentoDeTramo, equivalenteEnMoneda, precioConTramos, totalRenglon } from '@/lib/precio';
 import { pedirUrlDeFoto } from '@/lib/subir-foto';
 import type { InfoApi } from '@/lib/api';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -23,6 +23,13 @@ import type { ProductoVitrina } from '@/lib/producto';
 interface Props {
   producto: ProductoVitrina;
   info: InfoApi;
+}
+
+/** "−17 %" al lado del tramo. Vacío si no se puede derivar: mejor no decir nada que
+ *  mostrar un porcentaje inventado. */
+function textoDeDescuento(precioLista: number, tramo: { minQty: number; discountPct?: number; unitPriceUsd?: number }) {
+  const d = descuentoDeTramo(precioLista, tramo);
+  return d == null || d <= 0 ? '' : `−${Math.round(d * 100)}%`;
 }
 
 export default function Ficha({ producto: p, info }: Props) {
@@ -160,7 +167,7 @@ export default function Ficha({ producto: p, info }: Props) {
                 <tr key={t.minQty}>
                   <th scope="row">Desde {t.minQty} u</th>
                   <td>${precioConTramos(p.price, t.minQty, p.priceTiers).toFixed(2)} c/u</td>
-                  <td className="dim">−{Math.round(t.discountPct * 100)}%</td>
+                  <td className="dim">{textoDeDescuento(p.price, t)}</td>
                 </tr>
               ))}
             </tbody>
