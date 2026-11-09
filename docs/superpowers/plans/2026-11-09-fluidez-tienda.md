@@ -592,11 +592,32 @@ git commit -m "feat(tienda): el refresco en vivo cruza el dato que cambió, sin 
 **Files:**
 - Create: `src/components/ficha/EsqueletoFicha.tsx`
 - Modify: `src/components/ficha/FichaEnVivo.tsx:81-95`, `src/components/ficha/FichaEnVivo.spec.tsx`
+- Create: `src/components/ficha/Galeria.spec.tsx` — **no existe** (comprobado: en
+  `src/components/ficha/` solo hay specs de `Ficha`, `FichaEnVivo` y `RelacionadosEnVivo`)
 - Modify: `src/components/ficha/Galeria.tsx`, `src/styles/global.css`
 
 **Interfaces:**
-- Consumes: la transición de opacidad de la Tarea 3.
+- Consumes: **`useCruce` de la Tarea 5** (`src/components/ui/Cruce.tsx`), **no** la
+  transición de la Tarea 3.
 - Produces: nada que otra tarea consuma.
+
+⚠️ **Corregido el 2026-11-09, después de cerrar la Tarea 5.** Este bloque decía «la
+transición de la Tarea 3» y no sirve acá, por dos razones medidas en esa tarea:
+
+1. La regla de la Tarea 3 es **`img[data-fundir]`**, y `src/fotos-funden.spec.ts:40` fija ese
+   selector **textual**: ampliarlo pone rojo un guardián ajeno.
+2. Esa regla deja el elemento en **`opacity: 0` en reposo** mientras carga. `.pdp-main` va con
+   `prioridad` justamente para **no** estar nunca escondida, porque es el elemento del LCP de
+   la ficha. Usarla acá es la reversión que el paso 6 prohíbe, por la puerta de atrás.
+
+`useCruce` es lo correcto: reposo en **opacidad 1** (el 0 vive solo en el keyframe) y sus
+reglas `[data-cruce='1']`/`[data-cruce='2']` no están calificadas por elemento, así que
+alcanzan a un `<img>` igual que a un `<span>`.
+
+⚠️ **`Foto` tiene una `interface Props` cerrada** (`src/components/ui/Foto.tsx:6`): no
+reenvía props sueltas, así que hay que ensancharla para que acepte las del cruce. Es un
+cambio chico y explícito; **no** lo resuelvas con un `{...rest}` que deje pasar cualquier
+cosa.
 
 - [ ] **Step 1: Escribir el test del esqueleto**
 
@@ -627,14 +648,37 @@ las dimensiones **medidas** de la ficha, y conserva `role="status"`. Reusa la cl
 - [ ] **Step 5: Escribir el test del cruce de la galería**
 
 ```tsx
-it('al elegir otra miniatura, la foto principal cruza', …);         // estructura, no opacity
-it('la foto principal no cambia de alto entre fotos de distinta proporción', …);
+it('al elegir otra miniatura, la foto principal cruza', …);        // estructura, no opacity
+it('la foto principal conserva la clase `.pdp-main` sea cual sea la elegida', …);
+it('al elegir la MISMA miniatura no cruza', …);
 ```
+
+⚠️ **El segundo test NO mide altura, y es a propósito.** La versión anterior de este paso
+pedía «la foto principal no cambia de alto entre fotos de distinta proporción»: eso es
+geometría, **jsdom no hace layout** y el test habría dado verde con el bloque roto. Es la
+**tercera** vez que este plan escribe ese mismo error (ya corregido en las Tareas 3 y 5).
+
+Lo que de verdad garantiza el alto es el `aspect-ratio` de `.pdp-main`, y **ya lo cuida
+`src/fotos-reservan-espacio.spec.ts`** (Tarea 2). Así que acá alcanza con amarrar que la
+clase siga puesta pase lo que pase; el `aspect-ratio` lo vigila el otro guardián, y la
+geometría se mide en el navegador si hace falta.
+
+El tercero es el que evita el verde vacío: si el mecanismo marcara **siempre**, los dos
+primeros pasarían igual.
 
 - [ ] **Step 6: Correr, implementar el cruce en `Galeria.tsx`, volver a correr** → PASS
 
 El cambio de foto es una **interacción**, no una carga: acá sí cruza aunque `.pdp-main`
 sea candidata a LCP, porque el LCP ya ocurrió.
+
+⚠️ **Decidí y decí qué elegiste: cruzar al cambiar el `src` significa cruzar hacia una
+foto que puede no haber llegado.** Si la nueva no está en caché, el cruce pinta un hueco que
+se desvanece hacia adentro en vez de una foto. Dos salidas razonables: (a) disparar el cruce
+cuando la foto nueva **termina de cargar** (y entonces hace falta un techo por tiempo, como
+el de la Tarea 3, para que una foto que nunca llega no deje el cruce colgado), o (b) aceptar
+el hueco porque `.pdp-main` tiene fondo y `aspect-ratio`, así que no salta nada. **Medí si
+las miniaturas y la principal comparten URL** (si la comparten, la foto ya está en caché y
+el problema no existe) y elegí con ese dato, no de memoria.
 
 ⚠️ **Prohibido quitarle `prioridad` a `.pdp-main`.** Son dos disparadores distintos y solo
 uno es gratis: cruzar al **cambiar de foto** no cuesta nada, fundir su **carga inicial**
