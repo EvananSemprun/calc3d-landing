@@ -800,16 +800,66 @@ git commit -m "refactor(tienda): las duraciones de movimiento salen todas de los
 pnpm test && pnpm check
 ```
 
-Y el guardián de `dist/`, que no corre con los otros:
+Y el guardián de `dist/`, que no corre con los otros (vive en el proyecto `dist` de vitest,
+que `pnpm test` excluye con `--project=!dist`):
 
 ```bash
-pnpm build && pnpm test:dist
+PUBLIC_API_URL=https://calc3d-api-production.up.railway.app/api PUBLIC_SITE_URL=https://bananolab-3d.com pnpm build
+pnpm test:dist
 ```
 
-- [ ] **Step 2: Medir igual que en la Tarea 1 y comparar con el umbral**
+⚠️ **Las variables no son opcionales.** Un `pnpm build` pelado construye contra
+`localhost:3001` con el dataset local, que tiene 1 producto por categoría: dos tests de
+`test:dist` fallan **por falta de datos, no por el código** (ya pasó en la Tarea 5), y
+encima deja servida una base de medición falsa.
 
-Mismas tres pantallas, mismo perfil de red, mediana de 5. CLS y LCP. **Si el LCP empeoró
-más de 5 % o 50 ms, se revierte la tarea culpable** — no se discute.
+- [ ] **Step 2: Medir — y la línea base hay que VOLVER A MEDIRLA**
+
+⚠️ **Corregido el 2026-11-09. La versión anterior decía «medir igual que en la Tarea 1 y
+comparar», y no alcanza, por tres razones que aparecieron durante el plan:**
+
+1. **La tabla de la Tarea 1 se midió con OTRO binario de Chromium**, que no quedó anotado.
+   Una diferencia del 10-15 % entre tablas de binarios distintos no dice nada.
+2. **Dos de sus filas son falsas** (el listado: 1.244 ms móvil y 1.272 ms escritorio). El
+   elemento real de esa pantalla es `product-photo` y da ~9,7 s / ~30 s. La causa de esas
+   filas **sigue abierta**, con dos candidatos: el `dist/` anterior a las Tareas 1-3, o el
+   binario. **Esta tarea la zanja gratis**, porque al re-medir la base con el binario de
+   hoy: si vuelve a dar 1,2 s era el `dist/`; si da 9,6 s era el binario. Escribí cuál fue.
+3. El método cambió: ahora se anota **el elemento del LCP junto a cada número**, que es el
+   único control que cazó el problema sin conocer su causa.
+
+**Cómo medir la base sin romper el CORS.** El último estado de código antes del plan es
+**`07638a0`**. Sacá un `git worktree` ahí, `pnpm install`, y construí con las mismas
+variables de producción. **Las dos mediciones van en el MISMO puerto 5182, una después de
+otra** (construí base → preview 5182 → medí → `pnpm exec astro preview stop` → construí el
+actual → preview 5182 → medí). La API valida `STORE_ORIGIN` exacto: en otro puerto las
+islas mueren en CORS y la base mediría una página sin refresco en vivo, o sea otra cosa.
+
+Mismas tres pantallas, mismo perfil de red, mediana de 5, **mismo binario, misma sesión**.
+CLS y LCP, **con el elemento anotado**. La ventana de `load` + 2.500 ms alcanza hoy en las
+tres (medido), pero verificá que el elemento sea estable entre corridas antes de creerle a
+un número.
+
+**Las cuatro trampas del arnés, todas pagadas ya en este plan:**
+- **`route.fulfill` de Playwright entrega el documento SIN el freno de red de CDP** (64 ms
+  contra 259 con el cuerpo idéntico): interceptá **las dos ramas o ninguna**, nunca mezcles.
+- **Esperá a que `getAnimations()` quede quieto** antes de leer geometría, o medís la
+  animación de entrada todavía corriendo.
+- **Para ver el respaldo de una fuente hay que bloquear `.woff2` Y `.woff`**: el
+  `@font-face` lista las dos y bloquear una sola carga la fuente igual.
+- **Una pestaña de fondo miente**: las transiciones no avanzan.
+
+- [ ] **Step 2b: Aplicar el umbral — con UNA excepción ya decidida**
+
+**Si el LCP empeoró más de 5 % o 50 ms, se revierte la tarea culpable** — no se discute.
+
+⚠️ **Excepción, y es la única: la precarga de la fuente.** Cuesta **20 ms de LCP en móvil y
+76 ms en escritorio**, medido con las dos ramas bajo el mismo tratamiento. Los 76 ms pasan
+el umbral y **no se revierte**: el dueño lo decidió con las capturas y los dos números
+delante, porque lo que compra es cerrar los ~540 ms en que el titular principal se ve en la
+familia de respaldo (fino en vez de negro; **no se mueve de lugar**, eso ya lo resuelven los
+overrides de métrica). Anotá el número en la tabla como **costo aceptado**, no como
+regresión pendiente.
 
 - [ ] **Step 3: Escribir el resultado en el documento de mediciones**
 
@@ -817,11 +867,40 @@ Tabla antes/después y, en una línea, el veredicto: pasa o se revierte, y qué.
 
 - [ ] **Step 4: Actualizar el `CLAUDE.md` del repo**
 
-Lo que el próximo necesita y no está en el código: que las candidatas a LCP **no se
-funden** y por qué (una imagen en `opacity: 0` no es candidata a LCP); que la marca de «no
-cargada» se autolibera por tiempo y por qué; que `test:dist` existe, **no** corre con
-`pnpm test` y falla si no hay `dist/`; y que la proporción del banner es `16/9` por
-coherencia con la vista previa del panel.
+Lo que el próximo necesita y no está en el código:
+
+**Del mecanismo:**
+- que las candidatas a LCP **no se funden** y por qué (una imagen en `opacity: 0` no es
+  candidata a LCP);
+- que la marca de «no cargada» se autolibera por tiempo y por qué;
+- que `test:dist` existe, **no** corre con `pnpm test` (`--project=!dist`) y falla si no hay
+  `dist/` — así que un guardián que viva solo ahí **no protege al gancho de pre-push**;
+- que la proporción del banner es `16/9` por coherencia con la vista previa del panel;
+- que el cruce del refresco en vivo es una **`animation`** y no una transición, porque una
+  transición de 0 a 1 obliga a declarar el dato invisible en reposo, y entonces con
+  `prefers-reduced-motion` se queda esperando;
+- que esa guardia de `reduce` gana **solo por orden** en el archivo, y hay tests que se
+  ponen rojos si alguien la mueve o la mete en un `@layer`;
+- que la fuente va autohospedada con overrides de métrica calibrados contra **Arial**, y
+  que la precarga **cuesta 20/76 ms a propósito** (decisión del dueño, no un descuido).
+
+**Del método, que es lo que más caro salió en este plan:**
+- **En jsdom no hay layout ni CSS.** Cualquier aserción sobre tamaño, posición u opacidad
+  en un `*.spec.tsx` es nula y da verde con el diseño roto. Este plan lo escribió **tres
+  veces** teniéndolo en sus propias restricciones: la regla tiene que estar donde se
+  escriben los tests, no solo en un encabezado.
+- **Un test se valida con la mutación que se TEME, no con la que basta para verlo en rojo.**
+  Si una regla gana por posición, la mutación que importa es **moverla**, no borrarla.
+- **Una medición tiene que poder dar que NO**, y conviene verificarlo con un **control
+  positivo**: introducí vos mismo la perturbación que buscarías y comprobá que el arnés la
+  ve. Dos veces en este plan una medición no podía detectar lo que afirmaba descartar.
+- **Las cuatro trampas del arnés** del paso 2.
+- **Anotá el elemento del LCP junto a cada número.** Es el único control que cazó una tabla
+  falsa sin que nadie supiera la causa.
+- **Una mediana solo promedia mediciones del mismo fenómeno.** Cuando la dispersión son dos
+  fenómenos distintos, elige el mayoritario y no avisa.
+- **Un comentario equivocado no da error, no rompe ningún test, y el próximo lo lee como
+  medido.** Apareció cuatro veces acá. Si un número aparece en dos lugares, ya divergió.
 
 - [ ] **Step 5: Commit**
 

@@ -158,6 +158,16 @@ describe('el esqueleto de la ficha reserva el espacio de la ficha', () => {
     // componente y la expresión es la MISMA que emite Tailwind:
     // `.h-11{height:calc(var(--spacing) * 11)}`. Escrito así, cambiar `h-11` por `h-12`
     // —o cambiar `--spacing`— no deja el esqueleto diciendo 44 px en silencio.
+        //
+    // ⚠️ **Límite conocido de este guardián, dicho para que nadie lo crea hermético:**
+    // compara TEXTO, y `--spacing` la define Tailwind, no `global.css`. Si algún día esa
+    // variable dejara de resolver, el `calc` sería inválido, el alto caería a `auto` y la
+    // barra mediría 0 px — con este test en verde. Se verificó a mano (2026-11-09):
+    // `--spacing` = `0.25rem`, `.esq-boton` = 44 px, y el control positivo
+    // `calc(var(--no-existe) * 11)` da **0**, o sea que el fallo es real pero no silencioso
+    // por otro lado: el botón de verdad usa la MISMA variable (`Ficha.tsx`, `h-11`), así
+    // que se rompería a la vista en la misma pantalla. Cerrarlo con un test exigiría un
+    // navegador para una sola medida; se decidió que no vale.
     const ficha = readFileSync(join(__dirname, 'components', 'ficha', 'Ficha.tsx'), 'utf8');
     const n = /className="h-(\d+) /.exec(ficha)?.[1];
     expect(n, 'No encontré la clase `h-N` del botón en Ficha.tsx').toBeTruthy();
