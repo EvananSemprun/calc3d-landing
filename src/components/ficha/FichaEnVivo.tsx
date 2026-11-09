@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import Ficha from './Ficha';
+import EsqueletoFicha from './EsqueletoFicha';
 import { fetchProducto, type InfoApi } from '@/lib/api';
 import { useEnVivo } from '@/lib/vivo';
 import { tituloDeFicha } from '@/lib/titulo';
@@ -89,9 +90,10 @@ export default function FichaEnVivo({
         </p>
       </div>
     ) : (
-      <p className="lead" role="status">
-        Cargando el producto…
-      </p>
+      // La respuesta está viajando. Va la silueta de la ficha y NO un texto suelto: lo
+      // que viene tiene una forma conocida, así que se reserva su lugar en vez de
+      // dejarlo aparecer de golpe empujando el pie del sitio.
+      <EsqueletoFicha />
     );
   }
 

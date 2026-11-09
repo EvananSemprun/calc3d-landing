@@ -145,3 +145,85 @@ describe('FichaEnVivo — la pestaña acompaña al producto', () => {
     await waitFor(() => expect(document.title).toBe('Árbol corregido — Banano Lab'));
   });
 });
+
+/**
+ * EL RESCATE MUESTRA UN ESQUELETO, NO UN TEXTO SUELTO (2026-11-09).
+ *
+ * Cuando alguien abre una ficha que el build no horneó (un producto creado después del
+ * último despliegue), la página no tiene nada que mostrar hasta que contesta la API. Antes
+ * se veía un «Cargando el producto…» suelto en el medio de la nada y, al llegar la
+ * respuesta, la ficha entera aparecía de golpe empujando el pie del sitio. Ahora se pinta
+ * un esqueleto con la FORMA de la ficha —galería, título, precio, botón— con sus
+ * dimensiones medidas, así que lo que llega ocupa el lugar que ya estaba reservado.
+ *
+ * ⚠️ **Los tres estados de `useEnVivo` NO son el mismo, y el esqueleto es solo para uno.**
+ * Son «la respuesta viaja» (esqueleto), «la API no contestó» (se conserva lo horneado) y
+ * «la API dice que no está» (se PISA lo horneado). Mezclarlos es el bug que este repo ya
+ * cerró una vez el 2026-11-08; los dos tests del medio existen para que el esqueleto no lo
+ * reintroduzca por la puerta de atrás, mostrando una silueta donde había que mostrar una
+ * ficha o un cartel.
+ *
+ * ⚠️ **Y por eso acá NO se busca por `role="status"`:** el aviso de «última información
+ * guardada» TAMBIÉN es un `role="status"`, así que un test que midiera «no hay status»
+ * daría rojo con el código bien. Lo que se mide es la silueta (`.esqueleto`).
+ *
+ * jsdom no aplica CSS, así que acá se amarra la ESTRUCTURA: que estén las piezas que el
+ * CSS dimensiona. Los altos los vigila `src/esqueleto-mide.spec.ts` leyendo `global.css`.
+ */
+describe('FichaEnVivo — el esqueleto del rescate', () => {
+  it('mientras viaja la respuesta y no hay ficha horneada, pinta el esqueleto de la ficha', async () => {
+    fetchProducto.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<FichaEnVivo inicial={null} slug="fantasma" info={info} />);
+
+    const esqueleto = container.querySelector('.esqueleto');
+    expect(esqueleto, 'No se pintó el esqueleto mientras la respuesta viajaba').not.toBeNull();
+
+    // La forma de la ficha. El hueco de la galería REUSA `.pdp-main`, que ya trae su
+    // `aspect-ratio` (lo exige `fotos-reservan-espacio.spec.ts`): un hueco con otra clase
+    // sería un alto nuevo que mantener de acuerdo con la foto de verdad.
+    for (const sel of ['.pdp-gallery .pdp-main', '.esq-titulo', '.esq-precio', '.esq-boton']) {
+      expect(esqueleto!.querySelector(sel), `al esqueleto le falta \`${sel}\``).not.toBeNull();
+    }
+
+    // Y no es la ficha: una silueta no tiene título, ni precio, ni botón de comprar que
+    // puedan decir algo falso.
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('con error conserva lo horneado y NO pinta esqueleto', async () => {
+    fetchProducto.mockRejectedValue(new Error('conexión caída'));
+    const { container } = render(<FichaEnVivo inicial={horneado()} slug="arbol-de-navidad" info={info} />);
+
+    await screen.findByText(/última información guardada/i);
+    expect(screen.getByText('Árbol de Navidad')).toBeTruthy();
+    expect(
+      container.querySelector('.esqueleto'),
+      'La API no contestó y lo horneado es lo mejor que hay: una silueta encima sería ' +
+        'esconder la ficha que sí tenemos.',
+    ).toBeNull();
+  });
+
+  it('con noExiste pisa lo horneado y NO pinta esqueleto', async () => {
+    fetchProducto.mockRejectedValue(new NoExiste('/public/store/products/arbol-de-navidad'));
+    const { container } = render(<FichaEnVivo inicial={horneado()} slug="arbol-de-navidad" info={info} />);
+
+    await screen.findByText(/ya no está disponible/i);
+    expect(screen.queryByText('Árbol de Navidad')).toBeNull();
+    expect(
+      container.querySelector('.esqueleto'),
+      'La API dijo que el producto no está: lo que corresponde es el cartel, no una ' +
+        'silueta que promete una ficha que no va a llegar.',
+    ).toBeNull();
+  });
+
+  it('el esqueleto conserva role="status" para el lector de pantalla', async () => {
+    fetchProducto.mockReturnValue(new Promise(() => {}));
+    render(<FichaEnVivo inicial={null} slug="fantasma" info={info} />);
+
+    // Una silueta no dice nada en voz alta: el texto sigue estando, solo que ya no se ve.
+    const aviso = await screen.findByRole('status');
+    expect(aviso.className).toMatch(/esqueleto/);
+    expect(aviso.textContent).toMatch(/Cargando el producto/i);
+  });
+});

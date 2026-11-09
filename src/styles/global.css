@@ -1098,6 +1098,67 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   }
   .pdp-related { padding-top: clamp(40px, 5vw, 64px); }
 
+  /* ---------- El esqueleto de la ficha (`ficha/EsqueletoFicha.tsx`) ----------
+     La silueta que se muestra mientras viaja la respuesta de una ficha que el build no
+     horneó. Su único trabajo es RESERVAR el espacio que va a ocupar la ficha, así que lo
+     que importa de estas reglas son los ALTOS.
+
+     ⚠️ **Va DENTRO de `@layer components`, con el resto de `.pdp-*`, y es a propósito.**
+     Los bloques del final de `global.css` están fuera de capa porque tienen que ganarle a
+     algo (las utilidades encapadas, los estilos que sonner inyecta en tiempo de
+     ejecución). Acá no hay nada que pisar: son medidas, no movimiento. Sacarlo de la capa
+     sería ponerlo por encima de las utilidades de Tailwind sin ninguna razón.
+
+     ⚠️ **Los altos están escritos como la EXPRESIÓN que los produce, no como el número
+     medido**, para que sigan al diseño si cambia la escala tipográfica. Medidos en
+     `astro preview` el 2026-11-09 (1280×800 y 390×844):
+
+     | Pieza            | 1280    | 390     | De dónde sale                         |
+     |------------------|---------|---------|---------------------------------------|
+     | `.pdp-main`      | 565,3²  | 350²    | su propio `aspect-ratio: 1 / 1`       |
+     | título (`.h2`)   |  47,4   |  28,8   | `clamp(28px, 3.6vw, 46px)` × 1,03     |
+     | `.pdp-facts`     |  20,1   |  20,1   | 13px × 1,55                           |
+     | `.pdp-price`     |  40     |  30     | `clamp(30px, 4vw, 40px)`, interlínea 1|
+     | `.pdp-unit`      |  21,7   |  21,7   | 14px × 1,55                           |
+     | línea de `.lead` |  26,35  |  26,35  | 17px × 1,55 (`.pdp-lead` fija 17px)   |
+     | `.qty`           | 104×32  | 104×32  | el contador de la ficha               |
+     | botón            | 176×44  | 176×44  | `h-11` de shadcn                      |
+
+     Lo que NO se puede medir de antemano es cuántas líneas va a ocupar el título y cuántas
+     la descripción: el esqueleto reserva UNA de título y TRES de descripción, que es un
+     piso razonable, no una promesa.
+
+     ⚠️ **Ni `animation` ni `transition` acá.** Ver el comentario de `EsqueletoFicha.tsx`;
+     lo fija `src/esqueleto-mide.spec.ts`. */
+  .esqueleto-barra {
+    background: var(--ink-700);
+    border-radius: 8px;
+    width: 100%;
+  }
+  /* Una línea de `.h2`, que es el `<h1>` de la ficha. */
+  .esq-titulo { height: calc(clamp(28px, 3.6vw, 46px) * 1.03); width: 72%; }
+  .esq-hechos { height: calc(13px * 1.55); width: 46%; }
+  /* `.pdp-price` tiene `line-height: 1`, así que su alto ES el tamaño de letra. */
+  .esq-precio { height: clamp(30px, 4vw, 40px); width: 34%; }
+  .esq-unidad { height: calc(14px * 1.55); width: 26%; }
+
+  /* Los renglones de la descripción llevan su propia interlínea en vez del hueco de 16 px
+     de `.pdp-info`: cada uno ocupa EXACTAMENTE una línea de `.pdp-lead` y pinta solo su
+     parte central (`background-clip: content-box`), así que los tres juntos miden lo que
+     miden tres líneas de verdad (79,05 px) y no tres barras con aire entre ellas. */
+  .esqueleto-texto { display: flex; flex-direction: column; }
+  .esq-renglon {
+    height: calc(17px * 1.55);
+    padding-block: 4px;
+    background-clip: content-box;
+  }
+  /* Un párrafo no termina justo en el margen. */
+  .esq-renglon:last-child { width: 64%; }
+
+  .esq-cantidad { width: 104px; height: 32px; }
+  /* El botón de la ficha es `h-11` (44 px) y mide 176 px con «Agregar al pedido». */
+  .esq-boton { width: 176px; height: 44px; }
+
   @media (max-width: 900px) {
     .pdp { grid-template-columns: 1fr; }
   }

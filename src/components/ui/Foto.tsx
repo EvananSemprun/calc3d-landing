@@ -2,8 +2,18 @@
 // cruce corto cuando la foto llega.
 import { useEffect, useRef } from 'react';
 import { marcarCargando } from '@/lib/foto';
+import type { PropsDeCruce } from '@/components/ui/Cruce';
 
-interface Props {
+/**
+ * ⚠️ **`Props` extiende `PropsDeCruce` y NO reenvía props sueltas.** La galería de la
+ * ficha marca su foto principal con `useCruce` para que cruce al elegir otra miniatura, y
+ * para eso el `data-cruce` tiene que llegar al `<img>`. Se ensancha esta interfaz a mano,
+ * explícitamente, en vez de abrirla con un `{...rest}`: con el `rest` cualquier atributo
+ * pasaría sin que nadie lo decida, incluido un `className` que pisara el de arriba o un
+ * `data-cargando` escrito a mano, que es justo la marca que este componente promete poner
+ * SOLO desde el JS del cliente.
+ */
+interface Props extends PropsDeCruce {
   src: string;
   alt: string;
   /** Las clases de la foto (`product-photo`, `cat-card-foto`…). Llegan TAL CUAL al `<img>`. */
@@ -54,6 +64,7 @@ export default function Foto({
   loading,
   width,
   height,
+  'data-cruce': cruce,
 }: Props) {
   const ref = useRef<HTMLImageElement>(null);
 
@@ -77,6 +88,9 @@ export default function Foto({
       loading={loading}
       width={width}
       height={height}
+      // El cruce del dato que cambió (ver `ui/Cruce.tsx`). `undefined` no emite el
+      // atributo, así que una foto que nadie marcó sale exactamente como antes.
+      data-cruce={cruce}
       // `data-fundir` es lo que le da la TRANSICIÓN de opacidad (ver `global.css`); la
       // opacidad 0 la trae `data-cargando`, que solo pone el efecto. Sale en el HTML
       // horneado a propósito y es inofensivo: declarar una transición no esconde nada.
