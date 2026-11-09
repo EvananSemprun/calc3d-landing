@@ -83,7 +83,6 @@ export function useCruce(valor: unknown): PropsDeCruce {
   return turno === 0 ? {} : { 'data-cruce': turno === 1 ? '1' : '2' };
 }
 
-
 /**
  * Envuelve un nodo de texto SUELTO para que cruce cuando `valor` cambie.
  *
