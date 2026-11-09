@@ -20,7 +20,8 @@
 | Herramienta | Playwright, no el panel del navegador |
 | Red | CDP `Network.emulateNetworkConditions`: **150 ms de latencia, 1,6 Mbps bajada, 750 kbps subida** |
 | Caché | **Fría en cada corrida** (contexto nuevo del navegador por corrida) |
-| Espera | `load` + 2.500 ms de reposo antes de leer |
+| Espera | ⚠️ **`load` + una ventana más larga que el candidato más lento de ESA pantalla** (ver hallazgo 5). La línea base usó `load` + 2.500 ms y eso **cortó el LCP del listado**. Mínimos comprobados: portada y ficha 2.500 ms alcanzan; **listado necesita 12 s en móvil y 33 s en escritorio** |
+| Elemento del LCP | **Se anota junto a cada número, siempre.** Un número sin su elemento no se puede comparar: si el elemento cambia entre dos tablas, no midieron lo mismo |
 | Pantallas | `/` · `/tienda/navidad/` · `/producto/arbol-de-navidad-con-nombres/` |
 | Tamaños | **390×844** y **1280×800** |
 
@@ -45,7 +46,10 @@ Por eso se usó Playwright, donde `visibilityState` siempre es `visible`.
 | Pantalla | LCP mediana | LCP corridas crudas | CLS mediana | CLS corridas crudas |
 |---|---|---|---|---|
 | Portada | **780 ms** | 780 · 776 · 788 · 776 · 808 | **0,0342** | 0,0333 · 0,0342 · 0,0333 · 0,0365 · 0,0365 |
-| Listado `navidad` | **1.244 ms** | 9.796 · 1.244 · 1.228 · 1.388 · 1.136 | **0,0097** | 0,0097 en las 5 |
+
+Elemento del LCP en móvil, que la línea base no había anotado y se midió después: **`hero-art`** (la imagen) en 5 de 5 en la portada. En escritorio es el `h1`.
+
+| Listado `navidad` | ~~1.244 ms~~ **9.692 ms** | ❌ **artefacto** (9.796 · 1.244 · 1.228 · 1.388 · 1.136) → re-medido con ventana de 12 s: 9.644 · 9.680 · **9.692** · 9.700 · 9.780 | **0,0097** | 0,0097 en las 5 |
 | Ficha | **4.128 ms** | 4.188 · 4.132 · 4.108 · 4.128 · 4.116 | **0,0739** | 0,0739 en las 5 |
 
 ### Escritorio (1280×800)
@@ -53,7 +57,7 @@ Por eso se usó Playwright, donde `visibilityState` siempre es `visible`.
 | Pantalla | LCP mediana | LCP corridas crudas | CLS mediana | Elemento del LCP |
 |---|---|---|---|---|
 | Portada | **800 ms** | 804 · 760 · 800 · 776 · 832 | **0,0081** | `h1` (texto) en las 5 |
-| Listado `navidad` | **1.272 ms** | 1.272 · 1.408 · **30.064** · 1.200 · 1.116 | **0,0081** | `h1` en 4 de 5; `product-photo` en la del outlier |
+| Listado `navidad` | ~~1.272 ms~~ **30.340 ms** | ❌ **artefacto** (1.272 · 1.408 · **30.064** · 1.200 · 1.116) → re-medido con ventana de 33 s: 30.292 · **30.340** · 30.380 | **0,0081** | **`product-photo` en todas.** El `h1` que la base anotó en 4 de 5 era el candidato que quedaba cuando el reloj cortaba |
 | Ficha | **11.394 ms** (n=4) | **timeout >60 s** · 11.388 · 11.388 · 11.488 · 11.400 | **0,0350** | **`pdp-main`** en las 4 |
 
 ⚠️ **La ficha de escritorio tiene n=4, no 5:** la primera corrida pasó los **60 s** de
@@ -85,9 +89,15 @@ ve quien todavía no la recibió:
 
 ## Hallazgos de la línea base
 
-### 1. El LCP de la portada y del listado es TEXTO, no una foto
+### 1. El LCP de la portada es TEXTO. El del listado NO — eso estaba mal
 
-El elemento es el **`h1`** en 9 de 10 corridas de escritorio. Eso cambia dos cosas del plan:
+⚠️ **Corregido el 2026-11-09 (Tarea 4).** El título original de este hallazgo decía «y del
+listado», y era falso: en el listado el elemento es **`product-photo`** en todas las
+corridas, medido con una ventana que no corta (ver hallazgo 5). Lo que sigue vale para la
+**portada**, donde el elemento es el **`h1`** en 5 de 5 corridas de escritorio, confirmado
+dos veces con binarios distintos. En móvil la portada da `hero-art`, la imagen.
+
+Eso cambia dos cosas del plan:
 
 - **La fuente está en el camino crítico del LCP.** Autohospedarla (Tarea 4) no es solo
   cosmética: puede **mejorar** el LCP, no solo el reflujo. Hoy el texto que define el LCP
@@ -105,10 +115,15 @@ da **11,4 s** en escritorio y **4,1 s** en móvil (el umbral «bueno» de Google
 Esto **confirma con números la decisión del spec §5.2**: fundir esa foto le sumaría la
 duración del fade a un LCP que ya es malo. No se funde, y no se reabre.
 
-⚠️ **Pero además es un problema que el diseño no conocía**, y está FUERA del alcance de
-este plan: la foto de la ficha es demasiado pesada para la red de un cliente venezolano con
-datos móviles. No se toca acá — el plan no lo cubre y meterlo sería ampliar el alcance solo.
-**Vale una conversación aparte con el dueño.**
+⚠️ **Y es PEOR de lo que decía este hallazgo** (medido en la Tarea 4): no es solo la ficha.
+La foto del **catálogo** tarda **9,7 s en móvil y 30,3 s en escritorio** con la misma red —
+el LCP más malo de las tres pantallas, y el que un cliente ve primero. La línea base no lo
+vio porque su ventana de medición cortaba antes (hallazgo 5).
+
+Está FUERA del alcance de este plan: las fotos son demasiado pesadas para la red de un
+cliente venezolano con datos móviles, en las dos pantallas. No se toca acá — el plan no lo
+cubre y meterlo sería ampliar el alcance solo. **Vale una conversación aparte con el dueño,
+y es la más valiosa que salió de todo este trabajo.**
 
 ### 3. El reflujo de la fuente es real y vale 37 px en el peor sitio
 
@@ -131,11 +146,41 @@ Las fotos no aparecen entre los culpables, lo cual **confirma** que la reserva d
 estaba bien (13 de 14, §2 del diseño). El CLS que queda viene de la hidratación de las
 opciones, que **ninguna tarea de este plan toca**. Queda anotado para el dueño.
 
-### 5. Las corridas lentas sueltas son reales y por eso la mediana de 5 era lo correcto
+### 5. ⚠️ Dos de los tres «outliers» eran la medición CORRECTA, y la mediana los tapó
 
-Tres outliers en 30 corridas: 9.796 ms, 30.064 ms y un timeout de más de 60 s. La mediana
-los absorbió sin problema en los tres casos. Una medición de una sola corrida habría
-reportado un LCP de 30 segundos en el listado.
+**Este hallazgo decía lo contrario y estaba mal.** Decía que los tres valores lentos
+(9.796 ms, 30.064 ms y un timeout de 60 s) eran outliers que «la mediana absorbió sin
+problema», y lo presentaba como prueba de que el método funcionaba. Es al revés: en el
+listado, **esas corridas lentas eran las únicas que medían el LCP de verdad**, y la mediana
+de 5 las descartó justamente por ser correctas.
+
+**La causa, verificada en el código y no solo en una medición.** El arnés esperaba
+`waitUntil: 'load'` más 2.500 ms. `load` espera a las imágenes **eager**, y nada más:
+
+| Pantalla | Foto que define el LCP | Cómo carga | ¿La espera `load`? |
+|---|---|---|---|
+| Portada | `hero-art` | `loading="eager"` ([HeroEnVivo.tsx:93](../../../src/components/inicio/HeroEnVivo.tsx)) | **Sí** → la fila es válida |
+| Ficha | `.pdp-main` | con `prioridad`, o sea eager ([Galeria.tsx:25](../../../src/components/ficha/Galeria.tsx)) | **Sí** → la fila es válida |
+| **Listado** | `.product-photo` | **`loading="lazy"`** ([TarjetaProducto.tsx:47](../../../src/components/catalogo/TarjetaProducto.tsx)) | **NO** → la fila es un artefacto |
+
+O sea que el defecto golpea **exactamente** a la pantalla cuyas fotos son perezosas, y a
+ninguna otra. `load` disparaba sin la foto, los 2.500 ms se agotaban antes de que llegara, y
+el observador se quedaba con el candidato anterior: un `h1` o un `product-desc` de 1,2 s.
+Las corridas «lentas» eran las que, por azar de red, alcanzaban a pintar la foto dentro de
+la ventana.
+
+**Aislando la variable** (reproducir el estado anterior dentro del `dist/` ya construido y
+medir con ventana larga): listado móvil **9.692 → 9.672 ms** y escritorio
+**30.340 → 30.084 ms**. El LCP real de esa pantalla **no se movió** con el trabajo de la
+Tarea 4; lo único que cambió fue que entra en la ventana de medición.
+
+**La lección, que es la que vale para la Tarea 8 y para el `CLAUDE.md`:** una mediana solo
+promedia mediciones del mismo fenómeno. Cuando la dispersión no es ruido de red sino **dos
+fenómenos distintos** —el LCP real y el reloj cortando—, la mediana elige el fenómeno
+equivocado por mayoría y lo hace sin avisar. El control que lo habría cazado en la línea
+base es barato y ahora está en el método: **anotar el elemento del LCP junto a cada
+número**. Las corridas decían `h1` en unas y `product-photo` en otras; eso solo no es
+dispersión, es la señal de que no se estaba midiendo lo mismo.
 
 ---
 
@@ -186,7 +231,10 @@ async (page) => {
       try {
         await p.goto(BASE + url, { waitUntil: 'load', timeout: 60000 });
       } catch (e) { out.push({ nombre, run: i, error: String(e).slice(0, 120) }); await ctx.close(); continue; }
-      await p.waitForTimeout(2500);
+      // ⚠️ La ventana depende de la pantalla: tiene que ser MÁS LARGA que su
+      // candidato más lento, o el LCP se corta y se reporta el candidato anterior
+      // (ver hallazgo 5). El listado tiene fotos `lazy`, que `load` no espera.
+      await p.waitForTimeout(nombre === 'listado' ? 12000 : 2500);
       const m = await p.evaluate(() => ({
         lcp: window.__lcp, cls: window.__cls, el: window.__lcpEl,
         shifts: [...new Set(window.__shifts)].slice(0, 5),
@@ -200,7 +248,8 @@ async (page) => {
 }
 ```
 
-Para escritorio, lo mismo con `viewport: { width: 1280, height: 800 }`.
+Para escritorio, lo mismo con `viewport: { width: 1280, height: 800 }` — y la ventana del
+listado sube a **33.000 ms**, porque ahí la foto tarda ~30 s con la red frenada.
 
 ⚠️ **La versión de Chromium es parte del método.** La línea base no la anotó, así que la
 Tarea 8 tiene que **re-medir la base Y el después con el mismo binario, en la misma
@@ -212,4 +261,27 @@ salida correcta es **aislar la variable** (por ejemplo neutralizar el cambio en 
 `dist/` ya construido y volver a medir), no ampliar la muestra hasta que el número entre.
 Ampliar la muestra cambia el método a mitad de camino y hace la comparación incomparable.
 
-## Después del trabajo — pendiente (Tarea 8)
+## Después del trabajo
+
+### Parcial — Tarea 4 (fuentes autohospedadas), 2026-11-09
+
+Medido con **Chromium 156.0.8078.81**, re-midiendo la base Y el después con ese mismo
+binario en la misma sesión (la línea base de arriba se tomó con otro binario, así que sus
+números **no** son comparables con estos de a uno).
+
+| | Antes | Después |
+|---|---|---|
+| **Reflujo del `h1` de la portada** (390×844) | **+37,1 px (33 %)** | **0 px** |
+| CLS portada móvil | 0,0357 | **0,0167 (−53 %)** |
+| Peticiones a Google por carga | 5 (1 CSS + 4 woff2) | **0** |
+| Ventana con la fuente de respaldo en pantalla (portada) | 514 ms | **0 ms** (llega 170 ms antes del primer pintado) |
+| LCP portada | 764 / 748 ms | 792 / 788 ms → **+28 / +40 ms**, bajo el umbral de 50 ms |
+| LCP ficha | 4.120 / 11.452 ms | 4.116 / **11.296** ms |
+| LCP listado (ventana larga) | 9.692 / 30.340 ms | 9.672 / 30.084 ms |
+
+Sin medir, y dicho a propósito: **Android y macOS**. El `size-adjust` se calibró contra
+Arial, que es lo que resuelve en Windows; en Android `local('Arial')` cae a Roboto y la
+corrección es parcial. La propiedad que hace aceptable el riesgo es que **toda rama que
+falle cae a `system-ui` sin ajustar = el comportamiento de hoy**, nunca peor.
+
+### Final — pendiente (Tarea 8)
