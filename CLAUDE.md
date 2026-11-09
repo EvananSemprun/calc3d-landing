@@ -390,6 +390,31 @@ Medido ese día antes de decidir: **13 productos en la API, 3 en el sitemap** �
 respondiendo 404. Un `git push` a este repo las hornea todas; el problema vuelve con el
 siguiente producto. **No reabrir el tema sin que lo pida el dueño.**
 
+**Lo que SÍ llega solo, y conviene no confundir.** Un producto nuevo aparece en la tienda
+sin ningún despliegue: sale en el catálogo (se refresca contra la API al abrir la página)
+y su ficha abre entera por el rescate. Lo ÚNICO que espera un build es que la ruta
+responda **200** en vez de 404 — o sea, la tarjeta de WhatsApp y Google. Si el dueño
+dice «los productos no llegan solos», casi seguro está hablando de eso y no del catálogo.
+
+**Las dos salidas, con el costo medido el 2026-11-09 — y el dueño eligió NINGUNA:**
+
+| Salida | Qué cuesta |
+|---|---|
+| Función de Pages (`functions/producto/[slug].ts`) que sirva la cáscara con las etiquetas del producto | Un push para instalarla y nunca más. No toca dominio ni panel. |
+| Renderizar la ficha en el servidor (`prerender = false`) | ⚠️ **Obliga a mudar la tienda de Pages a Workers.** |
+
+⚠️ **`@astrojs/cloudflare` YA NO SOPORTA CLOUDFLARE PAGES.** Textual de su documentación:
+*«The Astro Cloudflare adapter no longer supports deployment on Cloudflare Pages»* — ahora
+apunta a Workers. O sea que el SSR de la ficha **no es un cambio de código**: es mudar el
+proyecto y llevarse `bananolab-3d.com` de Pages a Workers, con la tienda en vivo y en el
+mismo panel donde el 2026-11-07 ya se creó un Worker por error. Datos para no volver a
+investigarlo: Astro instalado **7.3.8**; `@astrojs/cloudflare@14.3.4` pide astro `^7.2.0`
+(sirve sin subir Astro) y `14.4.x` pide `^7.4.0`.
+
+**Decisión del dueño (2026-11-09, segunda vez): dejarlo como está.** Se le ofrecieron las
+dos y dijo que no. El cliente que navega la tienda ve todo bien; el link pegado en un chat
+muestra «Página no encontrada» hasta el próximo despliegue, y eso está aceptado.
+
 ## Tramos de mayoreo: DOS formas, y el recargo va aparte (2026-11-08)
 
 `lib/precio.ts` **reimplementa** `precioConTramos` (la tienda no importa shared),
