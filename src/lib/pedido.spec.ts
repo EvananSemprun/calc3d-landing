@@ -77,7 +77,8 @@ describe('mensajePedido', () => {
     expect(msg).toContain('soy Evan');
     expect(msg).toContain('2 × Taza');
     expect(msg).toContain('Color: Rojo');
-    expect(msg).toContain('Total: $20.00 USD');
+    // «BCV» y no «USD»: lo publicado esta en dolares BCV, que no es el dolar del costeo.
+    expect(msg).toContain('Total: $20.00 BCV');
     expect(msg).toContain('Bs'); // equivalente a la tasa
   });
 });

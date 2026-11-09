@@ -79,7 +79,7 @@ export function mensajePedido({
   });
   const total = totalPedido(items);
   const quien = nombre ? `soy ${nombre} y ` : '';
-  let msg = `Hola ${info.businessName}, ${quien}quiero hacer este pedido:\n\n${lineas.join('\n')}\n\nTotal: $${total.toFixed(2)} USD`;
+  let msg = `Hola ${info.businessName}, ${quien}quiero hacer este pedido:\n\n${lineas.join('\n')}\n\nTotal: $${total.toFixed(2)} BCV`;
   const alt = equivalenteEnMoneda(total, info.rate);
   if (alt) msg += `\n(≈ ${alt} ${info.rate?.currencyCode} a la tasa de hoy)`;
   return msg;

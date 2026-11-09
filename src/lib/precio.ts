@@ -48,13 +48,28 @@ export interface RenglonPrecio {
  * compilador obligue a decidir en cada llamada es la protección; quien de verdad quiere
  * el precio de lista pasa 0, y así se lee que lo decidió.
  */
+/**
+ * El tramo que CORRESPONDE a esa cantidad: el de mayor `minQty` que no la pase, o
+ * `null` si todavía no llega a ninguno.
+ *
+ * Existe para que la ficha pueda decir «Precio por mayor aplicado» sin adivinarlo
+ * comparando precios: con un tramo por precio fijo el unitario puede quedar IGUAL al de
+ * lista, y comparar daría «no hay tramo» cuando sí lo hay.
+ */
+export function tramoAplicable(
+  qty: number,
+  tiers: readonly TramoPrecio[] | null | undefined,
+): TramoPrecio | null {
+  return (tiers || []).filter((x) => qty >= x.minQty).sort((a, b) => b.minQty - a.minQty)[0] ?? null;
+}
+
 export function precioConTramos(
   baseUnit: number,
   qty: number,
   tiers: readonly TramoPrecio[] | null | undefined,
   recargos: number,
 ): number {
-  const t = (tiers || []).filter((x) => qty >= x.minQty).sort((a, b) => b.minQty - a.minQty)[0];
+  const t = tramoAplicable(qty, tiers);
   if (!t) return baseUnit;
   // El precio fijo reemplaza al de LISTA; los recargos de opción se cobran encima. Si
   // reemplazara todo, a partir del tramo el tamaño grande saldría gratis.

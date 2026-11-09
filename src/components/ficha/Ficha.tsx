@@ -15,7 +15,15 @@ import { Button } from '@/components/ui/button';
 import { agregar as agregarAlCarrito } from '@/lib/carrito';
 import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
 import { fotosDeOpcion } from '@/lib/galeria';
-import { descuentoDeTramo, equivalenteEnMoneda, precioConTramos, totalRenglon } from '@/lib/precio';
+import {
+  descuentoDeTramo,
+  equivalenteEnMoneda,
+  precioConTramos,
+  totalRenglon,
+  tramoAplicable,
+} from '@/lib/precio';
+import { diasDeEntrega, textoDeEntregaElegida } from '@/lib/entrega';
+import { textoDeMinimo } from '@/lib/producto';
 import { pedirUrlDeFoto } from '@/lib/subir-foto';
 import type { InfoApi } from '@/lib/api';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -136,7 +144,14 @@ export default function Ficha({ producto: p, info }: Props) {
     ),
   ].filter(Boolean);
 
-  const hechos = hechosDeFicha(p);
+  // El plazo SIGUE a lo elegido: una opción puede traer sus propios días. Por eso los
+  // hechos se arman acá y no con `hechosDeFicha`, que es para el HTML horneado y no
+  // sabe qué eligió el visitante.
+  const dias = diasDeEntrega(p, elegido);
+  const hechos = [p.catLabel || '', textoDeEntregaElegida(dias) ?? '', textoDeMinimo(p) ?? ''].filter(
+    Boolean,
+  );
+  const tramo = tramoAplicable(cantidad, p.priceTiers);
 
   return (
     <div className="pdp">
@@ -155,15 +170,35 @@ export default function Ficha({ producto: p, info }: Props) {
           </div>
         )}
 
+        {/*
+          El precio grande es el TOTAL de lo que se está por pedir: cantidad, recargos de
+          las opciones y tramo de mayoreo, ya aplicados. Debajo, en chico, el unitario.
+          Antes el grande era el unitario y el total aparecía recién al pasar de 1, así
+          que el visitante no veía lo que iba a pagar hasta sumar.
+
+          «$ BCV» y no «USD»: lo publicado está en dólares BCV, que no es el dólar del
+          costeo (ver CLAUDE.md de la API, «el margen en USDT»).
+        */}
         <div className="pdp-price">
-          ${precioUnit.toFixed(2)}
-          <small> USD{cantidad > 1 && ' c/u'}</small>
-          {equivalente && (
+          ${total.toFixed(2)}
+          {/* «BCV» a secas: el signo ya esta en el numero, y «$1.50 $ BCV» se lee mal. */}
+          <small> BCV</small>
+          {equivalenteTotal && (
             <span className="price-alt">
-              ≈ {equivalente} {info.rate?.currencyCode}
+              ≈ {equivalenteTotal} {info.rate?.currencyCode}
             </span>
           )}
         </div>
+        <p className="pdp-unit dim">
+          ${precioUnit.toFixed(2)} c/u
+          {equivalente && (
+            <span className="price-alt-inline">
+              {' '}
+              (≈ {equivalente} {info.rate?.currencyCode})
+            </span>
+          )}
+          {tramo && <strong className="pdp-mayoreo"> · Precio por mayor aplicado</strong>}
+        </p>
 
         {p.priceTiers.length > 0 && (
           <table className="pdp-tiers">
@@ -212,12 +247,7 @@ export default function Ficha({ producto: p, info }: Props) {
         </div>
         {cantidad > 1 && (
           <p className="pdp-total">
-            {cantidad} × ${precioUnit.toFixed(2)} = <strong>${total.toFixed(2)}</strong> USD
-            {equivalenteTotal && (
-              <span className="price-alt">
-                ≈ {equivalenteTotal} {info.rate?.currencyCode}
-              </span>
-            )}
+            {cantidad} × ${precioUnit.toFixed(2)} = <strong>${total.toFixed(2)}</strong> BCV
           </p>
         )}
         {error && (

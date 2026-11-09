@@ -17,6 +17,11 @@ export interface OpcionApi {
   value: string;
   priceDeltaUsd?: number;
   swatchHex?: string | null;
+  /**
+   * Días de entrega PROPIOS de esta opción, cuando elegirla cambia el plazo.
+   * Ausente o `null` = no lo cambia y manda el del producto (ver `diasDeEntrega`).
+   */
+  leadTimeDays?: number | null;
   /** Fotos propias de la opción (solo cuentan si el grupo `drivesPhoto`). */
   images?: FotoApi[];
 }

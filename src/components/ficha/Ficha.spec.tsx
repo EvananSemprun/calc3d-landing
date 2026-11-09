@@ -94,12 +94,35 @@ describe('Ficha — el total se mueve con la cantidad', () => {
     expect(total()?.textContent).toContain('$12.45');
   });
 
-  it('el precio grande se declara POR UNIDAD en cuanto hay más de una', () => {
+  it('el precio grande es el TOTAL, y el unitario va debajo (2026-11-09)', () => {
+    // Antes el grande era el unitario y el total aparecía recién al pasar de 1, así que
+    // el visitante no veía lo que iba a pagar hasta sumar.
     render(<Ficha producto={producto()} info={info} />);
-    expect(document.querySelector('.pdp-price')?.textContent).not.toContain('c/u');
+    const grande = () => document.querySelector('.pdp-price')?.textContent ?? '';
+    const unitario = () => document.querySelector('.pdp-unit')?.textContent ?? '';
+
+    expect(grande()).toContain('$1.50');
+    expect(unitario()).toContain('$1.50 c/u');
 
     fireEvent.click(mas());
-    expect(document.querySelector('.pdp-price')?.textContent).toContain('c/u');
+    expect(grande()).toContain('$3.00');
+    expect(grande()).not.toContain('c/u');
+    expect(unitario()).toContain('$1.50 c/u');
+  });
+
+  it('el precio dice «$ BCV», que es la moneda publicada, y no «USD»', () => {
+    render(<Ficha producto={producto()} info={info} />);
+    expect(document.querySelector('.pdp-price')?.textContent).toContain('BCV');
+    expect(document.querySelector('.pdp-price')?.textContent).not.toContain('USD');
+  });
+
+  it('avisa cuando el precio que se está mostrando ya es el de mayoreo', () => {
+    render(<Ficha producto={producto({ minQty: 9 })} info={info} />);
+    const unitario = () => document.querySelector('.pdp-unit')?.textContent ?? '';
+    expect(unitario()).not.toContain('mayor');
+
+    fireEvent.click(mas()); // la décima entra en el tramo
+    expect(unitario()).toContain('Precio por mayor aplicado');
   });
 
   it('bajar no perfora el mínimo del producto', () => {
@@ -113,7 +136,7 @@ describe('Ficha — el total se mueve con la cantidad', () => {
     expect(total()?.textContent).toContain('$9.00');
   });
 
-  it('el equivalente en bolívares acompaña al total, no al unitario solo', () => {
+  it('el equivalente en bolívares acompaña al TOTAL grande', () => {
     render(
       <Ficha
         producto={producto()}
@@ -121,7 +144,43 @@ describe('Ficha — el total se mueve con la cantidad', () => {
       />,
     );
     fireEvent.click(mas());
-    // 2 × 1.50 = 3.00 USD -> 600 Bs
-    expect(total()?.textContent).toContain('600');
+    // 2 × 1.50 = 3.00 -> 600 Bs
+    expect(document.querySelector('.pdp-price')?.textContent).toContain('600');
+  });
+
+  it('el plazo cambia al elegir una opción que tarda más (2026-11-09)', () => {
+    // La cuenta vive en `diasDeEntrega` y ya tiene sus tests; lo que se fija acá es que
+    // la PANTALLA use la elección. Volver a `hechosDeFicha(p)` deja los 8 de función
+    // pura en verde y la ficha prometiendo el plazo del producto.
+    render(
+      <Ficha
+        producto={producto({
+          ship: '2 días',
+          leadTimeDays: 2,
+          optionGroups: [
+            {
+              name: 'Tamaño',
+              required: true,
+              options: [{ value: '15 cm' }, { value: '30 cm', leadTimeDays: 5 }],
+            },
+          ],
+        } as Partial<ProductoVitrina>)}
+        info={info}
+      />,
+    );
+    expect(screen.getByText(/Listo en 2 días/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '30 cm' }));
+    expect(screen.getByText(/Listo en 5 días/)).toBeTruthy();
+    expect(screen.queryByText(/Listo en 2 días/)).toBeNull();
+  });
+
+  it('sin tasa configurada NO muestra un bolívar inventado', () => {
+    // ⚠️ Hoy la API devuelve `rate: null` en producción. Un «≈ 0 Bs» sería peor que
+    // no decir nada.
+    render(<Ficha producto={producto()} info={{ ...info, rate: null }} />);
+    const grande = document.querySelector('.pdp-price')?.textContent ?? '';
+    expect(grande).not.toContain('≈');
+    expect(grande).toContain('$1.50');
   });
 });

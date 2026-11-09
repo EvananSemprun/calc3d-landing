@@ -781,6 +781,15 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     color: var(--text-dim);
     font-weight: 400;
   }
+  /* El unitario, debajo del total grande. Discreto: lo primero que el visitante tiene
+     que leer es lo que va a pagar, no el precio por unidad. */
+  .pdp-unit {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+  .pdp-unit .price-alt-inline { color: var(--text-dim); font-weight: 400; }
+  /* El aviso de mayoreo va en el color de marca: es una buena noticia, no una nota al pie. */
+  .pdp-mayoreo { color: var(--yellow); font-weight: 600; }
   .pdp-lead { font-size: 17px; }
 
   .pdp-opt-group { display: flex; flex-direction: column; gap: 10px; }
