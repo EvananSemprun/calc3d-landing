@@ -24,19 +24,19 @@ import { bloques, bloquesAt, sinComentarios } from './test/css';
  * 1. **Ninguna referencia a Google.** Volver a pegar el `<link>` del CSS de Google es un
  *    copiar y pegar de cualquier tutorial, y el sitio sigue funcionando igual de bien:
  *    nada se rompe, solo vuelven las 5 peticiones a otro dominio.
- * 2. **UNA sola precarga.** Precargar los seis pesos es pelearse por el ancho de banda
- *    justo en el instante que define el LCP, y encima dos de los seis (500 y 800) la
- *    portada **no los descarga**: quedan `unloaded` en `document.fonts`.
- * 3. **La precarga sale de un `import … ?url`, no de una ruta escrita a mano.** Vite
- *    emite UN activo con hash por archivo: con el `import`, la precarga y el `url()` del
- *    `@font-face` apuntan al mismo, y con una ruta a mano serían **dos descargas** del
- *    mismo woff2 — más tráfico que antes, sin un solo error.
- * 4. **Ningún `@font-face` con `font-display: block`.** Es un modo de falla propio y
+ * 2. **NINGUNA precarga de fuente**, y es lo contrario de lo que dice la intuición: se
+ *    probó y el primer pintado dio igual o peor (los números y el método, en el `describe`
+ *    correspondiente). No hace falta adelantar la descarga, porque el punto 4 hace que
+ *    esperarla no cueste nada.
+ * 3. **Ningún `@font-face` con `font-display: block`.** Es un modo de falla propio y
  *    PEOR que el salto: deja el texto **invisible** hasta que llega la fuente, y el que
  *    define el LCP es texto.
- * 5. **La familia de respaldo con overrides de métrica, y METIDA EN LA PILA.** Declarar
+ * 4. **La familia de respaldo con overrides de métrica, y METIDA EN LA PILA.** Declarar
  *    el `@font-face` ajustado y olvidarse de nombrarlo en `--font-sans`/`--font-display`
  *    es un no-op perfectamente silencioso: el salto vuelve entero.
+ * 5. **Los 6 pesos declarados.** No cuesta tráfico: el navegador baja solo las caras que
+ *    la página usa — medido, la portada descarga 4 (400, 600, 700 y 900) y el 500 y el 800
+ *    quedan `unloaded` en `document.fonts`.
  *
  * ⚠️ Los números de los overrides NO se tocan sin volver a medirlos: de dónde salen está
  * escrito en el comentario de `global.css`, junto al bloque.
@@ -51,14 +51,6 @@ const BLOQUES = bloques(sinComentarios(CSS));
 
 /** Los 6 pesos que el sitio declara (`global.css` + `font-medium`/`font-semibold`). */
 const PESOS = [400, 500, 600, 700, 800, 900];
-
-/**
- * Los pesos que la portada DESCARGA de verdad, medidos con `document.fonts` el
- * 2026-11-09. ⚠️ 500 y 800 están declarados pero quedan `unloaded`: una precarga
- * apuntando a uno de esos dos gasta ancho de banda en algo que la primera pantalla no
- * pinta.
- */
-const PESOS_DE_LA_PRIMERA_PANTALLA = [400, 600, 700, 900];
 
 /** El dominio del que no tiene que quedar ni rastro. Partido para que no se encuentre a sí mismo. */
 const GOOGLE = new RegExp(['fonts', '\\.', '(googleapis|gstatic)', '\\.', 'com'].join(''));
@@ -202,50 +194,51 @@ describe('Poppins no viene de Google', () => {
   });
 });
 
-describe('la precarga de la fuente', () => {
-  it('es EXACTAMENTE una', () => {
-    const deFuente = precargas().filter((p) => /as="font"/.test(p));
-    expect(deFuente).toHaveLength(1);
+/**
+ * ⚠️ NO HAY PRECARGA DE FUENTE, Y ES UNA DECISIÓN MEDIDA (2026-11-09).
+ *
+ * Se probó precargar el woff2 del peso 900 (el del `h1`) y el primer pintado dio **igual o
+ * peor**: el woff2 va en prioridad alta y le roba ancho de banda al CSS que bloquea el
+ * pintado. Red a 150 ms / 1,6 Mbps, mediana de 5, las DOS ramas por la misma intercepción
+ * para que su costo se cancele:
+ *
+ *     portada móvil        LCP 664 con · 612 sin  (−52 ms)   FCP 568 · 528
+ *     portada escritorio   LCP 624 con · 612 sin  (−12 ms)   FCP 572 · 532
+ *     y sin interceptar ninguna rama: móvil 792 · 772 · escritorio 788 · 712 (−76 ms)
+ *
+ * Lo único que compraba era cerrar la ventana de ~540 ms en la que se ve la familia de
+ * respaldo en vez de Poppins — que con los overrides de métrica **ya no mueve nada** (0 px
+ * de salto). Cambiar primer pintado real por un parpadeo de tipografía que no desplaza nada
+ * es el negocio al revés.
+ *
+ * ⚠️ **El número que NO hay que repetir: −150/−220 ms.** Una medición anterior lo dio y era
+ * del arnés: comparaba una rama interceptada con Playwright contra una sin interceptar, y
+ * `route.fulfill` entrega el documento **sin** el freno de red (misma página, mismo
+ * momento: `responseEnd` 21 ms interceptado vs 265 ms sin interceptar; FCP 536 vs 664, sin
+ * solaparse). La intercepción REGALA ~130 ms, no los cobra.
+ *
+ * ⚠️ Estos tests cuidan la AUSENCIA, que es más fácil de deshacer que una presencia:
+ * «precargá la fuente del LCP» es el consejo de todas las guías de rendimiento, así que
+ * alguien la va a querer reponer. Por eso los números están acá y en `Base.astro`: para que
+ * lea que se midió y en qué condiciones. Si vuelve a medirse y el resultado cambia (otra
+ * red, otro CSS crítico, HTTP/3), rehacer la medición es el camino correcto — cambiar el
+ * test sin medir, no.
+ */
+describe('la precarga de fuente se quitó a propósito (medido: igual o peor con ella)', () => {
+  it('no hay NINGUNA precarga de fuente en el layout', () => {
+    expect(precargas().filter((p) => /as="font"/.test(p))).toEqual([]);
   });
 
-  it('no se precarga ningún otro woff2 por otro camino', () => {
-    // El invariante es «una sola precarga de FUENTE», no «ninguna precarga de nada»: la
-    // portada MÓVIL tiene por elemento del LCP a `hero-art`, una imagen, y precargarla
-    // sería una mejora legítima de otra tarea — que se encontraría con un rojo cuyo
-    // nombre se lee como una prohibición deliberada. Lo que no puede volver es un segundo
-    // woff2 precargado colado con otro `as`.
-    const otras = precargas().filter((p) => !/as="font"/.test(p));
-    expect(otras.filter((p) => /\.woff2?\b/.test(p))).toEqual([]);
+  it('no se precarga ningún woff2 por otro camino', () => {
+    // Con otro `as` (o sin `as`) la precarga igual se dispara: lo que no puede volver es
+    // la DESCARGA adelantada, no una etiqueta con una forma concreta.
+    expect(precargas().filter((p) => /\.woff2?\b/.test(p))).toEqual([]);
   });
 
-  it('lleva `type="font/woff2"` y `crossorigin`', () => {
-    const [p] = precargas().filter((e) => /as="font"/.test(e));
-    expect(p, 'no hay precarga de fuente').toBeTruthy();
-    // Sin `crossorigin` el navegador DESCARTA la precarga y vuelve a pedir el archivo:
-    // una fuente se pide siempre en modo CORS anónimo.
-    expect(p).toMatch(/crossorigin/);
-    expect(p).toMatch(/type="font\/woff2"/);
-  });
-
-  it('apunta a un peso que la primera pantalla pinta de verdad', () => {
-    const [imp] = importesDeWoff2();
-    expect(imp, 'no hay ningún `import … .woff2?url`').toBeTruthy();
-    expect(PESOS_DE_LA_PRIMERA_PANTALLA).toContain(imp.peso);
-  });
-
-  it('usa el `import … ?url` y no una ruta escrita a mano', () => {
-    const importes = importesDeWoff2();
-    expect(importes).toHaveLength(1);
-    const [p] = precargas().filter((e) => /as="font"/.test(e));
-    // `href={nombreDelImport}`: una cadena a mano haría que Vite emita el activo con
-    // hash para el CSS y la precarga pida OTRA URL = el mismo woff2 dos veces.
-    expect(p).toContain(`href={${importes[0].nombre}}`);
-  });
-
-  it('el woff2 que precarga existe en `node_modules`', () => {
-    const [imp] = importesDeWoff2();
-    const ruta = join(RAIZ, 'node_modules', imp.especificador.replace(/\?url$/, ''));
-    expect(existsSync(ruta), `no existe ${imp.especificador}`).toBe(true);
+  it('el layout no importa ningún woff2 (ni con `?url`)', () => {
+    // El `import … .woff2?url` existía solo para darle la URL con hash a la precarga.
+    // Sin consumidor es código muerto, y es el camino por el que la precarga volvería.
+    expect(importesDeWoff2()).toEqual([]);
   });
 });
 
