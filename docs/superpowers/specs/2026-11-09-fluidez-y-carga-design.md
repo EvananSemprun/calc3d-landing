@@ -381,30 +381,97 @@ servirlo con `pnpm preview` y medir ahí, con el umbral de la §8. No hace falta
 tienda esté desplegada: los commits quedan en `main` sin push, y el dueño publica cuando
 quiera (§10).
 
-1. **Endurecer la guardia de movimiento.** La del panel (`index.css:282`) es la versión
-   vieja: **no neutraliza los retardos**. La de la tienda sí, y lo hace porque un bug real
-   (un panel que salía de pantalla al instante pero seguía 300 ms enfocable) lo obligó.
-   Portar la versión endurecida, y revisar si al panel le falta también el equivalente de
-   `hover-con-reduce.spec.ts`.
-2. **Las fotos del panel.** `StoreBanners` ya usa `aspect-[16/9]`: ése es el patrón.
-   Revisar `Store.tsx:272`, `StoreProductDetail.tsx:543` y `:1026`,
-   `StoreRequests.tsx:244` y `BusinessLogo.tsx:97` — **leyendo la clase, no el JSX**
-   (§1).
-3. **Fuentes autohospedadas**: Bricolage Grotesque (variable), Hanken Grotesk y JetBrains
-   Mono. Tres familias es el caso más caro de los dos repos; contar los pesos que el CSS
-   usa de verdad antes de empaquetar nada.
-4. **Huecos de skeleton.** Pantallas sin ninguno hoy: `Calculator`, `Calendar` y
-   `Filament` (las de autenticación quedan fuera; `Filament` quizá esté cubierto por sus
-   pestañas, hay que mirar). Hay **35 archivos** con `isLoading`/`isPending`: ver cuáles
-   resuelven con un skeleton y cuáles no muestran nada mientras esperan.
-5. **El loader de arranque** (`App.tsx:49`): un cuadrado amarillo pulsando mientras
-   resuelve la sesión. Se queda, pero se convierte en el esqueleto del armazón (barra
-   lateral + barra superior), que es lo que viene después, y se le pone `role="status"` —
-   hoy el `aria-label` va en un `div` sin rol y el lector de pantalla no lo anuncia de
-   forma confiable.
-6. **Tokens de movimiento**, al final y con el mismo criterio de §5.5: unificar lo que
-   hay. El panel tiene `motion` instalado: se usa donde ya está, no se extiende a lo que
-   CSS resuelve.
+⚠️ **Verificado contra el código el 2026-11-09, antes de escribir el plan.** Los seis
+puntos de abajo se escribieron a partir de una auditoría anterior y **tres estaban mal, los
+tres en la dirección de que hay MENOS trabajo del que yo creía**. Lo que sigue son los
+puntos corregidos, con la evidencia al lado. Las rutas son relativas a `apps/web/` (el panel
+es un monorepo pnpm: el panel en `apps/web`, más un `packages/shared`).
+
+1. **Endurecer la guardia de movimiento.** Confirmado: `src/index.css:281-291` neutraliza
+   `animation-duration`, `animation-iteration-count`, `transition-duration` y
+   `scroll-behavior`, y **no toca los retardos** (`grep delay src/index.css` no da nada).
+   La de la tienda sí, y lo hace porque un bug real (un panel que salía de pantalla al
+   instante pero seguía 300 ms enfocable) lo obligó. Portar la versión endurecida.
+   - ⚠️ **No existe ningún test que vigile esa guardia.** De 37 specs del panel, ninguno
+     usa `matchMedia` ni menciona `prefers-reduced-motion`. El equivalente de
+     `hover-con-reduce.spec.ts` **hay que escribirlo**, no adaptarlo.
+   - ✅ **La mitad de JS ya está hecha**: `useReducedMotion` de `motion` se usa en
+     `AnimatedBackground.tsx`, `effects.tsx` y `ui.tsx`. Lo que está viejo es el CSS.
+
+2. ~~**Las fotos del panel.**~~ **FUERA DE ALCANCE: ya reservan todas.** Verificado
+   leyendo **la clase y el contenedor**, no el JSX: `Store.tsx:270` y
+   `StoreProductDetail.tsx:541` usan `aspect-square` en el padre;
+   `StoreProductDetail.tsx:1024` usa `h-12 w-12`; `StoreRequests.tsx:247` tiene
+   `h-16 w-16` en el `<img>`; `BusinessLogo.tsx:95` reserva en el padre con `h-24 w-56`.
+   Ninguno de los cinco tiene `width`/`height` en el `<img>` **y eso no cambia el
+   veredicto** — exactamente el error que cometí en la fase 1 y que esta vez verifiqué
+   antes. El trabajo acá se reduce a no romper lo que ya está bien.
+
+3. **Fuentes autohospedadas — el ítem más caro de los dos repos, y el más caro de lo que
+   decía.** Las tres familias se cargan hoy **desde Google Fonts**, por `<link>` en
+   `index.html:38-43` (dos `preconnect` + un `stylesheet`), sin ningún `@font-face` ni
+   `@import` propio. Pesos pedidos en esa URL, **once declaraciones en tres familias**:
+   - Bricolage Grotesque: variable en el eje `opsz` 12..96, con **500, 600, 700 y 800**
+   - Hanken Grotesk: **400, 500, 600, 700**
+   - JetBrains Mono: **500, 600, 700**
+
+   ⚠️ `index.css` **no declara pesos** (no hay `font-weight` ni `@font-face`): los únicos
+   pesos declarados son los de la URL. Antes de empaquetar nada hay que **medir cuáles se
+   descargan de verdad** (`document.fonts`), como en la fase 1, donde el CSS declaraba 6 y
+   la portada bajaba 4. Y los overrides de métrica son tres juegos, no uno.
+
+4. **Huecos de skeleton — `Filament` NO es uno de ellos.** Verificado: sus tres pestañas
+   ya resuelven (`AnalysisTab.tsx:29` con `<PageSkeleton />`, `PurchasesTab.tsx:101` y
+   `StockTab.tsx:538` con `<TableSkeleton />`). Los huecos reales son dos:
+   - **`Calculator`**: `CalculatorProvider.tsx:125-126` toma solo `data` de `useSettings()`
+     y `useCatalogData()`, nunca `isLoading`. Mientras espera, la pantalla se pinta con
+     valores por defecto.
+   - **`Calendar`**: `Calendar.tsx:20` hace `const { data: orders = [] } = useOrders()`.
+     ⚠️ **Esto es peor que no tener skeleton: muestra un calendario VACÍO**, o sea
+     información falsa («no tienes pedidos») mientras en realidad está cargando. Es el
+     ítem de más valor de toda la fase 2.
+
+   **35 archivos** usan `isLoading`/`isPending` (28 con `isLoading`, 20 con `isPending`,
+   ninguno es spec). Ver cuáles resuelven con un skeleton y cuáles no muestran nada.
+
+5. **El loader de arranque** (`App.tsx:44-54`): confirmado tal cual. Un `div` de
+   `h-8 w-8 animate-pulse` con `aria-label="Cargando"` **y sin `role`**, así que el lector
+   de pantalla no lo anuncia de forma confiable. Se queda, pero se convierte en el
+   esqueleto del armazón (barra lateral + barra superior), que es lo que viene después, y
+   se le pone `role="status"`.
+
+6. **Tokens de movimiento: no hay NADA que unificar.** Corregido: el panel **no tiene
+   ningún token** de duración o easing (`grep -- "--dur\|--duration\|--ease"` sobre `src`
+   y `tailwind.config.js` da cero). Lo más parecido son tres animaciones con duración y
+   easing escritos en línea en `tailwind.config.js:115-118` (`shimmer 2.5s`,
+   `glow-pulse 2.4s`, `gradient-pan 8s`), que no son reutilizables.
+
+   Así que esto **no es «unificar lo que hay» sino decidir si se introducen tokens**, que
+   es otra tarea y de otro tamaño. ⚠️ Y la lección de la fase 1 aplica en contra de
+   crearlos a ciegas: allá se borró un `--dur-rapida` por no tener usos, y volvió **solo**
+   cuando se midió que tenía 17. Acá hay que medir primero los valores reales que usa el
+   panel y que el conjunto de tokens salga de esa medición, no al revés.
+
+   `motion` (**v11.18.2**, el paquete `motion`, no `framer-motion`) se importa en 6
+   archivos: se usa donde ya está, no se extiende a lo que CSS resuelve.
+
+### Lo que la verificación cambió, en una línea
+
+De seis ítems, **uno desaparece** (las fotos ya reservan), **uno se achica** (`Filament` ya
+está cubierto), **uno crece** (las fuentes: tres familias, once pesos, y hay que medir
+cuáles bajan de verdad) y **uno cambia de naturaleza** (no hay tokens que unificar: hay que
+decidir si se crean). Los otros dos quedaron confirmados tal cual.
+
+### Cómo se prueba el panel (verificado, y el patrón de la fase 1 se transfiere)
+
+`apps/web/vitest.config.ts` tiene **dos proyectos y los dos corren** con `vitest run`:
+`node` toma `src/**/*.spec.ts` y `dom` toma `src/**/*.spec.tsx` con jsdom. **El entorno lo
+decide la extensión**, igual que en la tienda — así que la regla de la fase 1 vale acá sin
+cambios: lo que mide CSS o geometría va en un `.spec.ts` leyendo el texto del CSS, nunca en
+un `.spec.tsx`.
+
+⚠️ `packages/shared` usa **Jest**, no vitest. `pnpm -r test` desde la raíz corre los dos,
+pero `pnpm --filter @calc3d/web test` deja a `shared` afuera.
 
 ---
 
