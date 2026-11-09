@@ -31,7 +31,8 @@ export function sinComentarios(css: string): string {
 export const normalizar = (s: string) => s.trim().replace(/\s+/g, ' ');
 
 export interface Regla {
-  /** El selector tal cual se escribió (puede ser una lista con comas), normalizado. */
+  /** El selector tal cual se escribió (puede ser una lista con comas), normalizado.
+      En un bloque `@…` es el at-rule con su prelude (`@font-face`, `@theme inline`). */
   selector: string;
   /** Los selectores de esa lista, uno por uno. */
   selectores: string[];
@@ -41,23 +42,32 @@ export interface Regla {
   desde: number;
   /** Los `@…` que la envuelven, de afuera hacia adentro (`@layer components`, `@media …`). */
   envoltorios: string[];
+  /** `true` si la cabecera empieza con `@`: es un bloque at-rule, no una regla. */
+  at: boolean;
 }
 
 /**
- * Las reglas del CSS, con el contexto que las envuelve.
+ * TODOS los bloques con llaves del CSS —reglas y at-rules— con el contexto que los
+ * envuelve.
  *
  * Recorre con una **pila** y no con una regex porque lo que hace falta saber es si la
  * regla está DENTRO de un `@layer`, y eso solo se sabe contando llaves: un `@layer`
  * contiene reglas, y una regex de `([^{}]+)\{([^{}]*)\}` encuentra la regla pero pierde
  * quién la envuelve.
  *
- * ⚠️ **Corta la cabecera en `;`** cuando lo que está abierto no es una regla. Sin eso, un
- * at-rule SIN bloque (`@import "x";`, `@charset`) se pega al selector de la regla
- * siguiente y esa regla **desaparece** del resultado: el guardián dejaría de verla y
- * saldría verde. Dentro del cuerpo de una regla el `;` no corta nada, que es donde separa
- * declaraciones.
+ * ⚠️ **Corta la cabecera en `;` SOLO en el nivel de arriba.** Sin eso, un at-rule sin
+ * bloque (`@import "x";`, `@charset`, `@custom-variant …;`) se pega al selector de la
+ * regla siguiente y esa regla **desaparece** del resultado: el guardián dejaría de verla
+ * y saldría verde. Dentro de cualquier bloque abierto el `;` no corta nada, que es donde
+ * separa declaraciones — y eso vale igual para un `@font-face` o un `@theme`, que
+ * contienen declaraciones y no reglas.
+ *
+ * ⚠️ **Límite conocido:** el `cuerpo` de un at-rule que contiene REGLAS (`@layer`,
+ * `@media`) no sirve — se reinicia con el `}` de cada regla de adentro, así que solo
+ * recoge lo que haya después de la última. Los que importan (`@font-face`, `@theme`,
+ * `@property`) contienen declaraciones y sí quedan completos.
  */
-export function reglas(css: string): Regla[] {
+export function bloques(css: string): Regla[] {
   const salida: Regla[] = [];
   /** Lo abierto, de afuera hacia adentro. `at` distingue un envoltorio de una regla. */
   const pila: { at: boolean; sel: string; desde: number }[] = [];
@@ -71,7 +81,6 @@ export function reglas(css: string): Regla[] {
 
   for (let i = 0; i < css.length; i++) {
     const ch = css[i];
-    const dentroDeRegla = pila.length > 0 && !pila[pila.length - 1].at;
 
     if (ch === '{') {
       const texto = normalizar(cabeza);
@@ -79,17 +88,18 @@ export function reglas(css: string): Regla[] {
       reiniciar();
     } else if (ch === '}') {
       const abierto = pila.pop();
-      if (abierto && !abierto.at) {
+      if (abierto) {
         salida.push({
           selector: abierto.sel,
           selectores: abierto.sel.split(',').map(normalizar).filter(Boolean),
           cuerpo: normalizar(cabeza),
           desde: abierto.desde,
           envoltorios: pila.filter((p) => p.at).map((p) => p.sel),
+          at: abierto.at,
         });
       }
       reiniciar();
-    } else if (ch === ';' && !dentroDeRegla) {
+    } else if (ch === ';' && pila.length === 0) {
       reiniciar();
     } else {
       if (inicio < 0 && ch.trim() !== '') inicio = i;
@@ -97,6 +107,21 @@ export function reglas(css: string): Regla[] {
     }
   }
   return salida;
+}
+
+/** Las reglas del CSS: los bloques que NO son at-rules. */
+export function reglas(css: string): Regla[] {
+  return bloques(css).filter((b) => !b.at);
+}
+
+/**
+ * Los bloques de un at-rule, por nombre (`'@font-face'`, `'@theme'`).
+ *
+ * Compara la primera palabra de la cabecera, así que `@theme` también encuentra
+ * `@theme inline`.
+ */
+export function bloquesAt(todos: Regla[], nombre: string): Regla[] {
+  return todos.filter((b) => b.at && b.selector.split(' ')[0] === nombre);
 }
 
 /** Las reglas que apuntan a `sel` (su lista de selectores lo incluye, exacto). */

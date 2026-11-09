@@ -2,13 +2,119 @@
 @import "tw-animate-css";
 @import "../lib/tokens.css";
 
+/* ============================================================
+   POPPINS AUTOHOSPEDADA (@fontsource/poppins 5.3.0) — 2026-11-09
+
+   Los 6 pesos que declara el sitio, solo el subconjunto `latin`. Antes los pedía
+   `Base.astro` a Google Fonts: **5 peticiones a otro dominio** en una carga de
+   portada (1 de CSS + 4 woff2), y el elemento del LCP de la portada y del listado ES el
+   `h1` — texto. O sea que lo primero que se ve esperaba un CSS y una fuente de un tercero.
+
+   Se declaran los 6 aunque la portada solo descargue 4 (400, 600, 700 y 900; el 500 y el
+   800 quedan `unloaded`): el navegador baja únicamente las caras que una página usa, así
+   que declarar de más no cuesta tráfico. La precarga, en cambio, sí: va UNA sola y está
+   en `Base.astro`.
+
+   `@fontsource` trae `font-display: swap` en cada cara. Eso no se cambia a `block`
+   NUNCA: dejaría el texto invisible hasta que llegue la fuente, y el que define el LCP es
+   texto. Lo vigila `src/fuentes.spec.ts`.
+   ============================================================ */
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
+@import "@fontsource/poppins/latin-800.css";
+@import "@fontsource/poppins/latin-900.css";
+
+/* ---------- La familia de respaldo, con las métricas de Poppins ----------
+   Mientras Poppins viaja, el texto se pinta con el respaldo del sistema y **salta** al
+   llegar. Medido el 2026-11-09 a 390 px de ancho: el `h1` de la portada pasaba de
+   **111,2 px de alto con el respaldo a 148,3 px con Poppins — +37,1 px (33 %)**, que es
+   exactamente una línea más (`line-height: 1.03` × 36 px): Poppins es más ancha y el
+   título envuelve en una línea más. El resto del texto medido no se movía.
+
+   Esta familia intermedia toma las glifas de una fuente del sistema y las ESCALA para que
+   ocupen lo mismo que Poppins, así el reflujo desaparece.
+
+   DE DÓNDE SALE CADA NÚMERO (todo medido el 2026-11-09, nada copiado de un blog):
+
+   1. **Las métricas verticales, del `woff2` instalado** (`fontTools` sobre
+      `files/poppins-latin-*-normal.woff2`, idénticas en los 6 pesos; Poppins 4.004):
+      `unitsPerEm` 1000 · `hhea.ascender` 1050 · `hhea.descender` −350 · `hhea.lineGap` 100
+      (`OS/2` typo da lo mismo y `USE_TYPO_METRICS` está puesto, así que no hay ambigüedad
+      sobre cuál juego usa el navegador). Verificado: una caja con `line-height: normal` y
+      Poppins mide exactamente (1050+350+100)/1000 = 150 % del tamaño de fuente.
+
+   2. ⚠️ **Los overrides van DIVIDIDOS por el `size-adjust`**, y esto NO es un detalle de
+      estilo: `size-adjust` escala también las métricas sobreescritas. Medido con los tres
+      candidatos a la vez, caja de 100 px y `line-height: normal`, contra los 150 px de
+      Poppins: crudos (105/35/10) → **154 px**; divididos → **150 px** ✓. Escribirlos
+      crudos AGREGA 4 px de salto en vez de quitarlo.
+
+   3. **Los dos `size-adjust`, barriendo y midiendo** (no de la razón de anchos a secas):
+      se probaron 100–150 % en las 3 pantallas × 390 px y 1280 px, midiendo cuánto se
+      desplaza cada elemento **que está en la primera pantalla** al cambiar de Poppins al
+      respaldo. Resultado (suma de los 6 escenarios): hoy **74 px** desplazados con un
+      peor caso de **37,1 px**; con 104 %/123 % → **0 px en los 6**. Por eso 123 % y no
+      el 114 % que daría dividir anchos: con 114 % el `h1` sigue envolviendo una línea
+      menos que Poppins y el salto queda igual que antes. Se eligió el valor que reproduce
+      el NÚMERO DE LÍNEAS, que es lo que se ve.
+
+   ⚠️ LÍMITES, para que el próximo no crea que estos números son universales:
+   - **Están calibrados contra Arial**, que se nombra explícitamente en vez de dejar
+     `system-ui`: un `size-adjust` solo tiene sentido contra UN juego de anchos concreto, y
+     `system-ui` es Segoe UI en Windows, San Francisco en macOS y Roboto en Android — tres
+     anchos distintos, y un número bueno para uno **agrega** salto en otro. Arial es el
+     mismo archivo en Windows y macOS, y Liberation Sans (Linux) es métricamente
+     compatible, así que es el respaldo más predecible que existe.
+   - **En Android `local('Arial')` resuelve a Roboto**, que es más angosta, así que allá la
+     corrección es PARCIAL. No se pudo medir: Roboto no está instalada en la máquina donde
+     se midió (comprobado — una familia inventada mide exactamente lo mismo que 'Roboto'),
+     y escribir un número sin medirlo es justo lo que agrega salto.
+   - **Si una rama no existe, se cae a `system-ui` sin ajustar = lo de hoy.** El peor caso
+     de todo esto es «no mejora», nunca «empeora».
+   - Los `size-adjust` se eligieron contra los títulos que el sitio tiene HOY. Si cambian
+     mucho los textos de los `h1`/`h2`, hay que volver a barrer: el método está arriba.
+
+   Dos caras y no una porque el respaldo rinde las MISMAS glifas en todos los pesos (una
+   fuente estática con rango declarado no se emboldece sola), mientras Poppins Black es
+   mucho más ancha que Poppins Regular: con un solo número, el que sirve para los títulos
+   ensancha el texto corrido y le suma una línea al párrafo largo de la ficha. Los rangos
+   cubren 100–1000 sin huecos a propósito: un peso fuera de rango se caería a `system-ui`
+   sin ajustar. */
+@font-face {
+  font-family: 'Poppins respaldo';
+  font-weight: 100 600;
+  font-style: normal;
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 104%;
+  ascent-override: 100.9615%;  /* 1050/1000 / 1.04 */
+  descent-override: 33.6538%;  /*  350/1000 / 1.04 */
+  line-gap-override: 9.6154%;  /*  100/1000 / 1.04 */
+}
+@font-face {
+  font-family: 'Poppins respaldo';
+  font-weight: 700 1000;
+  font-style: normal;
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 123%;
+  ascent-override: 85.3659%;   /* 1050/1000 / 1.23 */
+  descent-override: 28.4553%;  /*  350/1000 / 1.23 */
+  line-gap-override: 8.1301%;  /*  100/1000 / 1.23 */
+}
+
 /* El sitio es oscuro siempre: `dark:` de shadcn se activa con la clase en <html>. */
 @custom-variant dark (&:is(.dark *));
 
 /* Tokens de shadcn -> utilidades de Tailwind (bg-primary, text-muted-foreground...). */
 @theme inline {
-  --font-sans: 'Poppins', system-ui, sans-serif;
-  --font-display: 'Poppins', system-ui, sans-serif;
+  /* ⚠️ `'Poppins respaldo'` TIENE que estar acá, entre Poppins y `system-ui`: declarar su
+     `@font-face` (arriba) y olvidarse de nombrarlo en la pila es un no-op perfectamente
+     silencioso —nada falla, el build sale verde— y el salto de 37,1 px vuelve entero.
+     `system-ui` se queda al final como última red: si la máquina no tiene ninguna de las
+     locales del respaldo, se comporta como antes de este cambio. */
+  --font-sans: 'Poppins', 'Poppins respaldo', system-ui, sans-serif;
+  --font-display: 'Poppins', 'Poppins respaldo', system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);

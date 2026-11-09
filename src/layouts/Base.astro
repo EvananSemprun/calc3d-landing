@@ -14,6 +14,25 @@
  *                 que ya las traen de la API en el build, como el catálogo).
  */
 import '../styles/global.css';
+/**
+ * La Poppins que pinta el texto grande de la primera pantalla, para precargarla.
+ *
+ * Es el peso **900** porque es el de `h1, h2, h3` (ver `global.css`), y el elemento del
+ * LCP de la portada y del listado **es el `h1`** — texto, no una foto (medido el
+ * 2026-11-09: 5 de 5 corridas de escritorio en las dos pantallas). O sea que esta
+ * descarga está en el camino crítico del LCP.
+ *
+ * ⚠️ **Va importada con `?url` y NO escrita a mano.** Vite emite un activo con hash por
+ * archivo de origen, así que con el `import` esta precarga y el `url()` del `@font-face`
+ * que trae `@fontsource` apuntan **al mismo** archivo. Una ruta escrita a mano sería otra
+ * URL = el mismo woff2 descargado **dos veces**, más tráfico que antes de autohospedar y
+ * sin un solo error que lo delate.
+ *
+ * ⚠️ **Una sola.** Precargar los seis pesos es pelearse por el ancho de banda en el
+ * instante que define el LCP, y encima la portada solo descarga cuatro (400, 600, 700 y
+ * 900; el 500 y el 800 quedan `unloaded` en `document.fonts`, medido el mismo día).
+ */
+import poppins900 from '@fontsource/poppins/files/poppins-latin-900-normal.woff2?url';
 import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -75,6 +94,18 @@ const textoDeLaFranja = textoDeBanner(banners);
     {urlCanonica && <link rel="canonical" href={urlCanonica} />}
     {noindex && <meta name="robots" content="noindex" />}
     <meta name="theme-color" content="#000814" />
+    {/* Poppins es NUESTRA: va en el bundle (`@fontsource/poppins`, ver `global.css`) y no
+        se le pide a Google. Hasta el 2026-11-09 acá había tres etiquetas —dos
+        `preconnect` y el `stylesheet` de Google Fonts— que costaban **5 peticiones a otro
+        dominio** en una carga de portada (1 de CSS + 4 woff2) justo en el camino crítico
+        del LCP, que es texto. ⚠️ `src/fuentes.spec.ts` prohíbe el dominio en TODO `src/`,
+        comentarios incluidos: volver a pegar ese `<link>` es un copiar y pegar de
+        cualquier tutorial y el sitio seguiría funcionando igual de bien.
+
+        ⚠️ `crossorigin` NO es decorativo: una fuente se pide siempre en modo CORS
+        anónimo, así que sin él el navegador descarta esta precarga y vuelve a pedir el
+        archivo — el doble de tráfico y ni un aviso. Lo exige `src/fuentes.spec.ts`. */}
+    <link rel="preload" href={poppins900} as="font" type="font/woff2" crossorigin />
     {/* Icono de la pestaña (el isotipo de Banano Lab). Viven en `public/`, que
         Astro copia tal cual a `dist/`. Hasta el 2026-11-07 no había ninguno.
 
@@ -104,13 +135,6 @@ const textoDeLaFranja = textoDeBanner(banners);
     {urlCanonica && <meta property="og:url" content={urlCanonica} />}
     {urlImagen && <meta property="og:image" content={urlImagen} />}
     <meta name="twitter:card" content={urlImagen ? 'summary_large_image' : 'summary'} />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap"
-    />
 
     {jsonLd && <script type="application/ld+json" set:html={jsonLdSeguro} />}
 
