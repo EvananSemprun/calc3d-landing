@@ -257,8 +257,10 @@ inicial *y* en cada navegación.
 
 ### Las fotos entran con un cruce corto (2026-11-09)
 
-Toda foto remota se pinta con **`components/ui/Foto.tsx`**, no con un `<img>` a mano.
-Funde al cargar, salvo las candidatas a LCP (`prioridad`).
+Las fotos remotas se pintan con **`components/ui/Foto.tsx`**, no con un `<img>` a mano,
+**salvo el arte del hero**, que va como `<img>` plana a propósito (`HeroEnVivo.tsx`: es
+remoto pero es candidato a LCP de la portada, así que no funde y no necesita el
+componente). Funden al cargar, salvo las candidatas a LCP (`prioridad`).
 
 - ⚠️ **La marca de «no cargada» (`data-cargando`) la pone SOLO el JS del cliente, en un
   efecto, después de montar.** El render que Astro hornea sale sin ella, y eso es el
@@ -272,10 +274,13 @@ Funde al cargar, salvo las candidatas a LCP (`prioridad`).
   efecto de la propia isla: Astro rehidrata las islas de la página destino después del
   swap y el efecto corre de nuevo. Verificado navegando con un clic.
 - ⚠️ **El techo por tiempo (`TECHO_CARGA_MS = 3000`, en `lib/foto.ts`) no es opcional.**
-  Con `prefers-reduced-motion` la guardia baja la duración a `0.01ms` pero **no cambia el
-  valor inicial**: sin el techo, una foto cuyo `load` no llega (red cortada a mitad de la
+  La guardia de movimiento baja la duración a `0.01ms` pero **no cambia el valor
+  inicial**: sin el techo, una foto cuyo `load` no llega (red cortada a mitad de la
   descarga) queda transparente **para siempre**. Hay tres salidas: `load`, `error` y el
   techo. Y una foto con `img.complete` **no se marca**: su `load` ya pasó.
+- **Con `prefers-reduced-motion` la foto no se esconde NUNCA**: una regla aparte en el
+  mismo bloque la deja en opacidad 1. Si no, quien pidió no ver movimiento pagaba la
+  ventana invisible y no recibía el cruce a cambio: perdía sin ganar.
 - **`prioridad` (sin fundido):** `.pdp-main` —medido, ES el LCP de la ficha: 11,9 s con
   red frenada en escritorio— y las **3 primeras** tarjetas de la grilla estática del
   listado (`COLUMNAS_PRIMERA_FILA` en `Catalogo.tsx`). ⚠️ **No se le quita a

@@ -37,7 +37,9 @@ export default function Galeria({ fotos, activa, onElegir, nombre }: Props) {
               aria-pressed={i === activa}
               onClick={() => onElegir(i)}
             >
-              <Foto src={f.url} alt={f.alt || ''} loading="lazy" />
+              {/* Sin `loading="lazy"`: están arriba del pliegue, al lado de la foto
+                  grande, así que diferirlas retrasa la descarga sin ganar nada. */}
+              <Foto src={f.url} alt={f.alt || ''} />
             </button>
           ))}
         </div>

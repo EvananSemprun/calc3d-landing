@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { normalizar, reglas, sinComentarios } from './test/css';
 
 /**
  * TODO `:hover` QUE MUEVA ALGO TIENE QUE ANULARSE EN LA GUARDIA DE `reduce` (2026-11-07).
@@ -36,10 +37,10 @@ import { describe, expect, it } from 'vitest';
  * Lo que NO caza, escrito acá para el próximo:
  *  - `:hover` con movimiento en un `.tsx` (estilos en línea o clases de Tailwind): solo
  *    mira `global.css`.
- *  - ⚠️ **el anidamiento `&:hover`**: la prueba lee selectores planos, así que un
- *    `.algo { &:hover { transform: … } }` le daría un falso rojo (el selector que
- *    extraería es `&:hover`, que no está en la guardia). Hoy `global.css` no usa
- *    anidamiento en ningún lado; si se empieza a usar, hay que resolver el `&` acá.
+ *  - ⚠️ **el anidamiento `&:hover`**: el parser lee selectores planos, así que un
+ *    `.algo { &:hover { transform: … } }` le daría un falso rojo. Hoy `global.css` no usa
+ *    anidamiento en ningún lado; si se empieza a usar, se resuelve el `&` en
+ *    **`src/test/css.ts`** (el parser compartido) y vale para los tres guardianes.
  *  - que la anulación esté en el MISMO contexto de media que la regla original: se pide
  *    que exista dentro de la guardia, no que los anchos coincidan. Hoy la guardia no
  *    tiene condición de ancho, así que alcanza.
@@ -49,11 +50,6 @@ const RUTA = join(__dirname, 'styles', 'global.css');
 
 /** Propiedades que DESPLAZAN el elemento (las que la guardia de duraciones no alcanza). */
 const MUEVEN = ['transform', 'translate', 'scale', 'rotate'] as const;
-
-/** El CSS sin comentarios: un comentario que menciona `transform` no es una regla. */
-function sinComentarios(css: string): string {
-  return css.replace(/\/\*[\s\S]*?\*\//g, ' ');
-}
 
 /**
  * Los bloques `@media (prefers-reduced-motion: reduce) { ... }` del archivo, con las
@@ -74,23 +70,6 @@ function bloquesBalanceados(css: string, cabecera: RegExp): { texto: string; des
     bloques.push({ texto: css.slice(m.index, i), desde: m.index, hasta: i });
   }
   return bloques;
-}
-
-/** Espacios normalizados, para comparar selectores escritos distinto. */
-const normalizar = (s: string) => s.trim().replace(/\s+/g, ' ');
-
-/**
- * Las reglas (selector + cuerpo) del CSS, con su posición. La regex se salta sola los
- * envoltorios `@media`/`@layer`: `[^{}]+` no puede contener `{`, así que nunca casa con uno.
- */
-function reglas(css: string): { selector: string; cuerpo: string; desde: number }[] {
-  const encontradas: { selector: string; cuerpo: string; desde: number }[] = [];
-  const re = /([^{}]+)\{([^{}]*)\}/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(css)) !== null) {
-    encontradas.push({ selector: normalizar(m[1]), cuerpo: m[2], desde: m.index });
-  }
-  return encontradas;
 }
 
 /**

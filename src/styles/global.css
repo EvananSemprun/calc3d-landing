@@ -1355,10 +1355,26 @@ html[data-bl-navegado] :is(
    verde y `hover-con-reduce.spec.ts` igual de verde, porque ese guardián mira la guardia
    de `reduce`, no si la transición existe.
 
-   Con `prefers-reduced-motion` la guardia de arriba baja la duración a `0.01ms`: la foto
-   aparece de golpe, que es lo correcto. Y **no cambia el valor inicial**, así que lo que
-   la vuelve visible es el techo por tiempo de `lib/foto.ts`, no el CSS. */
+   ⚠️ **Y por eso mismo hay que LISTAR acá toda transición encapada que gane una de estas
+   fotos.** El acoplamiento es el precio de estar fuera de `@layer`: si mañana
+   `.cart-thumb` o `.cat-card-foto` reciben su propio `transition` dentro de
+   `@layer components`, este atajo también se la come. Sumala a la lista de abajo (y al
+   test de `fotos-funden.spec.ts`), no la escribas solo allá.
+
+   Con `prefers-reduced-motion` NO se esconde nada: ver la guardia debajo del bloque. */
 img[data-fundir] {
   transition: opacity var(--dur-normal) var(--ease), transform var(--dur-lenta) var(--ease);
 }
 img[data-fundir][data-cargando] { opacity: 0; }
+
+/* Con `prefers-reduced-motion` la foto NUNCA se esconde.
+   La guardia de movimiento baja la duración de la transición a `0.01ms` pero **no cambia
+   el valor inicial**, así que sin esta regla quien pidió no ver movimiento pagaba la
+   ventana invisible (hasta el `load`, el `error` o el techo) y **no recibía el cruce a
+   cambio**: perdía sin ganar. El objetivo es que quien pide menos movimiento no pierda
+   nada. Va en el mismo bloque, fuera de capa y SIN `!important` (uno acá invertiría el
+   orden de capas y le haría perder a la guardia de movimiento); gana por orden, que es
+   suficiente contra una regla de la misma especificidad. */
+@media (prefers-reduced-motion: reduce) {
+  img[data-fundir][data-cargando] { opacity: 1; }
+}

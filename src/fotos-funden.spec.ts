@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { reglas, reglasCon, sinComentarios } from './test/css';
 
 /**
  * EL CSS DEL FUNDIDO DE LAS FOTOS (2026-11-09).
@@ -23,76 +24,40 @@ import { describe, expect, it } from 'vitest';
  *    movimiento y los estilos de sonner están afuera por lo mismo) y lo que evita quedar
  *    a merced del orden de las capas.
  *
- * Y una cuarta, para la Tarea 7: **las duraciones salen de los tokens**
+ * 4. **La guardia de `prefers-reduced-motion`**, que deja la foto marcada en opacidad 1.
+ *    Sin ella, quien pidió no ver movimiento paga la ventana invisible (hasta el `load`,
+ *    el `error` o el techo) y **no recibe el cruce a cambio**: pierde sin ganar.
+ *
+ * Y una quinta, para la Tarea 7: **las duraciones salen de los tokens**
  * (`--dur-normal`, `--dur-lenta`), nunca escritas a mano.
  */
 
 const RUTA = join(__dirname, 'styles', 'global.css');
 
-/** El CSS sin comentarios: un comentario que menciona la regla no es la regla. */
-const css = readFileSync(RUTA, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ');
-
-const normalizar = (s: string) => s.trim().replace(/\s+/g, ' ');
-
-interface Regla {
-  selector: string;
-  cuerpo: string;
-  /** Los `@…` que la envuelven, de afuera hacia adentro (`@layer components`, `@media …`). */
-  envoltorios: string[];
-}
-
-/**
- * Las reglas del archivo con el contexto que las envuelve.
- *
- * Hace falta recorrer con una pila y no con una regex porque lo que se quiere saber es si
- * la regla está DENTRO de un `@layer`, y eso solo se sabe contando llaves: un `@layer`
- * contiene reglas, y una regex de `([^{}]+)\{([^{}]*)\}` encuentra la regla pero pierde
- * quién la envuelve.
- */
-function reglas(): Regla[] {
-  const salida: Regla[] = [];
-  const pila: string[] = [];
-  let cabeza = '';
-  for (const ch of css) {
-    if (ch === '{') {
-      const sel = normalizar(cabeza);
-      cabeza = '';
-      if (sel.startsWith('@')) {
-        pila.push(sel);
-      } else {
-        // Una regla normal: lo que sigue hasta su `}` es su cuerpo. Se marca con `null`
-        // en la pila para no confundirla con un envoltorio.
-        pila.push(`\u0000${sel}`);
-      }
-    } else if (ch === '}') {
-      const abierto = pila.pop();
-      if (abierto?.startsWith('\u0000')) {
-        salida.push({
-          selector: abierto.slice(1),
-          cuerpo: normalizar(cabeza),
-          envoltorios: pila.filter((p) => !p.startsWith('\u0000')),
-        });
-      }
-      cabeza = '';
-    } else {
-      cabeza += ch;
-    }
-  }
-  return salida;
-}
-
-const todas = reglas();
-
-/** Las reglas cuyo selector es exactamente `sel` (hay una sola de cada una acá). */
-const reglaDe = (sel: string) => todas.filter((r) => r.selector === sel);
+/** El parser vive en `test/css.ts`: una sola definición para los tres guardianes de CSS. */
+const TODAS = reglas(sinComentarios(readFileSync(RUTA, 'utf8')));
 
 const SEL_TRANSICION = 'img[data-fundir]';
 const SEL_ESCONDIDA = 'img[data-fundir][data-cargando]';
 
+/** Todas las reglas que apuntan a `sel`, esté donde esté. */
+const reglaDe = (sel: string) => reglasCon(TODAS, sel);
+
+/**
+ * Las que están sueltas, sin ningún `@media` encima: el comportamiento por defecto.
+ * ⚠️ Hace falta distinguirlas porque `SEL_ESCONDIDA` se declara DOS veces (opacidad 0 por
+ * defecto, opacidad 1 con `reduce`) y confundirlas dejaría pasar que falte cualquiera.
+ */
+const sueltas = (sel: string) => reglaDe(sel).filter((r) => r.envoltorios.length === 0);
+
+/** Las que viven dentro de la guardia de `prefers-reduced-motion`. */
+const conReduce = (sel: string) =>
+  reglaDe(sel).filter((r) => r.envoltorios.some((e) => /prefers-reduced-motion/.test(e)));
+
 describe('el CSS del fundido de las fotos', () => {
   it.each([SEL_TRANSICION, SEL_ESCONDIDA])('existe la regla `%s`', (sel) => {
     expect(
-      reglaDe(sel).length,
+      sueltas(sel).length,
       `No encontré la regla \`${sel}\` en global.css. Sin ella el fundido no existe y ` +
         'nada más falla: las fotos aparecen de golpe con toda la suite en verde.',
     ).toBe(1);
@@ -109,11 +74,25 @@ describe('el CSS del fundido de las fotos', () => {
   });
 
   it('la foto marcada como «no cargada» queda en opacidad 0', () => {
-    expect(reglaDe(SEL_ESCONDIDA)[0]?.cuerpo).toMatch(/opacity:\s*0\s*(?:;|$)/);
+    expect(sueltas(SEL_ESCONDIDA)[0]?.cuerpo).toMatch(/opacity:\s*0\s*(?:;|$)/);
+  });
+
+  it('con `prefers-reduced-motion` la foto marcada queda VISIBLE', () => {
+    // Quien pide menos movimiento no pierde nada: sin esta regla paga la ventana
+    // invisible (la guardia de movimiento solo baja la DURACIÓN, no el valor inicial) y
+    // no recibe el cruce a cambio.
+    const r = conReduce(SEL_ESCONDIDA);
+    expect(
+      r.length,
+      'Falta la regla de `img[data-fundir][data-cargando]` dentro de ' +
+        '`@media (prefers-reduced-motion: reduce)`: con `reduce`, la foto se esconde ' +
+        'igual y el cruce no se ve, así que quien pidió no ver movimiento pierde sin ganar.',
+    ).toBe(1);
+    expect(r[0]?.cuerpo).toMatch(/opacity:\s*1\s*(?:;|$)/);
   });
 
   it('la transición funde la OPACIDAD con los tokens de movimiento', () => {
-    const cuerpo = reglaDe(SEL_TRANSICION)[0]?.cuerpo ?? '';
+    const cuerpo = sueltas(SEL_TRANSICION)[0]?.cuerpo ?? '';
     expect(cuerpo).toMatch(/transition:[^;]*\bopacity\s+var\(--dur-normal\)\s+var\(--ease\)/);
   });
 
@@ -121,7 +100,7 @@ describe('el CSS del fundido de las fotos', () => {
     // `.product-photo` declara `transition: transform …` en `@layer components`, y
     // `transition` es un atajo: una lista sin `transform` acá la PISA (este bloque está
     // fuera de capa) y el zoom del hover muere sin que nada falle.
-    const cuerpo = reglaDe(SEL_TRANSICION)[0]?.cuerpo ?? '';
+    const cuerpo = sueltas(SEL_TRANSICION)[0]?.cuerpo ?? '';
     expect(
       /transition:[^;]*\btransform\s+var\(--dur-lenta\)\s+var\(--ease\)/.test(cuerpo),
       'La transición de `img[data-fundir]` no lista `transform`. Al estar fuera de ' +

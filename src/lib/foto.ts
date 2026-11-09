@@ -59,6 +59,10 @@ export function marcarCargando(
   img.setAttribute('data-cargando', '');
 
   let liberado = false;
+  // ⚠️ `temporizador` se declara ANTES de `liberar` a propósito: si se declarara después,
+  // cualquier salida temprana que alguien agregue acá lo leería en su zona muerta y
+  // reventaría con `ReferenceError`. Hoy es inalcanzable; mañana no se sabe.
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
   const liberar = () => {
     if (liberado) return;
     liberado = true;
@@ -70,7 +74,7 @@ export function marcarCargando(
 
   img.addEventListener('load', liberar);
   img.addEventListener('error', liberar);
-  const temporizador = setTimeout(liberar, Math.max(0, limite - ahora()));
+  temporizador = setTimeout(liberar, Math.max(0, limite - ahora()));
 
   return liberar;
 }

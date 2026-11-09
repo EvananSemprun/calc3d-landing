@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { reglaDe as cuerpoDe, reglas, sinComentarios } from './test/css';
 
 /**
  * TODA FOTO REMOTA RESERVA SU ESPACIO ANTES DE CARGAR (2026-11-09).
@@ -32,20 +33,11 @@ const CLASES_CON_FOTO_REMOTA = [
   '.pdp-custom-chip img',
 ] as const;
 
-const normalizar = (s: string) => s.trim().replace(/\s+/g, ' ');
-
-const css = readFileSync(RUTA, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ');
+/** El parser vive en `test/css.ts`: una sola definición para los tres guardianes de CSS. */
+const TODAS = reglas(sinComentarios(readFileSync(RUTA, 'utf8')));
 
 /** Los cuerpos de todas las reglas cuyo selector (de una lista con comas) es exactamente `sel`. */
-function reglaDe(sel: string): string {
-  const cuerpos: string[] = [];
-  const re = /([^{}]+)\{([^{}]*)\}/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(css)) !== null) {
-    if (m[1].split(',').map(normalizar).includes(sel)) cuerpos.push(m[2]);
-  }
-  return cuerpos.join(';');
-}
+const reglaDe = (sel: string) => cuerpoDe(TODAS, sel);
 
 const declara = (cuerpo: string, prop: string, valor = '[^;}]+') =>
   new RegExp(String.raw`(?:^|[;{\s])${prop}\s*:\s*${valor}`).test(cuerpo);
