@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { reglas } from './test/css';
@@ -6,25 +6,32 @@ import { reglas } from './test/css';
 /**
  * LAS DURACIONES DE MOVIMIENTO SALEN DE LOS TOKENS (2026-11-09, Tarea 7).
  *
- * `global.css` tenía 26 duraciones escritas a mano en 6 valores distintos (150, 180, 200,
- * 300, 350 y 380 ms) y solo 8 usos de los tokens. Un número suelto no falla por ninguna
+ * `global.css` tenía **26 duraciones escritas a mano en 17 declaraciones**, con 6 valores
+ * distintos (150, 180, 200, 300, 350 y 380 ms), contra **9 usos de tokens** (medido sobre
+ * `9b08ba4`: `--dur-normal` ×5 y `--dur-lenta` ×4). Un número suelto no falla por ninguna
  * parte: se salta el techo de movimiento del plan (`--dur-lenta`), no se puede revisar de
  * un vistazo y cada pantalla nueva copia el de al lado. Acá se amarra que no vuelvan.
  *
- * Se mide el **TEXTO** de `global.css` y no el CSSOM: estos guardianes corren en
+ * Se mide el **TEXTO** del CSS y no el CSSOM: estos guardianes corren en
  * `environment: node`, y aunque corrieran en jsdom, jsdom **no aplica CSS** — un
  * `getComputedStyle` daría verde con el archivo entero escrito a mano.
  *
+ * ⚠️ **Barre TODOS los `.css` de `src/`, no una ruta fija.** Hoy son dos
+ * (`styles/global.css` y `lib/tokens.css`) y con una ruta fija no faltaba nada, pero un
+ * tercer archivo de estilos nacería **sin vigilancia** y nadie se enteraría. El barrido
+ * también hace que los tokens se puedan definir donde haga falta sin que el guardián
+ * empiece a mentir.
+ *
  * ⚠️ **TRES COSAS QUEDAN EXENTAS A PROPÓSITO, Y NO SON LA MISMA.** Un guardián escrito
- * como «ningún número con `s`/`ms` en `global.css`» marcaría las tres y habría que
- * desactivarlo el primer día:
+ * como «ningún número con `s`/`ms` en el CSS» marcaría las tres y habría que desactivarlo
+ * el primer día:
  *
  * 1. **Los RETRASOS.** `animation-delay`/`transition-delay`, y también el segundo valor de
  *    tiempo de un atajo (`transition: visibility 0s var(--dur-panel)`): en un atajo el
  *    PRIMER tiempo es la duración y el resto son retrasos. El escalonado de entrada son
  *    once `animation-delay` de 60 a 450 ms: una SECUENCIA, no duraciones. Meterla en
- *    tokens destruye el efecto, así que queda exenta… y por eso existe el segundo test de
- *    este archivo: exenta no puede significar «sin vigilar».
+ *    tokens destruye el efecto, así que queda exenta… y por eso existe el segundo
+ *    `describe` de este archivo: exenta no puede significar «sin vigilar».
  * 2. **Las duraciones de valor cero** (`0s`, `0.01ms`). Ahí no hay movimiento que
  *    tokenizar: son la **guardia de `prefers-reduced-motion`** (`0.01ms` es un valor
  *    mágico deliberado) y el `visibility 0s` del panel de filtros, que cambia de golpe a
@@ -32,23 +39,24 @@ import { reglas } from './test/css';
  *    eximiera «el bloque de la guardia» tendría que saber ubicarlo, y el día que la
  *    guardia se mueva o se duplique empezaría a mentir.
  * 3. **`src/components/ui/dialog.tsx`**, que trae una utilidad `duration-200` de Tailwind.
- *    Es un componente de shadcn y este guardián lee `global.css`: queda fuera de alcance a
- *    propósito (ver el reporte de la Tarea 7).
+ *    Es un componente de shadcn y este guardián lee hojas de estilo: queda fuera de
+ *    alcance a propósito (ver el reporte de la Tarea 7).
  *
  * Y dos cosas que este archivo cuida porque las introdujo esta migración:
  * - **Un `var(--dur-…)` mal escrito no es un error de CSS: es una declaración que se
  *   descarta entera.** `transition: color var(--dur-rapido)` (sin la `a`) deja al elemento
- *   SIN transición, con el build verde y sin un solo aviso en consola. Por eso se exige
- *   que cada token usado esté definido en `lib/tokens.css`.
+ *   SIN transición, con el build verde y sin un solo aviso en consola.
  * - **El techo de movimiento del plan ahora vive en los tokens.** Si las duraciones salen
  *   de ahí, alcanza con revisar ahí que ninguna pase de `--dur-lenta` (420 ms).
  */
 
-const RUTA_CSS = join(__dirname, 'styles', 'global.css');
-const RUTA_TOKENS = join(__dirname, 'lib', 'tokens.css');
-
-const FUENTE = readFileSync(RUTA_CSS, 'utf8');
-const TOKENS = readFileSync(RUTA_TOKENS, 'utf8');
+/** Una hoja de estilo de `src/`, con la ruta que se muestra en los mensajes. */
+interface Hoja {
+  /** Relativa a `src/`, con barras normales: `styles/global.css`. */
+  ruta: string;
+  /** El contenido con los comentarios EN BLANCO (ver `enBlanco`). */
+  css: string;
+}
 
 /**
  * El CSS con los comentarios EN BLANCO, conservando sus saltos de línea.
@@ -58,10 +66,14 @@ const TOKENS = readFileSync(RUTA_TOKENS, 'utf8');
  * todo lo que viene después y este guardián —que reporta LÍNEAS— señalaría la equivocada.
  * Si a un segundo guardián le hace falta la misma cosa, se muda a `test/css.ts`.
  */
-const enBlanco = (css: string) =>
-  css.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
+const enBlanco = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
 
-const CSS = enBlanco(FUENTE);
+const HOJAS: Hoja[] = readdirSync(__dirname, { recursive: true, encoding: 'utf8' })
+  .filter((f) => f.endsWith('.css'))
+  .map((f) => ({
+    ruta: f.replace(/\\/g, '/'),
+    css: enBlanco(readFileSync(join(__dirname, f), 'utf8')),
+  }));
 
 /** La línea (1-based) donde cae un índice del texto. */
 const lineaDe = (texto: string, i: number) => texto.slice(0, i).split('\n').length;
@@ -80,7 +92,7 @@ const DECLARACION = /\b(transition|animation)(-duration|-delay)?\s*:\s*([^;{}]*)
 
 /** Una duración escrita a mano, con dónde está y qué dice. */
 interface Hallazgo {
-  linea: number;
+  donde: string;
   valor: string;
   declaracion: string;
 }
@@ -124,43 +136,55 @@ const tiemposDe = (capa: string): string[] => {
   return plano.split(/\s+/).filter((t) => t === '@token' || TIEMPO.test(t));
 };
 
-/** Todas las duraciones escritas a mano de `global.css`, con su línea. */
+/** Todas las duraciones escritas a mano de las hojas de `src/`, con su archivo y línea. */
 const duracionesAMano = (): Hallazgo[] => {
   const salida: Hallazgo[] = [];
-  for (const m of CSS.matchAll(DECLARACION)) {
-    const [todo, , sufijo, valor] = m;
-    if (sufijo === '-delay') continue; // Un retraso no es una duración.
+  for (const hoja of HOJAS) {
+    for (const m of hoja.css.matchAll(DECLARACION)) {
+      const [todo, , sufijo, valor] = m;
+      if (sufijo === '-delay') continue; // Un retraso no es una duración.
 
-    // En el atajo, el primer tiempo de cada capa es la duración; en el longhand
-    // `*-duration` lo son todos.
-    const sospechosos =
-      sufijo === '-duration'
-        ? capasDe(valor).flatMap(tiemposDe)
-        : capasDe(valor).map((c) => tiemposDe(c)[0] ?? '');
+      // En el atajo, el primer tiempo de cada capa es la duración; en el longhand
+      // `*-duration` lo son todos.
+      const sospechosos =
+        sufijo === '-duration'
+          ? capasDe(valor).flatMap(tiemposDe)
+          : capasDe(valor).map((c) => tiemposDe(c)[0] ?? '');
 
-    for (const t of sospechosos) {
-      // Un token está bien, y una duración de cero no es movimiento que tokenizar
-      // (la guardia de `reduce` y el `visibility 0s` del panel de filtros).
-      if (t === '' || t === '@token' || !TIEMPO.test(t) || aMs(t) < 1) continue;
-      salida.push({
-        linea: lineaDe(CSS, m.index),
-        valor: t,
-        declaracion: todo.replace(/\s+/g, ' ').trim(),
-      });
+      for (const t of sospechosos) {
+        // Un token está bien, y una duración de cero no es movimiento que tokenizar
+        // (la guardia de `reduce` y el `visibility 0s` del panel de filtros).
+        if (t === '' || t === '@token' || !TIEMPO.test(t) || aMs(t) < 1) continue;
+        salida.push({
+          donde: `${hoja.ruta}:${lineaDe(hoja.css, m.index)}`,
+          valor: t,
+          declaracion: todo.replace(/\s+/g, ' ').trim(),
+        });
+      }
     }
   }
   return salida;
 };
 
-describe('las duraciones de movimiento de global.css', () => {
+/** Los tokens `--dur-…` definidos en las hojas de `src/`, con su valor y su archivo. */
+const tokensDefinidos = () =>
+  HOJAS.flatMap((hoja) =>
+    [...hoja.css.matchAll(/(--dur-[\w-]+)\s*:\s*([^;}]+)/g)].map((m) => ({
+      nombre: m[1],
+      valor: m[2].trim(),
+      donde: `${hoja.ruta}:${lineaDe(hoja.css, m.index)}`,
+    })),
+  );
+
+describe('las duraciones de movimiento del CSS', () => {
   it('ninguna DURACIÓN está escrita a mano', () => {
     const hallazgos = duracionesAMano();
     const detalle = hallazgos
-      .map((h) => `  global.css:${h.linea} → \`${h.valor}\` en \`${h.declaracion}\``)
+      .map((h) => `  ${h.donde} → \`${h.valor}\` en \`${h.declaracion}\``)
       .join('\n');
     expect(
       hallazgos,
-      `Hay ${hallazgos.length} duración(es) escrita(s) a mano en global.css:\n${detalle}\n` +
+      `Hay ${hallazgos.length} duración(es) escrita(s) a mano:\n${detalle}\n` +
         'Las duraciones salen de los tokens de `lib/tokens.css` (`--dur-rapida`, ' +
         '`--dur-normal`, `--dur-panel`, `--dur-lenta`). Un número suelto se salta el techo ' +
         'de movimiento del plan (`--dur-lenta`, 420 ms) sin que nada falle. Los RETRASOS ' +
@@ -169,35 +193,42 @@ describe('las duraciones de movimiento de global.css', () => {
     ).toEqual([]);
   });
 
-  it('cada `var(--dur-…)` que usa global.css está definido en los tokens', () => {
+  it('cada `var(--dur-…)` que usa el CSS está definido', () => {
     // Un nombre mal escrito NO es un error de CSS: el navegador descarta la declaración
     // entera y el elemento se queda sin transición, con el build verde y sin un aviso.
-    const usados = [...CSS.matchAll(/var\(\s*(--dur-[\w-]+)\s*\)/g)].map((m) => m[1]);
-    const definidos = [...enBlanco(TOKENS).matchAll(/(--dur-[\w-]+)\s*:/g)].map((m) => m[1]);
-    const huérfanos = [...new Set(usados)].filter((u) => !definidos.includes(u));
+    const usados = HOJAS.flatMap((h) =>
+      [...h.css.matchAll(/var\(\s*(--dur-[\w-]+)\s*\)/g)].map((m) => ({
+        nombre: m[1],
+        donde: `${h.ruta}:${lineaDe(h.css, m.index)}`,
+      })),
+    );
+    const definidos = tokensDefinidos().map((t) => t.nombre);
+    const huérfanos = usados.filter((u) => !definidos.includes(u.nombre));
     expect(
-      huérfanos,
-      `global.css usa ${huérfanos.join(', ')}, que no está definido en lib/tokens.css. ` +
-        'Un `var()` que no resuelve descarta la declaración entera: el elemento queda SIN ' +
-        'transición, sin error en consola y con el build en verde.',
+      huérfanos.map((u) => `${u.donde} usa ${u.nombre}`),
+      'Ese token no está definido en ninguna hoja de `src/`. Un `var()` que no resuelve ' +
+        'descarta la declaración entera: el elemento queda SIN transición, sin error en ' +
+        'consola y con el build en verde.',
     ).toEqual([]);
   });
 
   it('ningún token de duración pasa del techo de movimiento (`--dur-lenta`)', () => {
-    const definidos = [...enBlanco(TOKENS).matchAll(/(--dur-[\w-]+)\s*:\s*([^;}]+)/g)].map(
-      (m) => [m[1], m[2].trim()] as const,
-    );
-    expect(definidos.length, 'No encontré ningún token `--dur-…` en lib/tokens.css').toBeGreaterThan(1);
+    const definidos = tokensDefinidos();
+    expect(
+      definidos.length,
+      'No encontré ningún token `--dur-…` en las hojas de `src/`: este guardián no ' +
+        'estaría revisando nada.',
+    ).toBeGreaterThan(0);
 
-    const techo = definidos.find(([n]) => n === '--dur-lenta');
+    const techo = definidos.find((t) => t.nombre === '--dur-lenta');
     expect(techo, 'Falta `--dur-lenta`, que ES el techo de movimiento del plan').toBeDefined();
-    const maximo = aMs(techo![1]);
+    const maximo = aMs(techo!.valor);
 
     // El techo del plan son 420 ms. Ahora que TODA duración sale de acá, revisarlo acá
     // alcanza: no hace falta perseguir número por número por el CSS.
-    const pasados = definidos.filter(([, v]) => aMs(v) > maximo);
+    const pasados = definidos.filter((t) => aMs(t.valor) > maximo);
     expect(
-      pasados.map(([n, v]) => `${n}: ${v}`),
+      pasados.map((t) => `${t.donde} → ${t.nombre}: ${t.valor}`),
       `Esos tokens pasan el techo de movimiento del plan (\`--dur-lenta\`, ${maximo} ms).`,
     ).toEqual([]);
   });
@@ -208,8 +239,11 @@ describe('las duraciones de movimiento de global.css', () => {
  * secuencia). Sin este test, exento pasaría a significar «sin vigilar»: el día que alguien
  * desordene los retrasos, las tarjetas entrarían de atrás para adelante y no fallaría nada.
  *
- * Lo que se exige es la propiedad que hace al efecto, no los once números: que un hijo más
- * tardío NUNCA entre antes que uno anterior.
+ * Se exige la propiedad que hace al efecto —que un hijo más tardío NUNCA entre antes que
+ * uno anterior— **y la cantidad real de pasos de cada secuencia**. Lo segundo no es
+ * decorativo: con un mínimo («al menos 3»), recortar las 8 tarjetas a 3 quedaba en VERDE y
+ * el escalonado se perdía a medias. Si una secuencia crece o se acorta a propósito, el
+ * número se actualiza acá y así la decisión queda escrita.
  */
 describe('el escalonado de entrada', () => {
   /** `.entrada-grid > :nth-child(3)` → base `.entrada-grid >`, paso 3. `> *` → paso 1. */
@@ -217,30 +251,41 @@ describe('el escalonado de entrada', () => {
 
   const pasos = () => {
     const grupos = new Map<string, { paso: number; retraso: number }[]>();
-    for (const r of reglas(CSS)) {
-      const ms = /animation-delay\s*:\s*([^;}]+)/.exec(r.cuerpo);
-      if (!ms) continue;
-      for (const sel of r.selectores) {
-        const m = PASO.exec(sel);
-        if (!m?.groups) continue;
-        const lista = grupos.get(m.groups.base) ?? [];
-        lista.push({ paso: Number(m.groups.i ?? 1), retraso: aMs(ms[1].trim()) });
-        grupos.set(m.groups.base, lista);
+    for (const hoja of HOJAS) {
+      for (const r of reglas(hoja.css)) {
+        const ms = /animation-delay\s*:\s*([^;}]+)/.exec(r.cuerpo);
+        if (!ms) continue;
+        for (const sel of r.selectores) {
+          const m = PASO.exec(sel);
+          if (!m?.groups) continue;
+          const lista = grupos.get(m.groups.base) ?? [];
+          lista.push({ paso: Number(m.groups.i ?? 1), retraso: aMs(ms[1].trim()) });
+          grupos.set(m.groups.base, lista);
+        }
       }
     }
     return grupos;
   };
 
-  const ESPERADOS = ['.shop-head .container >', '.entrada-grid >'] as const;
+  /**
+   * Las dos secuencias y **cuántos pasos tiene cada una hoy**: el encabezado de categoría
+   * escalona 3 (hijos 2, 3 y n+4) y la primera grilla 8 (del 1 al n+8, las primeras ocho
+   * tarjetas; de ahí en adelante comparten el retardo de la octava).
+   */
+  const ESPERADOS = [
+    ['.shop-head .container >', 3],
+    ['.entrada-grid >', 8],
+  ] as const;
 
-  it.each(ESPERADOS)('`%s *` escalona al menos 3 pasos', (base) => {
+  it.each(ESPERADOS)('`%s *` escalona exactamente %i pasos', (base, cuantos) => {
     const lista = pasos().get(base) ?? [];
     expect(
       lista.length,
-      `El escalonado de \`${base} *\` desapareció o quedó en ${lista.length} paso(s). ` +
+      `El escalonado de \`${base} *\` tiene ${lista.length} paso(s) y esperaba ${cuantos}. ` +
         'Es la entrada escalonada de la cabecera de categoría y de las primeras tarjetas: ' +
-        'sin ella todo entra junto y ningún otro test lo nota.',
-    ).toBeGreaterThanOrEqual(3);
+        'si desaparece, todo entra junto, y si se recorta, entra junto a medias. Ningún ' +
+        'otro test lo nota. Si la secuencia cambió a propósito, actualizá el número acá.',
+    ).toBe(cuantos);
   });
 
   it.each(ESPERADOS)('`%s *` crece: un hijo posterior nunca entra antes', (base) => {

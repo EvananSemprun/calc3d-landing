@@ -42,10 +42,11 @@
      `src/duraciones-con-token.spec.ts`, que lee el texto del CSS.
 
      ⚠️ **No son cuatro escalones elegidos a gusto: cada valor sale de las duraciones que
-     reemplaza.** Antes había 26 duraciones a mano en 6 valores distintos (150, 180, 200,
-     300, 350 y 380 ms) y solo 8 usos de tokens. La regla con la que se eligieron: **ninguna
-     regla cambia su duración más de un 20 %** — forzarlas a `--dur-normal`/`--dur-lenta`
-     habría movido 28 reglas que nadie revisó, y un `0.15s` a 240 ms es un 60 % más lento.
+     reemplaza.** Antes había **26 duraciones a mano en 17 declaraciones**, con 6 valores
+     distintos (150, 180, 200, 300, 350 y 380 ms), contra **9 usos de tokens**. La regla con
+     la que se eligieron: **ninguna regla cambia su duración más de un 20 %** — forzarlas a
+     `--dur-normal`/`--dur-lenta` habría movido esas 17 reglas que ninguna tarea del plan
+     revisó, y un `0.15s` a 240 ms es un 60 % más lento.
      Tabla completa de antes y después: `.superpowers/sdd/2026-11-09-fluidez-tienda/
      task-7-report.md`.
 
@@ -56,10 +57,15 @@
        cumple el 20 % para los tres ([160, 180]), así que ninguna regla queda en el borde.
      - `--dur-normal`: el hover de las tarjetas (`.product` ya lo usaba; `.card` venía en
        300 ms por accidente, −20 %) y el cruce del refresco en vivo.
-     - `--dur-panel` es el único con nombre propio, y es a propósito: son los 4 paneles que
-       CRUZAN la pantalla (menú móvil, filtros, cajón del carrito y su velo). Un recorrido
-       largo pide más tiempo que un cambio de color, y el nombre evita que el próximo lo
-       agarre para un hover. Reemplaza 350 (−5,7 %), 2 × 300 (+10 %) y 380 ms (−13,2 %).
+     - `--dur-panel` es el único con nombre propio, y es a propósito: lo llevan los **tres
+       paneles que CRUZAN la pantalla** —menú móvil, panel de filtros (2 reglas) y cajón del
+       carrito— porque un recorrido largo pide más tiempo que un cambio de color, y el
+       nombre evita que el próximo lo agarre para un hover.
+       ⚠️ **Y el velo del carrito, que NO cruza: funde la opacidad.** Lo lleva por otra
+       razón, y es la buena: es el MISMO gesto que el cajón, y venían a velocidades
+       distintas (velo 300 ms, cajón 380 ms). Ahora abren juntos.
+       Reemplaza 350 ms (−5,7 %), 3 × 300 ms (+10 %) y 380 ms (−13,2 %), más el retraso del
+       `visibility` de `.filters`, que acompaña a su duración: 6 usos en 5 reglas.
      - `--dur-lenta` es el **techo de movimiento del plan**: ninguna duración lo pasa, y el
        guardián lo revisa acá mismo ahora que todas salen de este bloque. Lo usan el zoom
        de la foto, el latido del carrito y la entrada escalonada.
