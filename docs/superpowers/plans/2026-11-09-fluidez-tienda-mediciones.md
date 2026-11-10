@@ -177,14 +177,35 @@ porque el valor está en por qué fallaron.
 un timeout de 60 s) eran outliers que «lа mediana absorbió sin problema», y lo presentaba
 como prueba de que el método funcionaba.
 
-**Versión 2 (mía, al cerrar la Tarea 4), también mal.** Escribí que la causa era la ventana
-de 2.500 ms: `load` espera solo a las imágenes *eager*, la foto del catálogo es `lazy`, así
-que la ventana se agotaba antes de que llegara. Lo armé con una tabla de `file:line` que
-se veía rigurosa — y los datos de esa tabla son ciertos (la foto del catálogo **es** `lazy`,
-`TarjetaProducto.tsx:47`; la del hero y la de la ficha **son** eager). **Lo que es falso es
-que eso explique la observación.**
+**Versión 2 (mía, al cerrar la Tarea 4): ERA CORRECTA.** Escribí que la causa era la
+ventana de 2.500 ms: `load` espera solo a las imágenes *eager*, la foto del catálogo es
+`lazy` (`TarjetaProducto.tsx:47`), así que la ventana se agotaba antes de que llegara.
 
-**Lo medido el 09/11 contra el `dist/` actual (5 corridas, 390×844, misma red):**
+**Versión 3 (mía, horas después): mal, y es la que hay que leer con cuidado.** Medí contra
+el `dist/` **actual**, vi `load` esperando a la foto en 5 de 5 corridas, y concluí que la
+ventana no era la causa. Escribí un commit entero titulado «mi explicación del hallazgo 5
+era falsa — medida y corregida» (`06aa9b6`).
+
+⚠️ **La versión 3 refutaba la 2 midiendo el `dist/` equivocado**, que es exactamente el
+pecado original de este hallazgo. La Tarea 8 lo zanjó midiendo el `dist/` de `07638a0` —el
+que la línea base usó de verdad— y ahí la ventana de 2.500 ms da un resultado **bimodal**:
+1.476 ms con `product-desc` **o** 9,6-10,0 s con `product-photo`, según si el `load` de esa
+corrida esperó o no a la foto perezosa (`loadEventEnd` ~1,3 s contra ~11,7 s). El reparto
+entre las dos modas **cambia de tanda en tanda sobre el mismo build** (3/2 en una, 1/4 en
+otra), y reproduce el patrón exacto de la línea base original.
+
+**Lo que queda en pie, entonces:** el mecanismo de la versión 2 es el correcto —`load` no
+espera de forma confiable a una imagen `lazy`, y por eso la ventana corta corta—. Lo que la
+versión 2 no decía, y es lo que hacía falta, es que **el comportamiento no es determinista
+dentro de un mismo build**. Por eso mi medición de la versión 3, con 5 de 5 esperando,
+parecía refutarla: cayó entera en una de las dos modas.
+
+**Lo que sigue sin saberse, y no se inventa:** por qué dentro de un mismo build el `load`
+espera a una `lazy` en unas corridas y no en otras.
+
+**Lo medido el 09/11 contra el `dist/` actual (5 corridas, 390×844, misma red) — correcto
+como dato, equivocado como refutación:**
+
 
 | | |
 |---|---|

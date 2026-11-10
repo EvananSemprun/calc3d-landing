@@ -329,7 +329,7 @@ Los scripts filtran por proyecto: `pnpm test` = `vitest run --project=!dist` y
 - ⚠️ **Excluir el archivo del proyecto `node` y nada más NO alcanza:** entonces ningún
   proyecto lo incluye y `vitest run <ruta>` responde «No test files found» y sale en
   **rojo sin haber mirado nada**. Hace falta el proyecto propio.
-- ⚠️ **Si `dist/` no existe, el guardián falla fuerte** (los 6 tests en rojo). Nunca dice
+- ⚠️ **Si `dist/` no existe, el guardián falla fuerte** (los 9 tests en rojo). Nunca dice
   «0 verificados» y sale en verde.
 - ⚠️ **LA CONSECUENCIA QUE HAY QUE TENER PRESENTE AL ESCRIBIR UN GUARDIÁN: una prohibición
   que viva SOLO acá no protege al gancho de pre-push.** El gancho corre `pnpm test`, que
