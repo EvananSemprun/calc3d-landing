@@ -300,6 +300,22 @@ componente). Funden al cargar, salvo las candidatas a LCP (`prioridad`).
 - **Límite conocido:** una foto `loading="lazy"` muy abajo no empieza a bajar al hidratar,
   así que el techo la libera antes y **aparece sin cruce**. Nada queda invisible; el
   fundido simplemente no llega hasta ahí.
+- ⚠️ **Cómo verificar este mecanismo en el navegador, y el error que lo arruina:** NO uses
+  `route.abort()` para simular una foto que no llega. Un abort dispara `error`, que **es una
+  de las tres vías de liberación**, así que la medición no distingue «nunca se marcó» de «se
+  marcó y se liberó» — se lee igual que un mecanismo roto. La medición válida **cuelga** la
+  petición (sin `load` ni `error`) y muestrea **dentro** de los 3 s del techo.
+- **La galería de la ficha también cruza** al cambiar de foto, con `useCruce` (no con la
+  transición de `data-fundir`: ésa deja el elemento en opacidad 0 en reposo, que es justo lo
+  que `prioridad` evita en `.pdp-main`). Dos datos medidos que ahorran investigación:
+  miniatura y principal **son la misma URL** y las miniaturas no son `lazy`, así que al
+  cruzar el archivo ya está en caché y no hay que esperar ningún `load`; y cambiar el `src`
+  de un `<img>` **no lo vacía** (a 1,5 s con el servidor colgado seguía pintando el cuadro
+  anterior), así que lo que se funde es la foto vieja, no un hueco.
+  - ⚠️ **Hoy esto NO SE PUEDE VER en la tienda: 0 de 13 fichas dibujan miniaturas**, porque
+    ningún producto tiene más de una foto (`fotos.length > 1` es falso en todo el catálogo).
+    El mecanismo está hecho, probado y medido; es invisible hasta que se suba una segunda
+    foto a algún producto desde el panel. **No es un bug.**
 
 ### `pnpm test` NO corre el guardián de `dist/` (y es a propósito)
 
@@ -315,6 +331,142 @@ Los scripts filtran por proyecto: `pnpm test` = `vitest run --project=!dist` y
   **rojo sin haber mirado nada**. Hace falta el proyecto propio.
 - ⚠️ **Si `dist/` no existe, el guardián falla fuerte** (los 6 tests en rojo). Nunca dice
   «0 verificados» y sale en verde.
+- ⚠️ **LA CONSECUENCIA QUE HAY QUE TENER PRESENTE AL ESCRIBIR UN GUARDIÁN: una prohibición
+  que viva SOLO acá no protege al gancho de pre-push.** El gancho corre `pnpm test`, que
+  excluye este proyecto, así que el guardián de `dist/` no se entera de nada hasta que
+  alguien lo corra a mano. Pasó con la prohibición más fuerte de la Tarea 6: que `.pdp-main`
+  no lleve `data-fundir` estaba vigilada en `dist-sin-js.spec.ts` y **en ningún otro lado**.
+  **Si la regla se puede comprobar con un render, duplicala en un `*.spec.tsx`** y dejá acá
+  solo lo que de verdad necesita el HTML construido. Cuesta un render y cierra el hueco.
+
+## Cómo se prueba y se mide acá (lo que salió más caro de aprender)
+
+Esta sección es el saldo del plan de fluidez de noviembre de 2026. Cada punto costó una
+tanda de trabajo tirada o un hallazgo escrito al revés. **No está en el código: si no se
+lee acá, se vuelve a pagar.**
+
+### Tests
+
+- ⚠️ **EN JSDOM NO HAY LAYOUT NI CSS.** `getBoundingClientRect()` devuelve ceros y
+  `getComputedStyle` no conoce tu hoja de estilos. **Cualquier aserción sobre tamaño,
+  posición u opacidad en un `*.spec.tsx` es nula y da VERDE con el diseño roto.** Esto se
+  escribió **tres veces** en un mismo plan que ya lo tenía anotado en su encabezado, así que
+  la regla tiene que estar donde se escriben los tests y no solo en un prólogo. Lo que SÍ se
+  puede testear en jsdom: que la clase esté puesta, que el atributo esté, que el nodo exista.
+  La **geometría se mide en un navegador** (Playwright), a 390 y a 1280.
+- ⚠️ **El entorno lo elige la EXTENSIÓN** (`*.spec.ts` → node, `*.spec.tsx` → jsdom). Un
+  spec que toca `document`, `HTMLImageElement` o un render y se llama `.ts` revienta con
+  «document is not defined». Al nombrar un spec, **verificá la extensión con `ls`**, no de
+  memoria.
+- ⚠️ **Un test se valida con la mutación que uno TEME, no con la que basta para verlo en
+  rojo.** Si una regla gana **por posición** en el archivo, la mutación que importa es
+  **moverla**, no borrarla — borrarla da rojo y no prueba nada. Pasó con las dos guardias de
+  `prefers-reduced-motion` (fotos y cruce): el test «existía» y quedaba verde con la guardia
+  movida. También pasó al revés: un guardián de «alguna foto sigue fundiendo» quedaba verde
+  con `COLUMNAS_PRIMERA_FILA = 999`, porque otra página siempre dejaba una fundiendo.
+- ⚠️ **Y la mutación tiene que COMPILAR.** Si vitest responde «0 tests» o «No test files
+  found», eso es un **verde falso**, no un verde.
+- ⚠️ **Restaurar una mutación con `cp` desde una copia, NUNCA con `git checkout --`**: borra
+  todo lo no commiteado. Después, `diff -q` para comprobar que quedó idéntico.
+- **Un guardián que aparenta hermetismo es peor que uno que dice dónde termina.** Donde el
+  guardián compara TEXTO y no puede ver un valor calculado, el límite va escrito en el test,
+  con la medición a mano que lo cubre.
+- **Las tres capas no son intercambiables:** función pura (`src/lib`), **pantalla**
+  (`*.spec.tsx`) y `dist/`. Borrar una línea del JSX tumba los tests de pantalla y **cero**
+  de función pura. Toda regla que viva en el JSX necesita su test de pantalla.
+
+### Mediciones
+
+**La receta exacta está en `docs/superpowers/plans/2026-11-09-fluidez-tienda-mediciones.md`,
+con el script completo. Reusala; no escribas otro arnés.** Lo mínimo:
+
+- **Las dos ramas se miden JUNTAS**, en la misma sesión y con el mismo binario, las dos en
+  **el puerto 5182** (la API valida `STORE_ORIGIN` exacto: en otro puerto las islas mueren en
+  CORS y se mide una página sin refresco en vivo, o sea otra cosa). El `antes` sale de un
+  `git worktree`, construido con las **variables de producción**.
+- ⚠️ **Playwright acá usa el Chrome INSTALADO del usuario, que se actualiza solo.** Entre el
+  09/11 y el 10/11 pasó de 156 a 157 sin que nadie lo tocara. Por eso anotar la versión no
+  alcanza: **re-medir las dos ramas** es lo único que vuelve comparables dos tablas.
+- ⚠️ **ANOTÁ EL ELEMENTO DEL LCP JUNTO A CADA NÚMERO.** Es el control más barato que existe
+  y el único que cazó una tabla falsa **sin que nadie supiera la causa**: si las corridas
+  dicen `h1` en unas y `product-photo` en otras, ya no se está midiendo lo mismo. Anotar
+  también `loadEventEnd` cuesta nada y habría ahorrado tres versiones equivocadas de un
+  hallazgo.
+- ⚠️ **Una mediana solo promedia mediciones del MISMO fenómeno.** Cuando la dispersión no es
+  ruido sino dos fenómenos distintos, la mediana elige el mayoritario **y no avisa**. Y si
+  una tanda da un resultado dudoso, la salida es **aislar la variable** (neutralizar el
+  cambio en el `dist/` ya construido y volver a medir), **no ampliar la muestra** hasta que
+  el número entre: eso cambia el método a mitad de camino.
+- ⚠️ **Una medición tiene que poder dar que NO**, y conviene comprobarlo con un **control
+  positivo**: metele vos la perturbación que buscás y verificá que el arnés la ve. Dos veces
+  en ese plan una medición no podía detectar lo que afirmaba descartar.
+- **Las cuatro trampas del arnés, todas pagadas ya:**
+  1. **`route.fulfill` de Playwright entrega el documento SIN el freno de red de CDP** —
+     64 ms contra 259 con el cuerpo **byte por byte idéntico**, sin solaparse. Interceptar
+     regala ~195 ms, más que cualquier efecto que se esté buscando. **Interceptá las dos
+     ramas o ninguna**, nunca mezcles.
+  2. **Esperá a que `getAnimations()` quede quieto** antes de leer geometría, o medís la
+     animación de entrada todavía corriendo (pasó: 12 px que no eran del cambio).
+  3. **Para ver el respaldo de una fuente hay que bloquear `.woff2` Y `.woff`**: el
+     `@font-face` lista las dos y bloquear una sola carga la fuente igual, así que se mide
+     el estado equivocado creyendo que es el respaldo.
+  4. **Una pestaña de fondo miente**: las transiciones no arrancan y las animaciones no
+     avanzan. Con Playwright `visibilityState` siempre es `visible`.
+- **Y el sesgo que no es del arnés:** los dos builds le pegan a la **API de producción en
+  vivo**. Si el dueño edita el catálogo entre las dos construcciones, la comparación queda
+  contaminada y nada avisa. El control es comparar las URLs de foto de los dos `dist/`
+  (mismo md5) antes de creerle a la tabla.
+- **Un umbral solo sirve aplicado contra el estado CORRECTO.** Comparar «autohospedada +
+  precarga» contra «Google Fonts» cuando el estado relevante era «autohospedada sin
+  precarga» convirtió una regresión del 22 % en un «+28 ms, pasa». Antes de aplicar un
+  umbral, enumerá los estados posibles, no dos.
+
+### Al escribir el porqué
+
+- ⚠️ **Un comentario equivocado no da error, no rompe ningún test, y el próximo lo lee como
+  medido.** Apareció **cinco veces** en un solo plan. Si un número aparece en **dos**
+  lugares, ya divergió: dejá **una** copia y que los demás la citen.
+- ⚠️ **Un mecanismo que explica los datos Y cita código real puede estar igual de equivocado
+  que una corazonada.** Lo que separó uno de la verdad fue una medición de 15 segundos que
+  nadie hizo antes de escribirlo.
+- ⚠️ **Todo número que escribas tiene que salir de un comando que corriste** — incluidos los
+  que te pasaron de arriba y los que describen tu propio trabajo. Los errores de ese plan se
+  repartieron entre números heredados sin re-medir y números inventados sobre el trabajo
+  propio (contar mal sus propios tests sin abrir el archivo).
+- ⚠️ **Antes de concluir desde un dato cierto, enumerá TODOS los blancos a los que aplica.**
+  «Esas insignias son `position: absolute`» era verdad y valía para **un blanco de tres**.
+
+### ⚠️ Lo que la medición dejó sobre la mesa: las fotos pesan demasiado
+
+Medido el 10/11 con red frenada (150 ms, 1,6 Mbps — datos móviles de un cliente
+venezolano), el LCP de las tres pantallas es **malo en las tres**, y el umbral «bueno» de
+Google es 2,5 s:
+
+| Pantalla | Móvil | Escritorio | Elemento |
+|---|---|---|---|
+| Portada | 788 ms | 804 ms | `hero-art` / `h1` — **la única buena** |
+| Listado de categoría | **9,9 s** | **30,6 s** | `product-photo` |
+| Ficha | **4,2 s** | **11,4 s** | `pdp-main` |
+
+El listado es **la primera pantalla que ve un cliente que llega por un enlace de
+categoría**, y es la peor de las tres. La causa es una sola y está medida:
+
+> **Una página de listado baja 12,9 MB de fotos.** Son 12 archivos **PNG** de
+> **542 KB a 1,5 MB cada uno**, servidos a **1254×1254** para cajas de ~350 px. A 1,6 Mbps
+> eso es **más de un minuto** de descarga, y la foto que define el LCP compite por el ancho
+> de banda con las otras once.
+
+Ninguna tarea del plan de fluidez lo toca y meterlo habría sido ampliar el alcance solo.
+
+**Es el hallazgo más valioso del trabajo y está PENDIENTE de una conversación con el
+dueño.** Si alguien va a invertir una tarde en que la tienda «se sienta rápida», es acá y no
+en el movimiento. Ojo con el bloqueador conocido: **no hay `sharp`** en este repo (las
+imágenes van como `<img src>` plano, no `astro:assets`), así que redimensionar no es una
+línea de config.
+
+⚠️ Y un dato que conviene tener antes de medir esto: en el listado, el evento `load` **a
+veces espera a la foto `lazy` y a veces no**, dentro del mismo build. Es una carrera que no
+está aislada. Si una medición del listado da ~1,2 s, no mejoró nada: se cortó la ventana.
 
 ## Qué es y qué NO es
 - **Es** un catálogo de **solo lectura** que consume la API pública de `calc3d-api`
@@ -371,6 +523,50 @@ rescata la 404, ver abajo — pero responde con estado 404.
 ⚠️ **`PUBLIC_API_URL` se HORNEA en el bundle del cliente.** Al probar el refresco contra
 una API distinta hay que **reconstruir**: una corrida apuntando a producción parece
 demostrar que el refresco no anda.
+
+### El refresco en vivo CRUZA, y es una `animation` (no una transición) — 2026-11-09
+
+Cuando `useEnVivo` reemplaza un dato que estaba horneado (un precio, una insignia, el texto
+de la franja), el valor nuevo no aparece seco: **cruza**. Dos formas, y la diferencia
+importa:
+
+- **`useCruce(valor)`** (`components/ui/Cruce.tsx`) esparce el atributo sobre un elemento
+  que YA existe — cero nodos nuevos.
+- **`<Cruce valor>`** solo para **texto suelto en línea** (el precio de la tarjeta es un
+  nodo de texto dentro de un `.price`; el de la franja, un nodo hermano de un emoji).
+  Un envoltorio en línea alrededor de texto en línea no cambia la geometría; uno alrededor
+  de un hijo `display: block` o de un hijo de flex/grid **sí**. Por eso son dos formas.
+
+⚠️ **Es una `animation` y NO una `transition`, y las tres razones son trampas reales:**
+
+1. **Una transición de 0 a 1 obliga a declarar el dato invisible EN REPOSO**, y entonces con
+   `prefers-reduced-motion` se queda esperando: la guardia global solo baja duraciones a
+   `0.01ms`, **no** cancela estados, así que el dato nunca llegaría a opacidad 1. Con una
+   animación el reposo es opacidad **1** y el 0 vive solo dentro del keyframe: si la
+   animación no corre, el dato simplemente está ahí. Por eso tampoco necesita el techo por
+   tiempo que sí necesitan las fotos.
+2. **La transición de las fotos no se podía reusar:** su selector es `img[data-fundir]`,
+   fijado **textualmente** por `fotos-funden.spec.ts`. Ampliarlo rompe un guardián ajeno.
+3. **`transition` es un atajo**, y los blancos del cruce son elementos cualesquiera —
+   `badge.tsx` trae `transition-[color,box-shadow]`, que el atajo se habría comido.
+
+- **Hay DOS keyframes idénticos** (`cruce-1` / `cruce-2`) y el atributo alterna entre ellos.
+  Con uno solo, un elemento que cruza dos veces seguidas no vuelve a animar: reasignar la
+  misma `animation` no la reinicia.
+- ⚠️ **La guardia de `reduce` (`[data-cruce] { animation: none }`) gana SOLO POR ORDEN.**
+  `[data-cruce]` y `[data-cruce='1']` pesan lo mismo (0,1,0), así que **mover el bloque
+  arriba de las marcas devuelve el destello sin que nada se vea roto** — y meterlo en un
+  `@layer` lo rompe igual. Las dos mutaciones están **medidas en rojo** contra
+  **`src/cruce-funde.spec.ts`**: subir la guardia → ROJO; encaparla → ROJO.
+- **Lo que APARECE también cruza**, y no es un capricho: `.pdp-badges` es `display: flex` en
+  flujo normal justo encima del `<h1>` de la ficha, y `.price-alt` es `display: block`, así
+  que una insignia o un tachado que aparece **empuja la página**. Solo en las tarjetas las
+  insignias son `position: absolute` y no mueven nada — ése fue el dato cierto al que se le
+  dio un alcance que no tenía, en dos blancos de tres.
+- **El `0` NO cuenta como ausente.** Un «de $12 a $0» es justo lo que hay que mostrar; un
+  `ausente = (v) => !v` lo escondería y ningún caso feliz lo notaría.
+- **En la ficha dispara `p.price`, no el total**: fundir el total convierte el contador de
+  cantidad en un parpadeo.
 
 ### El producto BORRADO deja de ofrecerse (2026-11-08)
 
@@ -663,6 +859,16 @@ del catálogo.
   llevar `width`/`height`: la reserva de espacio la hace `.hero-art--banner` con
   `aspect-ratio: 1 / 1` (el cuadrado del arte propio) + `object-fit: contain`. Sin eso el
   hero salta cuando la imagen carga.
+- ⚠️ **El banner de CATEGORÍA reserva `16 / 9`** (`.banner-cat img`, + `object-fit: cover`),
+  y el número lo eligió el dueño **por coherencia con la vista previa del panel**: el arte
+  se sube viéndolo en ese recorte, así que cualquier otra proporción acá recorta distinto de
+  lo que el dueño aprobó. No es un valor «de diseño» que se pueda afinar a ojo.
+  - Medido a 390 px con una imagen que nunca carga: **210,9 px** de alto reservado
+    (proporción 1,778). Con `aspect-ratio: auto` vuelve a **0 px** y el listado salta
+    entero cuando llega el arte.
+  - Lo exige **`src/fotos-reservan-espacio.spec.ts`**, y exige el **valor**, no solo que la
+    declaración exista: un guardián que acepte `auto` no protege nada, porque `auto` es
+    exactamente el defecto.
 - **Flash Sale**: isla que consume `/public/store/sale`; `{ sale: null }` → oculta. Contador
   regresivo; el precio cobrado NO cambia (solo tacha + badge `-XX%`).
 
@@ -671,6 +877,68 @@ Navy + amarillo, Poppins, oscuro siempre (`<html class="dark">`). Paleta en
 `src/lib/tokens.css` (`--ink-900 #000814`, `--ink-700 #001D3D`, `--ink-600 #003566`,
 `--yellow #FFC300`, `--yellow-2 #FFD60A`). Logo/isotipo/mascotas en `src/assets/brand/`.
 **No** inventar contadores, reseñas ni portafolio: solo lo verdadero.
+
+### Poppins va AUTOHOSPEDADA, con overrides de métrica (2026-11-09)
+
+Hasta el 09/11 Poppins venía de **Google Fonts por `<link>`**: 5 peticiones a otro dominio
+en una carga de portada (1 de CSS + 4 woff2) justo en el camino crítico, y el `h1` de la
+portada **crecía 37,1 px de alto (33 %)** cuando por fin llegaba, empujando todo lo de
+abajo. Ahora va en el bundle (`@fontsource/poppins`, las 6 caras `latin` por `@import` al
+principio de `global.css`) y **no se le pide nada a Google**.
+
+Lo que sostiene que no salte, y que es lo fácil de romper:
+
+- **Dos `@font-face` de respaldo con overrides de métrica**, calibrados contra **Arial**
+  (`local('Arial'), local('Helvetica'), local('Liberation Sans')`). Uno por rango de peso,
+  con `size-adjust` **104 %** y **123 %**.
+- ⚠️ **Los `ascent-override`/`descent-override` van DIVIDIDOS por su `size-adjust`**, porque
+  `size-adjust` escala también las métricas sobreescritas. Los comentarios del CSS llevan la
+  cuenta al lado de cada número (`1050/1000 / 1.04`). Sin dividir, el ajuste **agrega** el
+  salto que vino a quitar.
+- **Arial, no `system-ui`**: un `size-adjust` solo tiene sentido contra UN juego de anchos
+  concreto. En Windows y macOS `local('Arial')` resuelve y el ajuste aplica; **en Android cae
+  a Roboto**, que es más angosta, y la corrección es parcial. Lo que hace aceptable el
+  riesgo: **toda rama que falle cae a `system-ui` sin ajustar = el comportamiento de antes**,
+  nunca peor.
+- `@fontsource` trae **`font-display: swap`** en cada cara. No se cambia a `block`.
+- Los `size-adjust` se eligieron contra los títulos que el sitio tiene HOY.
+- Lo vigila **`src/fuentes.spec.ts`**.
+
+⚠️ **LA PRECARGA CUESTA 20 ms EN MÓVIL Y 76 ms EN ESCRITORIO, Y ESTÁ PUESTA A PROPÓSITO.**
+No es un descuido ni una optimización a medias: es **decisión del dueño**, tomada con dos
+capturas y los dos números delante. Lo que compra es cerrar la ventana de **~540 ms** en que
+el titular principal de la portada se ve en la familia de respaldo — **no se mueve de
+lugar** (148,3 × 335 px y el mismo quiebre en 4 líneas, con y sin Poppins: los overrides
+funcionan), pero se ve **fino en vez de negro**. Solo afecta la primera visita.
+
+- **El `<link rel="preload">` vive en `Base.astro`** y su URL sale de
+  `import … '@fontsource/poppins/files/poppins-latin-900-normal.woff2?url'`. ⚠️ **Esa ruta
+  no se escribe a mano**: tiene que ser el **mismo** archivo que resuelve el `@font-face`, o
+  son dos URLs y el mismo woff2 se baja **dos veces** — más tráfico que antes de
+  autohospedar.
+- `src/fuentes.spec.ts` **permite esta precarga y prohíbe una segunda** por otro camino.
+- **El peso 900 no es arbitrario:** el CSS *declara* 6 pesos pero la portada *descarga* 4
+  (400, 600, 700, 900); 500 y 800 quedan `unloaded`. Precargar uno de los dos que no se usan
+  habría sido tráfico puro.
+- ⚠️ **No reabrir el tema con una medición nueva sin leer antes la sección de medición de
+  este archivo.** Este número se midió mal una vez (dio −150/−220 ms, o sea «la precarga
+  mejora todo») y el error era del arnés, no de la página.
+
+**El resultado, medido el 10/11 comparando el estado previo al plan contra hoy:**
+
+| | Antes (Google Fonts) | Después |
+|---|---|---|
+| Reflujo del `h1` de la portada (390×844) | **+37,1 px (33 %)** | **0 px** |
+| CLS de la portada móvil | 0,0342 | **0,0167 (−51 %)** |
+| Peticiones a Google por carga | 5 | **0** |
+| Ventana con la fuente de respaldo en pantalla | 514 ms | **0 ms** |
+| LCP de la portada (móvil / escritorio) | 788 / 780 ms | 788 / **804** ms |
+
+O sea: el LCP de la portada queda **igual en móvil y +24 ms en escritorio** (dentro de la
+tolerancia de 50 ms del plan), y a cambio desaparece el salto de 37 px y la mitad del CLS.
+Los 76 ms de la precarga son reales, pero son el costo **contra autohospedada-sin-precarga**,
+que no es el estado del que se viene: autohospedar devuelve casi todo lo que la precarga
+cuesta.
 
 ## Seguridad
 - Todo lo interpolado se **escapa** (`escape.ts`; el JSON-LD escapa `<` para que un

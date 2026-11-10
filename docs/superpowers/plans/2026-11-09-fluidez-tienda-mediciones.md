@@ -1,7 +1,12 @@
 # Fluidez de la tienda — mediciones
 
 **Plan:** [`2026-11-09-fluidez-tienda.md`](2026-11-09-fluidez-tienda.md) ·
-**Línea base:** 2026-11-09 · **Después:** pendiente (Tarea 8)
+**Línea base:** 2026-11-09 · **Después:** 2026-11-10 (Tarea 8)
+
+> ⚠️ **Para comparar, usá la tabla «Final» del fondo, no la «Línea base» de acá arriba.**
+> La línea base del 09/11 se tomó con un binario de Chrome que ya no existe en esta máquina
+> y dos de sus filas no describen el LCP de su pantalla. La Tarea 8 volvió a medir **las dos
+> ramas** el 10/11, con el mismo binario, la misma sesión y los mismos datos de catálogo.
 
 ---
 
@@ -125,6 +130,23 @@ cliente venezolano con datos móviles, en las dos pantallas. No se toca acá —
 cubre y meterlo sería ampliar el alcance solo. **Vale una conversación aparte con el dueño,
 y es la más valiosa que salió de todo este trabajo.**
 
+⚠️ **Y el 10/11 (Tarea 8) se midió el tamaño, que es el número que faltaba para esa
+conversación:** una página de listado baja **12.915.736 bytes (12,9 MB)** de fotos. Son
+**12 PNG** de **542 KB a 1,5 MB** cada uno, todos a **1254×1254** para cajas de ~350 px.
+Medido con `curl` contra `fotos.bananolab-3d.com`, archivo por archivo:
+
+| | |
+|---|---|
+| Formato | `image/png` en **12 de 12** — ni WebP ni AVIF |
+| El más liviano / el más pesado | 554.807 B / 1.565.540 B |
+| Total de la página | **12.915.736 B** |
+| A 1,6 Mbps (200 KB/s) | **~64 s** para bajarlas todas |
+
+Eso explica los dos números sin ninguna hipótesis: la foto que define el LCP compite con las
+otras once por el ancho de banda. ⚠️ **El bloqueador conocido: este repo no tiene `sharp`**
+(las imágenes van como `<img src>` plano, no `astro:assets`), así que redimensionar o
+convertir no es una línea de configuración.
+
 ### 3. El reflujo de la fuente es real y vale 37 px en el peor sitio
 
 El `h1` de la portada crece **37,1 px de alto (33 %)** cuando llega Poppins, y empuja todo
@@ -182,13 +204,14 @@ que la puso a prueba.
   una diferencia de medición, es otro objeto.
 - ✅ **El LCP real del listado es ~9,6 s en móvil y ~30 s en escritorio**, y no lo movió el
   trabajo de la Tarea 4 (9.692 → 9.672 ms aislando la variable en el `dist/` construido).
-- ❌ **La causa de que la línea base leyera 1,2 s no está identificada.** Quedan dos
-  candidatos y no elegí entre ellos sin medir: (1) la línea base corrió contra un `dist/`
-  anterior a las Tareas 1-3, y (2) corrió con **otro binario de Chromium** (el de ahora es
-  156.0.8078.81), y que una imagen `lazy` bloquee o no el evento `load` depende de la
-  versión. La Tarea 8 lo resuelve gratis, porque re-mide la base **y** el después con el
-  mismo binario: si ahí la base vuelve a dar 1,2 s, es el `dist/`; si da 9,6 s, era el
-  binario.
+- ✅ **La causa quedó identificada el 10/11 (Tarea 8), y no era ninguno de los dos
+  candidatos como estaban planteados: era la VENTANA DE MEDICIÓN.** Ver
+  «Por qué la línea base leyó 1,2 s» en la sección Final. En resumen: con la ventana de
+  2.500 ms, el `dist/` de `07638a0` da **1,1-1,5 s en unas corridas y 9,6-12,6 s en otras**,
+  según si el evento `load` de esa corrida esperó o no a la foto perezosa. No es el binario:
+  la base re-medida hoy reproduce las dos modas. Los dos candidatos se descartan tal como
+  estaban escritos — el `dist/` **sí** participa, pero no porque fuera más lento, sino
+  porque su `load` es una carrera.
 
 **La lección, que sobrevive a las dos versiones equivocadas:** el control que caza esto es
 **anotar el elemento del LCP junto a cada número**, y es el único de todos los que
@@ -331,4 +354,144 @@ Arial, que es lo que resuelve en Windows; en Android `local('Arial')` cae a Robo
 corrección es parcial. La propiedad que hace aceptable el riesgo es que **toda rama que
 falle cae a `system-ui` sin ajustar = el comportamiento de hoy**, nunca peor.
 
-### Final — pendiente (Tarea 8)
+### Final — Tarea 8, 2026-11-10
+
+## 🏁 VEREDICTO
+
+> **Pasa. Las 6 filas quedan dentro del umbral y NO se revierte nada.** La peor fila es el
+> LCP de la portada en escritorio: **+24 ms (+3,1 %)** contra una tolerancia de 50 ms. El
+> elemento del LCP es **el mismo antes y después en las 6 filas, en 5 de 5 corridas cada
+> una**, así que las dos tablas miden lo mismo. De yapa, dos mejoras que ninguna tarea
+> prometió: el CLS de la portada móvil baja **−51 %** y el de la ficha en escritorio
+> **−36 %**.
+
+### Cómo se midió esta tanda (y en qué se diferencia de la línea base)
+
+| | |
+|---|---|
+| Antes | `git worktree` en **`07638a0`** (último estado antes del plan), `pnpm install`, build con las variables de producción |
+| Después | **`b197bff`**, build con las mismas variables, verificado por contenido (`--dur-rapida`/`--dur-panel` de la Tarea 7, URL de Railway, 0 `localhost`) |
+| Servidor | Las **dos** en `astro preview --port 5182`, una después de otra (`pnpm exec astro preview stop` entre medio). El puerto no es un detalle: la API valida `STORE_ORIGIN` exacto |
+| Binario | **Chrome 157.0.8103.39**, el mismo para las dos ramas y en la misma sesión |
+| Red, caché, ventanas, pantallas, tamaños | Idénticos al método de arriba (150 ms / 1,6 Mbps / 750 kbps, contexto nuevo por corrida, `load` + 2.500 ms salvo el listado: 12 s en móvil y 33 s en escritorio) |
+| Control de datos | Las **12 URLs de foto** del listado dan el **mismo md5** en los dos builds, y la foto de la ficha medida es la misma. Los dos builds le pegan a la API de producción en vivo, así que sin este control el dueño editando el catálogo entre medio habría contaminado la comparación |
+
+⚠️ **El binario cambió solo, a mitad del plan.** La línea base del 09/11 se tomó con
+**156.0.8078.81** y hoy la misma máquina trae **157.0.8103.39**: Playwright acá no usa un
+Chromium empaquetado, usa el **Chrome instalado del usuario**
+(`C:\Program Files\Google\Chrome\Application\chrome.exe`), que se actualiza por su cuenta.
+Por eso «mismo binario» no se puede conseguir **entre días**, solo dentro de una tanda — y
+por eso la regla correcta no es anotar la versión, es **re-medir las dos ramas juntas**.
+
+### LCP y CLS — móvil (390×844)
+
+| Pantalla | Antes | Después | Δ | Tolerancia | Elemento (antes → después) | |
+|---|---|---|---|---|---|---|
+| Portada | **788 ms** | **788 ms** | **0 ms (0,0 %)** | 50 ms | `hero-art` 5/5 → `hero-art` 5/5 | ✅ |
+| Listado `navidad` | **9.792 ms** | **9.852 ms** | +60 ms (+0,6 %) | 490 ms | `product-photo` 5/5 → `product-photo` 5/5 | ✅ |
+| Ficha | **4.188 ms** | **4.172 ms** | −16 ms (−0,4 %) | 209 ms | `pdp-main` 5/5 → `pdp-main` 5/5 | ✅ |
+
+| Pantalla | CLS antes | CLS después | Δ |
+|---|---|---|---|
+| Portada | 0,0342 | **0,0167** | **−51 %** |
+| Listado | 0,0097 | 0,0100 | +0,0003 (ruido) |
+| Ficha | 0,0739 | 0,0735 | −0,5 % |
+
+Corridas crudas del LCP (ms):
+
+| | Antes | Después |
+|---|---|---|
+| Portada | 1.052 · 748 · 832 · 748 · 788 | 812 · 788 · 780 · 772 · 796 |
+| Listado | 11.004 · 9.692 · 9.792 · 10.088 · 9.784 | 9.964 · 9.852 · 9.852 · 9.648 · 9.676 |
+| Ficha | 4.344 · 4.132 · 4.160 · 4.336 · 4.188 | 4.172 · 4.144 · 4.176 · 4.136 · 4.180 |
+
+### LCP y CLS — escritorio (1280×800)
+
+| Pantalla | Antes | Después | Δ | Tolerancia | Elemento (antes → después) | |
+|---|---|---|---|---|---|---|
+| Portada | **780 ms** | **804 ms** | **+24 ms (+3,1 %)** | 50 ms | `h1` 5/5 → `h1` 5/5 | ✅ |
+| Listado `navidad` | **30.340 ms** | **30.580 ms** | +240 ms (+0,8 %) | 1.517 ms | `product-photo` 5/5 → `product-photo` 5/5 | ✅ |
+| Ficha | **11.360 ms** | **11.420 ms** | +60 ms (+0,5 %) | 568 ms | `pdp-main` 5/5 → `pdp-main` 5/5 | ✅ |
+
+| Pantalla | CLS antes | CLS después | Δ |
+|---|---|---|---|
+| Portada | 0,0081 | 0,0083 | +0,0002 (ruido) |
+| Listado | 0,0081 | 0,0083 | +0,0002 (ruido) |
+| Ficha | 0,0402 | **0,0258** | **−36 %** |
+
+Corridas crudas del LCP (ms):
+
+| | Antes | Después |
+|---|---|---|
+| Portada | 780 · 824 · 736 · 780 · 1.028 | 868 · 796 · 768 · 804 · 920 |
+| Listado | 30.520 · 29.964 · 30.672 · 30.340 · **11.916** | 30.204 · 30.596 · 30.580 · 29.676 · 30.584 |
+| Ficha | 11.400 · 11.360 · 11.340 · 11.292 · 11.424 | 11.296 · 11.368 · 11.628 · 11.420 · 11.620 |
+
+⚠️ **Los 11.916 ms del listado de la base son reales y se dejan escritos**: en esa corrida
+la foto llegó mucho antes, con el **mismo elemento** (`product-photo`) que las otras cuatro.
+O sea que es dispersión del **mismo** fenómeno, no dos fenómenos como en la línea base, y la
+mediana lo absorbe con derecho. Lo que lo autoriza es el elemento, no la forma de la
+distribución.
+
+### La precarga de la fuente: costo aceptado, no regresión pendiente
+
+El umbral habría mandado revertir la precarga del woff2 del peso 900 (**20 ms de LCP en
+móvil, 76 ms en escritorio**, medido en la Tarea 5 con las dos ramas bajo el mismo
+tratamiento). **No se revierte: es decisión del dueño**, tomada con las dos capturas y los
+dos números delante, y lo que compra es cerrar la ventana de ~540 ms en que el titular
+principal de la portada se ve en la familia de respaldo (fino en vez de negro; **no se
+mueve de lugar**, eso ya lo resuelven los overrides de métrica).
+
+⚠️ **Y medido de punta a punta, la excepción ni se necesita.** Los 76 ms son el costo de la
+precarga contra *autohospedada sin precarga*, que **no es ninguna de las dos ramas de esta
+tabla**. La fila que la contiene —portada escritorio— cierra en **+24 ms**, dentro de la
+tolerancia de 50 ms: autohospedar devuelve la mayor parte de lo que cuesta la precarga. El
+número de 76 ms sigue siendo cierto y sigue siendo el costo de una decisión; lo que no es,
+es una regresión abierta.
+
+### Por qué la línea base leyó 1,2 s en el listado (causa cerrada)
+
+La pregunta que quedó abierta en el hallazgo 5 era: la base decía **1.244 ms** y hoy esa
+pantalla mide **~9,8 s** — ¿fue el `dist/` viejo o fue el binario? Se zanjó re-midiendo la
+base con el binario de hoy, y la respuesta es **el `dist/`… por un mecanismo que no era
+ninguna de las dos explicaciones escritas**:
+
+| Base `07638a0`, listado móvil, Chrome 157 | Resultado |
+|---|---|
+| Ventana de **12 s** (la de hoy) | **9.792 ms**, `product-photo` en **5 de 5** |
+| Ventana de **2.500 ms** (la de la línea base) | **bimodal**: 1.476 ms con `product-desc` **o** 9,6-10,0 s con `product-photo`, según la corrida |
+
+Y el reparto de las dos modas cambia de tanda en tanda sobre el mismísimo `dist/`:
+**3 rápidas / 2 lentas** en una tanda y **1 rápida / 4 lentas** en otra. La línea base
+original cayó en una tanda con mayoría rápida (9.796 · 1.244 · 1.228 · 1.388 · 1.136) y su
+mediana eligió esa moda.
+
+**Lo que separa las dos modas, medido:** el `loadEventEnd` de la corrida. Donde da
+**~1,2-1,5 s**, el evento `load` **no esperó** a la foto perezosa, la ventana de 2.500 ms
+cerró a los ~3,9 s y el observador se quedó con el candidato anterior (`product-desc`,
+10.897 px²). Donde da **~11,7 s**, `load` sí la esperó y el número es el de la foto
+(83.145 px²).
+
+**Qué queda en firme:**
+
+- ✅ **No fue el binario.** La base re-medida con el binario de hoy reproduce las dos modas.
+- ✅ **El `dist/` participa, pero no por ser más lento.** Base y después miden el mismo LCP
+  en esa pantalla (9.792 vs 9.852 ms). La «regresión de 1,2 s a 9,6 s» **nunca existió**:
+  era el arnés leyendo dos cosas distintas.
+- ✅ **La «versión 2» del hallazgo 5 estaba sustancialmente BIEN** (la ventana corta se
+  agota antes de que llegue la foto `lazy`), y lo que la hizo parecer falsa fue que la
+  medición que la refutó corrió contra el **`dist/` equivocado** — el actual, donde `load`
+  espera a la foto en 5 de 5 y entonces la ventana corta alcanza igual. La refutación
+  repitió el pecado original: medir el artefacto que no era.
+- ❌ **Lo que NO sé, y no invento:** por qué dentro de un mismo build el evento `load`
+  espera a una imagen `lazy` en unas corridas y no en otras. Es una carrera que no aislé.
+  Escribir acá un mecanismo plausible es exactamente el defecto que este plan pagó cinco
+  veces.
+
+**La lección final sobre el método, que es la que hay que llevarse:** lo único que cazó esto
+—dos veces, sin conocer la causa— fue **anotar el elemento del LCP junto a cada número**. Una
+tabla cuyas corridas dicen `h1` en unas y `product-photo` en otras ya está mal, y se nota sin
+entender por qué. La mediana, en cambio, promedia lo que le den: cuando la dispersión son dos
+fenómenos, elige el mayoritario y no avisa. El segundo control, más barato todavía, es
+**anotar `loadEventEnd`**: 15 segundos de trabajo que habrían ahorrado tres versiones
+equivocadas de un hallazgo.
