@@ -94,7 +94,14 @@ function archivos(dir: string, acc: string[] = []): string[] {
   for (const entrada of readdirSync(dir)) {
     const ruta = join(dir, entrada);
     if (statSync(ruta).isDirectory()) archivos(ruta, acc);
-    else if (/\.(astro|tsx)$/.test(entrada) && !/\.spec\.tsx$/.test(entrada)) acc.push(ruta);
+    // ⚠️ **`.ts` TAMBIÉN** (2026-11-10). Barría solo `.astro` y `.tsx`, así que
+    // un `.ts` con texto de cara al usuario quedaba afuera **aunque su forma
+    // estuviera en la lista**: `lib/pedido.ts` validaba el formulario de pedido
+    // con «Escribí tu nombre» y «Escribí un WhatsApp válido» mientras `shared`
+    // ya respondía «Escribe tu nombre» — el cliente podía ver las dos personas
+    // en la misma pantalla según quién tirara el error.
+    else if (/\.(astro|tsx|ts)$/.test(entrada) && !/\.spec\.tsx?$/.test(entrada))
+      acc.push(ruta);
   }
   return acc;
 }

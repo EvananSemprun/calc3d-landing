@@ -48,10 +48,10 @@ describe('itemsParaPedido', () => {
 
 describe('validarContacto', () => {
   it('nombre corto → mensaje', () => {
-    expect(validarContacto({ name: 'A', phone: '04121234567' })).toBe('Escribí tu nombre.');
+    expect(validarContacto({ name: 'A', phone: '04121234567' })).toBe('Escribe tu nombre.');
   });
   it('teléfono con menos de 7 dígitos → mensaje', () => {
-    expect(validarContacto({ name: 'Evan', phone: '123' })).toBe('Escribí un WhatsApp válido.');
+    expect(validarContacto({ name: 'Evan', phone: '123' })).toBe('Escribe un WhatsApp válido.');
   });
   it('datos válidos → null', () => {
     expect(validarContacto({ name: 'Evan', phone: '0412 1234567' })).toBeNull();

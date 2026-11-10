@@ -45,6 +45,6 @@ export async function pedirUrlDeFoto(file: File): Promise<string> {
   const destino = data as DestinoFirmado;
   // `fetch` a pelo: la URL firmada no lleva ni debe llevar nada nuestro.
   const put = await fetch(destino.url, { method: 'PUT', headers: destino.headers, body: file });
-  if (!put.ok) throw new Error('No se pudo subir la foto. Probá de nuevo.');
+  if (!put.ok) throw new Error('No se pudo subir la foto. Prueba de nuevo.');
   return destino.key;
 }

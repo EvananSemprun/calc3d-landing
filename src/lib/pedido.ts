@@ -37,8 +37,8 @@ export function itemsParaPedido(items: ItemCarrito[]): LineaPedido[] {
 /** Valida en el navegador lo mismo que exige el contrato, para no gastar un viaje
  *  (ni una de las 5 solicitudes por minuto) en un nombre vacío. null = ok. */
 export function validarContacto(d: { name: string; phone: string }): string | null {
-  if (!d.name || d.name.trim().length < 2) return 'Escribí tu nombre.';
-  if ((d.phone.match(/\d/g) ?? []).length < 7) return 'Escribí un WhatsApp válido.';
+  if (!d.name || d.name.trim().length < 2) return 'Escribe tu nombre.';
+  if ((d.phone.match(/\d/g) ?? []).length < 7) return 'Escribe un WhatsApp válido.';
   return null;
 }
 
