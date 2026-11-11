@@ -11,9 +11,7 @@ import Base from '../../layouts/Base.astro';
 import CtaCotizar from '../../components/CtaCotizar.astro';
 import CategoriasEnVivo from '../../components/catalogo/CategoriasEnVivo';
 import DestacadosEnVivo from '../../components/catalogo/DestacadosEnVivo';
-import TarjetaProducto from '../../components/catalogo/TarjetaProducto';
 import { cargarTienda } from '../../lib/tienda-build';
-import { rutaDeCategoria } from '../../lib/paginacion';
 import { destacadosDe, TOPE_DESTACADOS_TIENDA } from '../../lib/portada';
 
 const { completos, info, listados, raices, categoriasDelIndice } = await cargarTienda();
