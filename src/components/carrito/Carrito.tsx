@@ -25,6 +25,7 @@
 //     mientras la info viaja se dice que está en camino, que no es lo mismo que faltar.
 import { useEffect, useState } from 'react';
 import Foto from '@/components/ui/Foto';
+import Cantidad from '@/components/ui/Cantidad';
 import {
   contar,
   fijarCantidad,
@@ -137,14 +138,10 @@ export default function Carrito() {
   // ⚠️ Cerrar NO vacía el carrito: ver la regla 1 del encabezado.
   const cerrar = () => setAbierto(false);
 
-  const bajar = (i: ItemCarrito) => {
-    const min = i.minQty ?? 1;
-    const nueva = i.qty - 1;
-    if (nueva < min) quitar(claveDe(i));
-    else fijarCantidad(claveDe(i), nueva);
-  };
-  const subir = (i: ItemCarrito) => fijarCantidad(claveDe(i), i.qty + 1);
-
+  // ⚠️ **Bajar de la cantidad mínima ya NO borra el renglón** (2026-11-11). Lo hacía
+  // `bajar()`, que desapareció con el selector compartido: ahora `−` se apaga en el
+  // mínimo y para sacar algo está «Quitar», que está al lado. Perder un renglón por
+  // tocar `−` una vez de más era fácil y no tenía deshacer.
   const total = totalPedido(items);
   // El nombre ya no se pide: en WhatsApp el cliente llega con el suyo y pedirlo acá era
   // un campo más entre el cliente y la compra.
@@ -202,14 +199,18 @@ export default function Carrito() {
                       <strong>${totalRenglon(precioRenglon(i), i.qty).toFixed(2)}</strong>
                       <span className="dim cart-row-unit"> · ${precioRenglon(i).toFixed(2)} c/u</span>
                     </div>
-                    <div className="qty cart-row-qty">
-                      <button type="button" onClick={() => bajar(i)} aria-label="menos">
-                        –
-                      </button>
-                      <span>{i.qty}</span>
-                      <button type="button" onClick={() => subir(i)} aria-label="más">
-                        +
-                      </button>
+                    {/* ⚠️ «Quitar» va FUERA del `.qty`, y no es cosmético: adentro perdía
+                        por especificidad contra `.qty button` y heredaba su `width: 32px`
+                        y su borde redondo, así que el recuadro amarillo del hover no
+                        envolvía la palabra —la «Q» quedaba afuera— y el botón era más
+                        alto que − y +. */}
+                    <div className="cart-row-qty">
+                      <Cantidad
+                        valor={i.qty}
+                        minimo={i.minQty ?? 1}
+                        onCambiar={(n) => fijarCantidad(clave, n)}
+                        etiqueta={`Cantidad de ${i.nombre ?? 'este producto'}`}
+                      />
                       <button className="cart-del" type="button" onClick={() => quitar(clave)}>
                         Quitar
                       </button>

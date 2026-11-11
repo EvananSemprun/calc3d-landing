@@ -706,6 +706,78 @@ llegaría con otro.
   vez** (el único con tramos no tiene recargos). O sea que el agujero habría
   quedado latente hasta que el árbol de Navidad llevara mayoreo.
 
+## Una opción puede EXIGIR una medida de otro grupo (2026-11-11)
+
+Los grupos de opciones son independientes y se suman sin mirarse, así que el árbol de
+Navidad se podía pedir en **12 cm con 7 nombres** —que no entran— y la ficha cotizaba
+**$9,50** cuando con los 18 cm que hacen falta son **$16,50**: $7 regalados por pedido.
+
+⚠️ **La regla ya estaba escrita en el catálogo y nadie la leía**: el dueño rotula la
+opción «**7 nombres · desde 18 cm**». `lib/restricciones.ts` la lee de ahí
+(`restriccionDeMedida`), apaga los tamaños que no alcanzan y sube al permitido más barato
+(`corregirSeleccion`). **Decisión del dueño** frente a las otras dos salidas: un mecanismo
+de dependencias en el modelo (correcto, pero es migración + contrato + pantalla de panel) o
+partir el producto en dos (sin código, pero le cambia el catálogo y las URLs).
+
+- ⚠️ **EL LÍMITE: depende de un TEXTO.** Si la etiqueta se reescribe de otra forma —«7
+  nombres (18 cm o más)»— la regla deja de aplicar **y nada falla**: vuelve el bug. Las
+  formas reconocidas están fijadas en `restricciones.spec.ts`.
+- **Nada está escrito a mano**: el grupo de medidas se DERIVA (aquel cuyas opciones son
+  todas «N cm»), así que renombrarlo «Alto» no lo rompe, y ningún `slug` aparece en el
+  código. Para el resto del catálogo la función devuelve `null` y no cuesta nada.
+- **La corrección SUBE el precio sin que el visitante lo pida, así que se dice** (un
+  `role="status"` bajo las opciones). Un número que cambia solo es el mismo bug al revés.
+- Las opciones prohibidas **se apagan, no se esconden**: una opción que desaparece deja al
+  visitante buscando el tamaño que vio hace un segundo.
+- **El campo de personalización deja de ser «(opcional)»** cuando lo elegido pide nombres:
+  pasa a «Escribe los nombres, uno por línea», bloquea el botón de agregar y avisa si se
+  escriben más de los que se pagaron (`problemaDeNombres`). Cuántos se pagaron sale de la
+  misma etiqueta (`cantidadDeNombres`); «Más de 10 · lo coordinamos» no declara cuántos y
+  solo exige que haya algo.
+- ⚠️ **Y LA NOTA AHORA VIAJA EN EL MENSAJE DE WHATSAPP.** Hasta ese mismo día no llegaba a
+  ninguna parte: iba en el `POST` a la bandeja, y al sacar ese POST se perdía entera y en
+  silencio —el carrito la mostraba en pantalla y el mensaje no la decía—. Sin eso el pedido
+  llega sin el dato con el que se fabrica la pieza. La FOTO no viaja (una clave de bucket
+  no le sirve a nadie en un chat): el mensaje pide que la manden por ahí.
+- Tests: `lib/restricciones.spec.ts` (22, función pura) y `ficha/Ficha.spec.tsx` (5, el
+  CABLEADO — el bug vivía justo ahí, en que nadie leía la regla). Por mutación, que la
+  ficha ignore `corregirSeleccion` tumba 2 de pantalla y **0** de función pura.
+
+## El contador de cantidad se ESCRIBE (2026-11-11)
+
+El número entre − y + era un `<span>`: para pedir 24 unidades había que tocar «+» 24 veces.
+Ahora es un campo editable, en **`components/ui/Cantidad.tsx`**, y lo usan la ficha **y** el
+carrito — con dos copias del mismo JSX, el día que una gane el teclado la otra se queda
+atrás y nadie se entera (es lo que le pasó a las dos tarjetas del catálogo con «Nuevo»).
+
+- Solo dígitos; vacío, 0 o negativo vuelven al mínimo **al salir**, no al teclear (si no,
+  no se podría borrar para escribir otra cifra). Lo válido se confirma **en el acto**, para
+  que el total, el tramo de mayoreo y el carrito se muevan mientras escribe.
+- Enter confirma, ↑/↓ suben y bajan, y **dejar apretado − o + repite** (400 ms de espera,
+  90 ms por paso).
+- ⚠️ **El valor vigente vive en una REF, no en el estado.** Los pasos de la repetición
+  salen de un temporizador que capturó el render en que arrancó: con el estado, las diez
+  repeticiones calculan desde el MISMO número viejo. Lo encontró su test, que daba 2 donde
+  esperaba 6.
+- ⚠️ **El primer paso lo da el `click`, no el `pointerdown`**, y el `click` que viene
+  DESPUÉS de un `pointerdown` se descarta. El teclado no emite `pointerdown`: sin ese
+  filtro, el mouse contaría dos pasos por clic y el teclado ninguno.
+- ⚠️ **Bajar del mínimo ya NO borra el renglón del carrito**: `−` se apaga y para sacar
+  algo está «Quitar». Perder un renglón por tocar `−` una vez de más era fácil y no tenía
+  deshacer.
+- ⚠️ **El `.qty` pasó de 104 a 120 px** (el campo mide 40 donde el `span` medía 24), así
+  que `.esq-cantidad` lo acompaña. Su guardián **solo comparaba el ALTO**, o sea que el
+  ancho del esqueleto no lo vigilaba nadie: ahora `esqueleto-mide.spec.ts` lo deriva de las
+  tres declaraciones que lo dibujan (2 botones + 2 huecos + el campo). Medido en el
+  navegador: 120 px.
+- ⚠️ **«Quitar» salió del `.qty`, y el bug era de ESPECIFICIDAD**: `.cart-del` (0,1,0)
+  perdía contra `.qty button` (0,1,1), así que heredaba su `width: 32px` y su borde — el
+  recuadro del hover no envolvía la palabra (la «Q» quedaba afuera) y era más alto que − y
+  +. Como hermano, `.cart-del` manda sobre sí mismo. Medido después: 57×32 para un texto de
+  37 px, alineado al píxel con el contador.
+- Tests: `components/ui/Cantidad.spec.tsx` (9), incluidos la repetición con temporizadores
+  falsos y los dos caminos del clic (mouse y teclado).
+
 ## El pedido va DIRECTO a WhatsApp (2026-11-11)
 
 ⚠️ **La tienda ya no escribe NADA en el servidor.** Hasta el 2026-11-11 el cajón pedía

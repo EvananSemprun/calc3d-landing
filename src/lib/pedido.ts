@@ -72,10 +72,23 @@ export function mensajePedido({
   info: Pick<InfoApi, 'businessName' | 'rate'>;
   nombre?: string;
 }): string {
-  const lineas = items.map((i) => {
+  // ⚠️ **LA NOTA VA EN EL MENSAJE, y hasta el 2026-11-11 no iba a ninguna parte.** Viajaba
+  // al servidor en el POST a la bandeja; al sacar ese POST, lo que el cliente escribía
+  // —los nombres del árbol de Navidad, entre otras cosas— se perdía entero y en silencio:
+  // el carrito lo mostraba en pantalla y el mensaje no lo decía. Sin esto, el pedido llega
+  // sin el dato con el que se fabrica la pieza.
+  const lineas = items.flatMap((i) => {
     const detalle = describirOpciones(i.opts);
     const nom = i.nombre ?? 'Producto';
-    return `• ${i.qty} × ${nom}${detalle ? ` (${detalle})` : ''} — $${precioRenglon(i).toFixed(2)} c/u`;
+    const fila = `• ${i.qty} × ${nom}${detalle ? ` (${detalle})` : ''} — $${precioRenglon(i).toFixed(2)} c/u`;
+    const extra: string[] = [];
+    // Con saltos de línea adentro (los nombres van uno por renglón) se indenta cada uno,
+    // o el mensaje se lee como si fueran productos sueltos del pedido.
+    if (i.customNote) extra.push(`   ${i.customNote.split('\n').join('\n   ')}`);
+    // La foto NO viaja: la clave del bucket no le sirve a nadie en un chat. Se le pide al
+    // cliente que la mande acá, que es donde ya está escribiendo.
+    if (i.customImageKey) extra.push('   (te mando la foto por aquí)');
+    return [fila, ...extra];
   });
   const total = totalPedido(items);
   const quien = nombre ? `soy ${nombre} y ` : '';

@@ -8,6 +8,7 @@
 import { useMemo, useRef, useState } from 'react';
 import Galeria from './Galeria';
 import Opciones from './Opciones';
+import Cantidad from '@/components/ui/Cantidad';
 import Personalizacion from './Personalizacion';
 import { Badge } from '@/components/ui/badge';
 import { useCruce } from '@/components/ui/Cruce';
@@ -16,6 +17,13 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { abrirCarrito, agregar as agregarAlCarrito } from '@/lib/carrito';
 import { hechosDeFicha, precioBaseConOpciones, seleccionInicial } from '@/lib/ficha';
+import {
+  cantidadDeNombres,
+  corregirSeleccion,
+  nombresPedidos,
+  problemaDeNombres,
+  restriccionDeMedida,
+} from '@/lib/restricciones';
 import { fotosDeOpcion } from '@/lib/galeria';
 import {
   descuentoDeTramo,
@@ -57,6 +65,28 @@ export default function Ficha({ producto: p, info }: Props) {
 
   const grupoFoto = useMemo(() => p.optionGroups.find((g) => g.drivesPhoto), [p.optionGroups]);
   const fotos = useMemo(() => fotosDeOpcion(p, elegido), [p, elegido]);
+
+  // Opciones que exigen una medida mínima de otro grupo (ver `lib/restricciones.ts`).
+  // Con `null` —todo el resto del catálogo— acá no cambia nada.
+  const restriccion = useMemo(
+    () => restriccionDeMedida(p.optionGroups, elegido),
+    [p.optionGroups, elegido],
+  );
+  // ⚠️ El aviso se guarda al ELEGIR, no se deriva del estado: una vez corregido el tamaño,
+  // la restricción ya está satisfecha y un aviso derivado desaparecería en el mismo
+  // instante en que el precio sube. Justo cuando hay que explicarlo.
+  const [avisoMedida, setAvisoMedida] = useState<string | null>(null);
+
+  // ¿Este producto pide nombres? Sale de la etiqueta de lo elegido, no de su slug.
+  // `undefined` = no pide (todo el resto del catálogo); `null` = pide, sin tope declarado.
+  const pideNombres = useMemo(
+    () => p.optionGroups.some((g) => g.options.some((o) => cantidadDeNombres(o.value) !== null)),
+    [p.optionGroups],
+  );
+  const maximoDeNombres = pideNombres ? nombresPedidos(p.optionGroups, elegido) : undefined;
+  const problemaNombres =
+    maximoDeNombres === undefined ? null : problemaDeNombres(nota, maximoDeNombres);
+
   const precioBase = precioBaseConOpciones(p, elegido);
   // Lo que aportan las opciones elegidas. Va APARTE porque un tramo por precio fijo
   // reemplaza al precio de lista y el recargo se cobra encima: sin esto, la ficha
@@ -80,14 +110,27 @@ export default function Ficha({ producto: p, info }: Props) {
   const cruceInsignia = useCruce(p.badge);
 
   const elegir = (grupo: string, valor: string) => {
-    setElegido((prev) => ({ ...prev, [grupo]: valor }));
+    setAvisoMedida(null);
+    setElegido((prev) => {
+      const pedido = { ...prev, [grupo]: valor };
+      // Una opción puede exigir una medida mínima de otro grupo («7 nombres · desde
+      // 18 cm»). Si lo elegido deja de alcanzar, se sube a la permitida más barata.
+      const corregido = corregirSeleccion(p.optionGroups, pedido);
+      if (corregido !== pedido) {
+        const r = restriccionDeMedida(p.optionGroups, pedido);
+        // ⚠️ Esa corrección SUBE el precio sin que el visitante lo haya pedido, así que
+        // se dice. Un número que cambia solo es el mismo bug al revés.
+        if (r) {
+          setAvisoMedida(
+            `${r.porque}: cambiamos el ${r.grupo.toLowerCase()} a ${corregido[r.grupo]}.`,
+          );
+        }
+      }
+      return corregido;
+    });
     // Si cambió el color del grupo que define la foto, se vuelve a la primera foto
     // para no quedar en una miniatura que la nueva opción no tiene.
     if (grupoFoto && grupoFoto.name === grupo) setFotoActiva(0);
-  };
-
-  const cambiarCantidad = (delta: number) => {
-    setCantidad((n) => Math.max(p.minQty || 1, n + delta));
   };
 
   const agregar = async () => {
@@ -248,7 +291,25 @@ export default function Ficha({ producto: p, info }: Props) {
 
         {p.desc && <p className="lead pdp-lead">{p.desc}</p>}
 
-        <Opciones grupos={p.optionGroups} elegido={elegido} onElegir={elegir} />
+        <Opciones
+          grupos={p.optionGroups}
+          elegido={elegido}
+          onElegir={elegir}
+          bloqueadas={
+            restriccion
+              ? {
+                  grupo: restriccion.grupo,
+                  valores: restriccion.bloqueadas,
+                  motivo: `${restriccion.porque}: no entran en menos de ${restriccion.minimo} cm.`,
+                }
+              : undefined
+          }
+        />
+        {avisoMedida && (
+          <p className="pdp-aviso-medida" role="status">
+            {avisoMedida}
+          </p>
+        )}
 
         {p.custom && (
           <Personalizacion
@@ -257,20 +318,24 @@ export default function Ficha({ producto: p, info }: Props) {
             onNota={setNota}
             foto={foto}
             onElegirFoto={setFoto}
+            nombres={
+              maximoDeNombres !== undefined
+                ? { maximo: maximoDeNombres, problema: problemaNombres }
+                : undefined
+            }
           />
         )}
 
         <div className="pdp-buy">
-          <div className="qty">
-            <button type="button" onClick={() => cambiarCantidad(-1)} aria-label="menos">
-              –
-            </button>
-            <span>{cantidad}</span>
-            <button type="button" onClick={() => cambiarCantidad(1)} aria-label="más">
-              +
-            </button>
-          </div>
-          <Button type="button" className="h-11 px-6" onClick={agregar} disabled={subiendo}>
+          <Cantidad valor={cantidad} minimo={p.minQty || 1} onCambiar={setCantidad} />
+          {/* Sin los nombres la pieza no se puede fabricar, así que el botón no deja
+              agregarla: el motivo ya está dicho al lado del campo. */}
+          <Button
+            type="button"
+            className="h-11 px-6"
+            onClick={agregar}
+            disabled={subiendo || problemaNombres !== null}
+          >
             {subiendo ? 'Subiendo foto…' : agregado ? 'Agregado ✓' : 'Agregar al pedido'}
           </Button>
         </div>

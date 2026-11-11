@@ -246,3 +246,102 @@ describe('Ficha — el total se mueve con la cantidad', () => {
     expect(grande).toContain('$1.50');
   });
 });
+
+/**
+ * EL ÁRBOL QUE COBRABA DE MENOS (2026-11-11).
+ *
+ * Con «7 nombres» elegido se podía dejar 12 cm, que no entran, y la ficha cotizaba
+ * **$9,50** cuando con los 18 cm que hacen falta son **$16,50**: $7 regalados por pedido.
+ * Los recargos son los reales del catálogo de producción.
+ *
+ * ⚠️ Lo que se fija acá es el CABLEADO. `restricciones.ts` tiene sus 22 tests de función
+ * pura y seguiría verde con la ficha ignorándola: el bug vivía justo ahí, en que nadie
+ * leía la regla que el dueño ya había escrito en la etiqueta.
+ */
+const arbol = () =>
+  producto({
+    id: 'arbol-de-navidad-con-nombres',
+    name: 'Árbol de Navidad con nombres',
+    price: 8,
+    priceTiers: [],
+    custom: true,
+    minQty: 1,
+    optionGroups: [
+      {
+        name: 'Tamaño',
+        required: true,
+        options: [
+          { value: '12 cm', priceDeltaUsd: 0 },
+          { value: '18 cm', priceDeltaUsd: 7 },
+          { value: '26 cm', priceDeltaUsd: 22 },
+        ],
+      },
+      {
+        name: 'Nombres',
+        required: true,
+        options: [
+          { value: 'Hasta 6 nombres', priceDeltaUsd: 0 },
+          { value: '7 nombres · desde 18 cm', priceDeltaUsd: 1.5 },
+        ],
+      },
+    ],
+  });
+
+const precioGrande = () => document.querySelector('.pdp-price')?.textContent ?? '';
+const botonOpcion = (texto: string | RegExp) => screen.getByRole('button', { name: texto });
+
+describe('Ficha — 7 nombres no entran en 12 cm', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('al elegir 7 nombres, 12 cm queda bloqueado y el tamaño sube a 18 cm', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    // Arranca en la primera de cada grupo: 12 cm + hasta 6 nombres = $8,00.
+    expect(precioGrande()).toContain('$8.00');
+
+    fireEvent.click(botonOpcion(/7 nombres/));
+
+    // 8 + 7 (18 cm) + 1,50 = 16,50. Antes de esto daba 9,50.
+    expect(precioGrande()).toContain('$16.50');
+    expect((botonOpcion(/12 cm/) as HTMLButtonElement).disabled).toBe(true);
+    expect((botonOpcion(/^18 cm/) as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('DICE que cambió el tamaño, porque el precio subió sin que nadie lo pidiera', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    fireEvent.click(botonOpcion(/7 nombres/));
+    expect(screen.getByRole('status').textContent).toContain('18 cm');
+  });
+
+  it('con hasta 6 nombres los tres tamaños siguen disponibles', () => {
+    // El hermano alcanzable: sin él, una ficha que bloqueara 12 cm SIEMPRE pasaría el
+    // primer test.
+    render(<Ficha producto={arbol()} info={info} />);
+    expect((botonOpcion(/12 cm/) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('pide los nombres y no deja agregar sin ellos', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    const agregar = screen.getByRole('button', { name: /agregar/i }) as HTMLButtonElement;
+    expect(agregar.disabled).toBe(true);
+    expect(screen.getByLabelText('Escribe los nombres, uno por línea')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Escribe los nombres, uno por línea'), {
+      target: { value: 'Ana\nLuis' },
+    });
+    expect((screen.getByRole('button', { name: /agregar/i }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('pasarse de los nombres pagados lo dice y vuelve a bloquear', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    fireEvent.change(screen.getByLabelText('Escribe los nombres, uno por línea'), {
+      target: { value: 'A\nB\nC\nD\nE\nF\nG' },
+    });
+    expect(screen.getByText(/Escribiste 7 y elegiste 6/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: /agregar/i }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+  });
+});

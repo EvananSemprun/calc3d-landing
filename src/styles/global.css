@@ -982,6 +982,27 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   }
   .pdp-opt:hover { border-color: var(--card-line-strong); color: var(--text); }
   .pdp-opt.on { border-color: var(--yellow); background: rgba(255, 195, 0, 0.1); color: var(--yellow); }
+  /* Una opción que lo ya elegido deja prohibida (ver `lib/restricciones.ts`). Se APAGA y
+     se queda a la vista con su motivo: esconderla deja al visitante buscando el tamaño
+     que vio hace un segundo. Tachada se lee como «existe y ahora no se puede». */
+  .pdp-opt:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+  .pdp-opt:disabled:hover { border-color: var(--card-line); color: inherit; }
+  .pdp-opt-nota { font-size: 0.82rem; margin: 0; }
+  /* El aviso de que el tamaño se cambió solo. Ámbar en píldora, como el resto de los
+     avisos de la casa: es legítimo y se registra igual, pero sube el precio. */
+  .pdp-aviso-medida {
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 195, 0, 0.45);
+    border-radius: 10px;
+    background: rgba(255, 195, 0, 0.08);
+    color: var(--yellow-2);
+    font-size: 0.88rem;
+  }
   .pdp-opt i {
     width: 14px;
     height: 14px;
@@ -1077,11 +1098,30 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     cursor: pointer;
   }
   .qty button:hover { border-color: var(--yellow); color: var(--yellow); }
+  .qty button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .qty button:disabled:hover { border-color: var(--card-line); color: var(--text); }
   .qty span {
     min-width: 24px;
     text-align: center;
     font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
   }
+  /* El número pasó de `<span>` a campo editable (ver `ui/Cantidad.tsx`). 40px en vez de
+     los 24 del span: tres cifras tienen que entrar sin que el cursor empuje el texto
+     fuera de la caja. Eso ensancha el `.qty` entero de 104 a 120, y por eso cambia
+     también `.esq-cantidad` — su test lo exige, que para eso está. */
+  .qty-input {
+    width: 40px;
+    height: 32px;
+    padding: 0;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid var(--card-line);
+    background: transparent;
+    color: var(--text);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 15px;
+  }
+  .qty-input:focus-visible { outline: 2px solid var(--yellow); outline-offset: 1px; }
 
   .pdp-desc { color: var(--text-dim); white-space: pre-wrap; }
   .pdp-specs-title { font-size: 20px; margin-top: 10px; }
@@ -1126,7 +1166,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
      | `.pdp-price`     |  40     |  30     | `clamp(30px, 4vw, 40px)`, interlínea 1|
      | `.pdp-unit`      |  21,7   |  21,7   | 14px × 1,55                           |
      | línea de `.lead` |  26,35  |  26,35  | 17px × 1,55 (`.pdp-lead` fija 17px)   |
-     | `.qty`           | 104×32  | 104×32  | el contador de la ficha               |
+     | `.qty`           | 120×32  | 120×32  | el contador de la ficha               |
      | botón            | 176×44  | 176×44  | `h-11` de shadcn                      |
 
      Lo que NO se puede medir de antemano es cuántas líneas va a ocupar el título y cuántas
@@ -1162,7 +1202,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
 
   /* El alto es el del botón del contador (`.qty button`); el ancho es el del `.qty`
      entero (32 + 8 + 24 + 8 + 32), que no sale de una sola declaración. */
-  .esq-cantidad { width: 104px; height: 32px; }
+  .esq-cantidad { width: 120px; height: 32px; }
   /* El alto es LITERALMENTE lo que emite `h-11` de Tailwind, que es lo que lleva el botón
      de la ficha: `calc(var(--spacing) * 11)`. Escrito así y no «44px», el día que el
      proyecto cambie `--spacing` las dos cosas se mueven juntas. El ancho, en cambio,
@@ -1278,10 +1318,22 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     font-size: 13px;
     color: var(--yellow);
   }
-  .cart-row-qty { margin-top: 8px; }
+  /* ⚠️ El `align-items` hace falta desde que «Quitar» salió del `.qty`: antes lo alineaba
+     el `inline-flex` de ese contenedor, y al quedar como hermanos el botón se iba 2 px
+     abajo del contador. Medido a 390 px. */
+  .cart-row-qty { margin-top: 8px; display: flex; align-items: center; }
+  /* ⚠️ Vivía DENTRO del `.qty` y perdía por especificidad contra `.qty button` (0,1,1
+     contra 0,1,0): heredaba su `width: 32px` y su borde, así que el recuadro del hover no
+     envolvía la palabra —la «Q» quedaba afuera— y era más alto que − y +. El arreglo es
+     estructural (salió del `.qty`, ver `Carrito.tsx`); esto es lo que queda. */
   .cart-del {
-    width: auto;
-    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    /* El alto es el de `.qty button` a propósito: la fila queda pareja y el blanco
+       táctil deja de ser los 19 px que medía con el alto del texto. */
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
     font-size: 12px;
     color: var(--text-dim);
     background: transparent;
@@ -1289,7 +1341,8 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     cursor: pointer;
     margin-left: 4px;
   }
-  .cart-del:hover { color: var(--text); }
+  .cart-del:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+  .cart-del:focus-visible { outline: 2px solid var(--yellow); outline-offset: 1px; }
   .cart-foot { padding: 18px 22px 24px; border-top: 1px solid var(--card-line); }
   .cart-total { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
   .cart-total-val { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--yellow); text-align: right; }

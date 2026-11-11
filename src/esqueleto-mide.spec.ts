@@ -153,6 +153,32 @@ describe('el esqueleto de la ficha reserva el espacio de la ficha', () => {
     ).toBe(aplanar(real!));
   });
 
+  it('`.esq-cantidad` mide el contador ENTERO, no solo su alto', () => {
+    // ⚠️ Este caso no existía hasta el 2026-11-11 y el de arriba comparaba **solo el
+    // alto**, así que el ANCHO era un número que no vigilaba nadie. Se notó al cambiar el
+    // `<span>` del contador por un campo editable: el `.qty` pasó de 104 a 120 px y el
+    // esqueleto se actualizó a mano, sin que un solo test pudiera decir si estaba bien.
+    // Un hueco de reserva equivocado es un salto de layout, que es lo único que el
+    // esqueleto existe para evitar.
+    const px = (s: string | undefined | null) => Number(String(s ?? '').replace('px', '').trim());
+    const boton = px(valorDe(reglaDe(TODAS, '.qty button'), 'width'));
+    const hueco = px(valorDe(reglaDe(TODAS, '.qty'), 'gap'));
+    const campo = px(valorDe(reglaDe(TODAS, '.qty-input'), 'width'));
+    expect(
+      Number.isFinite(boton) && Number.isFinite(hueco) && Number.isFinite(campo),
+      'No pude leer las tres piezas del contador (`.qty button`, `.qty` gap, `.qty-input`)',
+    ).toBe(true);
+
+    // 2 botones + 2 huecos + el campo. Se deriva de las MISMAS declaraciones que lo
+    // dibujan, así que cambiar cualquiera de las tres mueve el esperado solo.
+    const esperado = boton * 2 + hueco * 2 + campo;
+    expect(
+      px(valorDe(reglaDe(TODAS, '.esq-cantidad'), 'width')),
+      `El contador mide ${esperado}px de ancho (${boton}+${hueco}+${campo}+${hueco}+${boton}) ` +
+        'y el hueco del esqueleto, no.',
+    ).toBe(esperado);
+  });
+
   it('`.esq-boton` mide lo que emite la clase `h-N` del botón de la ficha', () => {
     // `h-11` no está en `global.css` (lo genera Tailwind), así que el número se lee del
     // componente y la expresión es la MISMA que emite Tailwind:
