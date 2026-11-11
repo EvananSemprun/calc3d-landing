@@ -93,7 +93,7 @@ const preguntas = [
 
 <Base
   title="Banano Lab — Impresión 3D a pedido en Venezuela"
-  description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo, desde una unidad. Cotizá por WhatsApp."
+  description="Taller de impresión 3D en Venezuela. Imprimimos piezas por encargo, desde una unidad. Cotiza por WhatsApp."
   canonical="/"
   categorias={raices}
 >
@@ -112,7 +112,7 @@ const preguntas = [
 
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mira por categoría" verTodo client:load />
 
-  <DestacadosEnVivo inicial={destacados} tope={TOPE_DESTACADOS} tasa={info.rate} verTodo client:load />
+  <DestacadosEnVivo inicial={destacados} tope={TOPE_DESTACADOS} tasa={info.rate} fila verTodo client:load />
 
   <FlashSale tasa={info.rate} client:visible />
 

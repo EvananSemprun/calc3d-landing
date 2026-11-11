@@ -1,4 +1,5 @@
 import TarjetaProducto from './TarjetaProducto';
+import Carrusel from '@/components/ui/Carrusel';
 import { fetchProductosCompletos, type TasaApi } from '@/lib/api';
 import { destacadosDe } from '@/lib/portada';
 import type { ProductoVitrina } from '@/lib/producto';
@@ -43,10 +44,17 @@ export default function DestacadosEnVivo({
   // apuntaría siempre a la primera.
   const idTitulo = `franja-${(categoria ?? 'destacados').replace(/[^a-z0-9]+/gi, '-')}`;
 
+  // La etiqueta de categoría de cada tarjeta no aporta nada cuando TODA la franja es de
+  // la misma: once veces «Navidad» debajo de once productos de Navidad es ruido que
+  // compite con el nombre. Se DERIVA de los datos, no del hecho de haber pasado
+  // `categoria`: una franja sin filtrar que casualmente traiga una sola categoría se
+  // comporta igual, y es la misma regla.
+  const unaSolaCategoria = new Set(datos.map((p) => p.cat)).size <= 1;
+
   if (datos.length === 0) return null;
 
   return (
-    <section className="section pt-0" aria-labelledby={idTitulo}>
+    <section className="section" aria-labelledby={idTitulo}>
       <div className="container">
         {verTodo ? (
           <div className="eyebrow-row mb-6">
@@ -55,7 +63,7 @@ export default function DestacadosEnVivo({
             </h2>
             <a
               href={categoria ? `/tienda/${categoria}/` : '/tienda/'}
-              className="text-sm font-semibold text-primary hover:underline"
+              className="enlace-tactil text-sm font-semibold text-primary hover:underline"
             >
               Ver todo →
             </a>
@@ -65,11 +73,19 @@ export default function DestacadosEnVivo({
             {titulo}
           </h2>
         )}
-        <div className={fila ? 'coleccion-fila' : 'grid shop-grid shop-grid--destacados'}>
-          {datos.map((p) => (
-            <TarjetaProducto key={p.id} producto={p} tasa={tasa} />
-          ))}
-        </div>
+        {fila ? (
+          <Carrusel etiqueta={titulo}>
+            {datos.map((p) => (
+              <TarjetaProducto key={p.id} producto={p} tasa={tasa} sinCategoria={unaSolaCategoria} />
+            ))}
+          </Carrusel>
+        ) : (
+          <div className="grid shop-grid shop-grid--destacados">
+            {datos.map((p) => (
+              <TarjetaProducto key={p.id} producto={p} tasa={tasa} sinCategoria={unaSolaCategoria} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

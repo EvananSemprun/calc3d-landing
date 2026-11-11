@@ -54,6 +54,7 @@ import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappCotizar from '../components/WhatsappCotizar.astro';
+import BotonWhatsapp from '../components/BotonWhatsapp.astro';
 import { cargarTienda } from '../lib/tienda-build';
 import { textoDeBanner } from '../lib/banner';
 import Carrito from '../components/carrito/Carrito';
@@ -344,6 +345,7 @@ const textoDeLaFranja = textoDeBanner(banners);
       <slot />
     </main>
     <Footer categorias={categorias} />
+    <BotonWhatsapp />
     <WhatsappCotizar />
     <Carrito client:load />
     <PiezaAMedida client:idle />

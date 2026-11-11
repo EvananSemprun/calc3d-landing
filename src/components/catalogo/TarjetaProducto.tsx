@@ -26,9 +26,20 @@ interface Props {
    * cuáles son es `Catalogo.tsx`, que es el único que sabe en qué posición va cada una.
    */
   prioridad?: boolean;
+  /**
+   * Esconde la etiqueta de categoría. La pone quien sabe si TODA la fila es de la misma:
+   * once veces «Navidad» debajo de once productos de Navidad es ruido que compite con el
+   * nombre del producto. La decide `DestacadosEnVivo`, que es quien ve el conjunto.
+   */
+  sinCategoria?: boolean;
 }
 
-export default function TarjetaProducto({ producto: p, tasa, prioridad = false }: Props) {
+export default function TarjetaProducto({
+  producto: p,
+  tasa,
+  prioridad = false,
+  sinCategoria = false,
+}: Props) {
   const ficha = rutaFicha(p.id);
   const enOferta = !!p.compareAt && p.compareAt > p.price;
   const linea = lineaDeTarjeta(p);
@@ -62,6 +73,11 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
         ) : (
           <div className="ph" data-label="sin foto" />
         )}
+        {/* ⚠️ «Personalizable» SALIÓ de acá (2026-11-11) y bajó al cuerpo de la tarjeta.
+            Con cuatro insignias apiladas sobre la esquina, la foto quedaba tapada justo
+            donde está el producto. Las tres que quedan son anuncios —algo cambió, algo
+            está en oferta—; «personalizable» es un ATRIBUTO, y un atributo se lee con el
+            resto de los datos, no encima de la foto. No se escondió nada. */}
         <div className="product-badges">
           {p.badge && (
             <Badge className={INSIGNIA_DESTACADA} {...cruceInsignia}>
@@ -70,7 +86,6 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
           )}
           {p.nuevo && <Badge className={INSIGNIA_NUEVO}>Nuevo</Badge>}
           {enOferta && <Badge className={INSIGNIA_OFERTA}>Oferta</Badge>}
-          {p.custom && <Badge className={INSIGNIA_SUAVE}>Personalizable</Badge>}
         </div>
       </a>
 
@@ -81,7 +96,7 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
           </h3>
           {p.kind === 'SERVICE' && <Badge className={INSIGNIA_SUAVE}>Servicio</Badge>}
         </div>
-        {linea && <p className="product-line mono">{linea}</p>}
+        {linea && !sinCategoria && <p className="product-line mono">{linea}</p>}
         {p.desc && <p className="product-desc">{p.desc}</p>}
 
         <div className="product-meta">
@@ -92,6 +107,7 @@ export default function TarjetaProducto({ producto: p, tasa, prioridad = false }
               ))}
             </div>
           )}
+          {p.custom && <Badge className={INSIGNIA_SUAVE}>Personalizable</Badge>}
           {entrega && <span className="mono dim text-xs">{entrega}</span>}
           {minimo && <span className="mono dim text-xs">{minimo}</span>}
         </div>

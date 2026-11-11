@@ -25,8 +25,14 @@
     return digitos.startsWith('0') ? `58${digitos.slice(1)}` : digitos;
   }
 
+  // ⚠️ DOS marcadores, y la diferencia importa: `cotizar` lo INTERCEPTA `PiezaAMedida`
+  // para abrir su modal, y `wa-directo` no — es el botón flotante, que tiene que abrir el
+  // chat y nada más. Los dos se rellenan con el mismo teléfono desde acá; si se llenara
+  // solo uno, el otro quedaría en `href="#"`, que es un botón de venta muerto.
   const enlaces = () =>
-    Array.from(document.querySelectorAll<HTMLAnchorElement>('a[data-bl="cotizar"]'));
+    Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[data-bl="cotizar"], a[data-bl="wa-directo"]'),
+    );
 
   function ocultar() {
     enlaces().forEach((a) => (a.hidden = true));
@@ -58,6 +64,10 @@
         a.href = `https://wa.me/${tel}?text=${mensaje}`;
         a.target = '_blank';
         a.rel = 'noopener';
+        // El botón flotante NACE oculto (ver `BotonWhatsapp.astro`): recién acá se sabe
+        // que hay teléfono y que el enlace lleva a algún lado. En los demás no cambia
+        // nada, porque nacen visibles.
+        a.hidden = false;
       });
     } catch (e) {
       console.warn('Sin datos del negocio (WhatsApp oculto):', e);

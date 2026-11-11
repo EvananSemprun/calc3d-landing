@@ -23,7 +23,13 @@
   --yellow-2: #FFD60A;  /* amarillo brillante */
   --text: #EAF1FB;
   --text-dim: #9DB2CC;
-  --text-faint: #5d76a0;
+  /* ⚠️ Era `#5d76a0` y daba **3,90:1** sobre la tarjeta (`--ink-750`, #001730): por debajo
+     del 4,5 que pide AA, y a 12 px, que es donde más se nota. Medido el 2026-11-11, el
+     mismo número que reportó el dueño. `#7e97bd` da **6,05:1** y sigue por debajo de
+     `--text-dim` (8,30), así que la jerarquía se conserva: esto es texto secundario, no
+     texto apagado hasta lo ilegible. Lo usan la etiqueta de categoría de las tarjetas y
+     otros tres textos chicos, todos sobre fondo oscuro — subirlo solo puede mejorarlos. */
+  --text-faint: #7e97bd;
   --card-line: rgba(157, 178, 204, 0.16);
   --card-line-strong: rgba(157, 178, 204, 0.30);
   --card-line-hover: rgba(157, 178, 204, 0.45);

@@ -80,6 +80,43 @@ const FORMAS = [
 const VOSEO = new RegExp(`(?<!${LETRA})(${FORMAS.join('|')})(?!${LETRA})`, 'i');
 
 /**
+ * EL IMPERATIVO EN `-á`, POR PATRÓN (2026-11-11).
+ *
+ * ⚠️ **La lista de arriba tenía un agujero estructural, y dejó DOS textos publicados.**
+ * Caza lo que alguien pensó en poner; un imperativo de un verbo que no esté enumerado
+ * pasa en verde, y el español tiene cientos. Los dos que sobrevivieron hasta hoy:
+ * «coordiná» en la franja del encabezado y **«Cotizá» en la meta description**, o sea el
+ * texto que Google muestra. La suite estuvo verde con los dos adentro desde el 09/11.
+ *
+ * El arreglo es el mismo que ya funciona para el presente: un PATRÓN con su lista blanca.
+ * Toda palabra terminada en «á» se marca, salvo las contadas que no son verbos.
+ *
+ * ⚠️ **El primer intento excluía los futuros (`será`, `costará`) dejando fuera lo que
+ * termina en `-rá`, y ESTABA MAL**: se comía los imperativos de todos los verbos en
+ * `-rar`, que son los más comunes de una tienda — «mirá», «comprá», «esperá», «mostrá».
+ * Lo cazó el test de discriminación de abajo. Es el mismo error que ya se había cometido
+ * horas antes en el guardián de la API, donde una exención de `-rás` escondía «comprás» y
+ * «cobrás»: la regla ortográfica NO separa el imperativo del futuro («mirá» y «vivirá»
+ * terminan los dos en «irá»), así que hay que elegir hacia qué lado fallar.
+ *
+ * **Se eligió fallar hacia el FALSO POSITIVO**, y el costo está medido: en TODO el código
+ * fuente hay tres palabras terminadas en «á» —`está` y los dos defectos— y **ni un solo
+ * futuro**. Si algún día alguien escribe «el pedido llegará mañana», este test se pone
+ * rojo nombrando esa palabra y el arreglo es sumarla a la lista blanca: una línea, y a la
+ * vista. Al revés —dejar pasar un «mirá»— el defecto se publica y nadie se entera.
+ *
+ * ⚠️ **`-é` y `-í` quedan FUERA del patrón a propósito**: chocan con el pretérito de «yo»
+ * («compré», «pagué», «escribí», «pedí»), que es legítimo y frecuente, y ahí el falso
+ * positivo sí sería constante. Esas formas siguen en la lista explícita de arriba.
+ */
+const PERMITIDAS_EN_A = ['está', 'acá', 'allá', 'quizá', 'ojalá', 'papá', 'mamá', 'sofá'];
+const IMPERATIVO_EN_A = new RegExp(
+  // Palabra completa terminada en «á» que no esté en la lista blanca.
+  `(?<!${LETRA})(?!(?:${PERMITIDAS_EN_A.join('|')})(?!${LETRA}))${LETRA}*á(?!${LETRA})`,
+  'i',
+);
+
+/**
  * Argentinismos de lugar.
  *
  * ⚠️ **Sin `\b`, y no es un descuido.** En JavaScript `\b` mira si al lado hay un
@@ -146,5 +183,29 @@ describe('el texto de la tienda está en español de Venezuela', () => {
 
   it('tampoco «acá» ni «allá»', () => {
     expect(hallazgos(LUGAR, fuentes)).toEqual([]);
+  });
+
+  it('ni un imperativo en «-á» que la lista no haya previsto', () => {
+    // El que caza lo que nadie pensó en enumerar. Es el que faltaba.
+    expect(hallazgos(IMPERATIVO_EN_A, fuentes)).toEqual([]);
+  });
+
+  it('el patrón distingue el imperativo del futuro y de lo permitido', () => {
+    // Sin esto, un patrón que no encontrara NADA pasaría el test de arriba y el agujero
+    // seguiría abierto con la suite en verde — que es exactamente lo que pasó con la
+    // lista a mano.
+    for (const malo of ['Cotizá por WhatsApp', 'coordiná tu pieza', 'mirá el catálogo'])
+      expect(IMPERATIVO_EN_A.test(malo), `debería marcar: ${malo}`).toBe(true);
+
+    // ⚠️ Los FUTUROS no están en esta lista a propósito: el patrón los marca, y eso es
+    // una decisión, no un descuido (ver el comentario de arriba). Lo que no puede marcar
+    // es lo que no es un verbo.
+    for (const bueno of ['ya está listo', 'quizá mañana', 'el sofá azul', 'más de 10'])
+      expect(IMPERATIVO_EN_A.test(bueno), `NO debería marcar: ${bueno}`).toBe(false);
+
+    // Y la prueba de que la exclusión de `-rá` habría sido un agujero: estos son los
+    // imperativos más comunes de una tienda y todos terminan así.
+    for (const rar of ['comprá ahora', 'esperá un momento', 'mostrá el catálogo'])
+      expect(IMPERATIVO_EN_A.test(rar), `un verbo en -rar también se marca: ${rar}`).toBe(true);
   });
 });

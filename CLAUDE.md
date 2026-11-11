@@ -706,6 +706,95 @@ llegaría con otro.
   vez** (el único con tramos no tiene recargos). O sea que el agujero habría
   quedado latente hasta que el árbol de Navidad llevara mayoreo.
 
+## El carrusel de la portada (2026-11-11)
+
+`.coleccion-fila` eran ~5,5 tarjetas de 200 px cortadas en seco, con la barra de scroll
+del sistema a la vista y sin ninguna señal de que aquello se desplazaba. Ahora es
+**`components/ui/Carrusel.tsx`**: 4 tarjetas en escritorio, 2 en tablet y **1,3 en móvil**
+—el 0,3 es lo que hace que se VEA que hay más—, con flechas, `scroll-snap`, arrastre con
+mouse y sin barra. **Sin librería**: es `overflow-x` + snap + unas pocas líneas.
+
+- ⚠️ **`behavior: 'smooth'` NO MUEVE NADA en esa pista**, y por eso el desplazamiento se
+  anima a mano. Medido en Chrome: `scrollBy`/`scrollTo` con `smooth` dejan `scrollLeft`
+  en 0 y la animación nunca arranca; con `'auto'` se mueve perfecto. **La causa no quedó
+  establecida**: en ese mismo navegador `requestAnimationFrame` entregó **un solo cuadro**
+  para 320 ms, o sea cuadros famélicos. Lo que importa es que la animación propia
+  **degrada bien**: con cuadros normales anima y con cuadros famélicos salta al lugar
+  correcto; `smooth` no hacía nada y los 9 tests seguían verdes (jsdom no tiene scroll).
+- ⚠️ **Después de mover se vuelve a medir A MANO**, sin esperar el evento `scroll`: ese
+  evento va alineado con los cuadros y llegaba tarde, así que la fila quedaba movida y la
+  flecha izquierda APAGADA — sin forma de volver. Medido.
+- ⚠️ **El arrastre se engancha SOLO a `pointerType === 'mouse'`.** El dedo ya tiene el
+  scroll nativo; interceptarlo es cómo estos componentes terminan sintiéndose peores que
+  un scroll normal. Y un arrastre suprime el `click` siguiente **en captura**, o deslizar
+  la fila abre una ficha que nadie quiso abrir.
+- Las flechas **se esconden bajo 560 px**: con 1,3 tarjetas, dos botones de 38 px tapan
+  producto, y ahí el dedo es la forma natural. El teclado no se queda sin salida (los
+  enlaces de las tarjetas son focalizables).
+- Tests: `ui/Carrusel.spec.tsx` (9). ⚠️ El del destino le pasa un `requestAnimationFrame`
+  que responde con un instante muy posterior: así mide el DESTINO —y su recorte en los dos
+  extremos— sin depender de cuadros.
+- ⚠️ **`setup-dom.ts` ganó dos dobles**, `ResizeObserver` y `matchMedia`, que jsdom no
+  trae. Van ahí y **no** como guardas en el componente: un `typeof X !== 'undefined'` sería
+  código muerto en todo navegador real.
+
+**La tarjeta** cambió con él: la foto pasó de `4/3` a **`4/5`** (más alto sin ensanchar la
+tarjeta, que es lo que no se puede tocar), **«Personalizable» bajó de la foto al cuerpo**
+—las otras tres insignias son anuncios, ésa es un atributo— y la **etiqueta de categoría se
+esconde cuando toda la franja es de la misma**, derivado de los datos y no de haber pasado
+`categoria`. ⚠️ `TarjetaIndice` no muestra «Personalizable» porque su índice liviano no
+lleva `custom`, y ese índice se mantiene mínimo a propósito.
+
+**Contraste:** `--text-faint` era `#5d76a0` = **3,90:1** sobre la tarjeta, por debajo del
+4,5 de AA y a 12 px. Pasó a `#7e97bd` = **6,05:1**, todavía por debajo de `--text-dim`
+(8,30) para conservar la jerarquía. Lo usan cuatro textos chicos, todos sobre fondo oscuro.
+
+**El hero no entraba en un teléfono.** Medido a 390×844: los botones arrancaban en **747 de
+844** y el segundo terminaba en 847, fuera de la pantalla. Con el título a 30 px y el arte
+a 150, van de **600 a 700**. ⚠️ La primera medición dio números absurdos porque
+`window.scrollTo(0, 0)` **no llegó**: con el `scroll-behavior: smooth` del repo hay que
+pasar `behavior: 'instant'`, que ya está escrito en la sección de mediciones.
+
+## Áreas táctiles y el botón flotante de WhatsApp (2026-11-11)
+
+- **`BotonWhatsapp.astro`**, montado en `Base`. ⚠️ Lleva **`data-bl="wa-directo"` y no
+  `cotizar`**: los `cotizar` los intercepta `PiezaAMedida` para abrir su modal, y éste
+  tiene que abrir el chat. Los dos los rellena `WhatsappCotizar`. **Nace `hidden`** y se
+  muestra al tener teléfono: si naciera visible, con la API caída habría un botón de venta
+  que no hace nada.
+- ⚠️ Su `:hover` que mueve vive dentro de `@media (hover: hover)` **porque lo exigió
+  `hover-con-reduce.spec.ts`**: en un teléfono un hover que mueve se queda pegado al tocar.
+  El guardián hizo su trabajo.
+- **Áreas táctiles de 44 px**: «Ver todo →» daba 20 y los enlaces del pie 33. ⚠️ La regla
+  va con **`(pointer: coarse), (max-width: 560px)`**, las dos. Lo correcto en teoría es
+  solo la primera —decide el dedo, no la pantalla—, pero **un Chrome de escritorio
+  redimensionado a 390 px sigue reportando puntero FINO**, así que con esa sola no se puede
+  verificar sin emular un dispositivo: medido, el pie seguía en 33. Con el ancho, queda
+  comprobable. Después: pie 45-60, «Ver todo» 44.
+
+## El guardián de voseo tenía un agujero ESTRUCTURAL (2026-11-11)
+
+La lista a mano caza lo que alguien pensó en enumerar; un imperativo de un verbo que no
+esté pasa en verde. **Dos textos sobrevivieron desde el 09/11**: «coordiná» en la franja
+del encabezado y «Cotizá» en la **meta description**, o sea el texto que muestra Google.
+Y al poner el patrón apareció un **tercero** que nadie había visto, en `/impresion-3d/`.
+
+- El arreglo es un **patrón sobre `-á`** con lista blanca (`IMPERATIVO_EN_A`), igual que ya
+  se hacía con el presente.
+- ⚠️ **El primer intento excluía los futuros dejando fuera lo terminado en `-rá`, y ESTABA
+  MAL**: se comía «mirá», «comprá», «esperá», «mostrá» — los imperativos más comunes de una
+  tienda. Lo cazó el test de discriminación. Es **el mismo error** que se cometió horas
+  antes en el guardián de la API con una exención de `-rás` que escondía «comprás».
+- **Se eligió fallar hacia el FALSO POSITIVO**, y el costo está medido: en todo el código
+  hay tres palabras terminadas en «á» y **ni un futuro**. Si aparece uno, el test se pone
+  rojo nombrándolo y se agrega a la lista blanca: una línea, a la vista. Al revés, el
+  defecto se publica.
+- ⚠️ **`-é` y `-í` quedan fuera del patrón**: chocan con el pretérito de «yo» («compré»,
+  «escribí»), donde el falso positivo sería constante.
+- ⚠️ **El guardián de `calc3d-api`/`calc3d-web` tiene el MISMO agujero y sigue abierto**:
+  su lista de imperativos son 12 palabras. Acá no se tocó porque es otro repo y tiene
+  trabajo sin desplegar.
+
 ## Una opción puede EXIGIR una medida de otro grupo (2026-11-11)
 
 Los grupos de opciones son independientes y se suman sin mirarse, así que el árbol de
