@@ -1044,6 +1044,35 @@ Un `TEXTO` no lleva imagen y un `CATEGORIA` exige su categoría: lo fija el cont
 que además **prohíbe** lo ajeno a cada tipo. Un `CATEGORIA` cuya categoría se borró **no
 se devuelve** por la API: no hay página donde mostrarlo.
 
+### El HERO lleva DOS imágenes (2026-11-11)
+
+Un `HERO` tiene **fondo** (`backgroundUrl`: la foto grande detrás del texto, a todo el
+ancho) y **arte** (`imageUrl`: lo que reemplaza al banano, en la columna de al lado).
+**Las dos son opcionales por separado y hace falta al menos una** — lo exige el contrato.
+
+⚠️ **El filtro es el que decide si un banner se ve, y era la pieza que faltaba.**
+`bannersDeHero` pedía `imageUrl`, así que un banner **con solo fondo** se guardaba bien en
+el panel, la API lo publicaba, y la portada **no lo mostraba nunca, sin un solo error**.
+Hoy acepta `imageUrl || backgroundUrl`; 3 tests fijan las tres combinaciones. Si alguna
+vez se agrega una tercera imagen al hero, **este filtro es el tercer lugar que hay que
+tocar** (contrato → proyección pública → filtro).
+
+⚠️ **El velo sobre el fondo (`.hero-fondo::after`) NO es decoración: es lo que hace que el
+título se lea.** El texto va en blanco y, encima de una foto cualquiera, la mitad de las
+veces no se distingue. Son dos degradados (horizontal en escritorio, **vertical en el
+teléfono**, porque ahí el texto ocupa todo el ancho). Verificado en el navegador con una
+foto **clara a propósito** —el caso difícil para texto blanco— a 1280×900. Si se saca, el
+hero pasa a ser legible por suerte.
+
+- La capa del fondo va **FUERA del `.container`** (su razón de ser es el ancho completo) y
+  se dibuja **solo la del slide activo**: con todas montadas, el navegador baja varias
+  fotos de 1920 px para mostrar una.
+- Sin arte, el slide lleva `hero-slide--sin-arte` y el texto toma la fila entera, acotado
+  a `56ch`: una línea de 1.200 px no se lee.
+- ⚠️ **El fondo NO va en `fotos-reservan-espacio.spec.ts`**, y está dicho en el propio
+  test: está posicionado absoluto cubriendo al hero, así que no empuja nada al cargar —
+  reservarle alto sería reservarlo dos veces.
+
 ⚠️ Los tres **ya no necesitan un despliegue**: se refrescan en el navegador como el resto
 del catálogo.
 - Si los banners fallan, el build **NO** se cae (`fetchBanners().catch(() => [])`): un
