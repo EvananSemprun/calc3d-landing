@@ -106,13 +106,26 @@ export default function HeroEnVivo({
       aria-label="Novedades"
       aria-roledescription={varias ? 'carrusel' : undefined}
     >
+      {/* ⚠️ EL FONDO va FUERA del `.container` y detrás de todo: tiene que ocupar el ancho
+          completo de la pantalla, no el del contenido. Solo se dibuja el de la
+          diapositiva activa — con todos montados, el navegador bajaría cuatro imágenes
+          grandes de una.
+
+          ⚠️ El `alt` va VACÍO a propósito: es decoración. Lo que dice la diapositiva ya
+          está en el `<h1>` de al lado, y un lector de pantalla que lea dos veces lo mismo
+          estorba. */}
+      {slides[activa]?.backgroundUrl && (
+        <div className="hero-fondo" aria-hidden="true">
+          <img src={slides[activa].backgroundUrl ?? ''} alt="" />
+        </div>
+      )}
       <div className="container">
         {slides.map((b, i) => {
           const href = enlaceBanner(b, rutasDeCategoria);
           return (
             <div
               key={`${b.title}-${i}`}
-              className="hero-art-grid hero-slide"
+              className={`hero-art-grid hero-slide${b.imageUrl ? '' : ' hero-slide--sin-arte'}`}
               {...(i === activa ? { 'data-activa': '' } : { 'aria-hidden': 'true' })}
               aria-roledescription={varias ? 'diapositiva' : undefined}
               aria-label={varias ? `${i + 1} de ${slides.length}` : undefined}
@@ -138,12 +151,18 @@ export default function HeroEnVivo({
                   </a>
                 </div>
               </div>
-              <img
-                className="hero-art hero-art--banner"
-                src={b.imageUrl ?? ''}
-                alt={b.title ?? ''}
-                loading={i === 0 ? 'eager' : 'lazy'}
-              />
+              {/* ⚠️ El arte de al lado es OPCIONAL desde el 2026-11-12: un banner puede
+                  traer solo el fondo, y entonces el texto va sobre la foto. Sin este
+                  condicional se dibujaría un `<img>` con `src=""`, que el navegador
+                  pinta como imagen rota. */}
+              {b.imageUrl && (
+                <img
+                  className="hero-art hero-art--banner"
+                  src={b.imageUrl}
+                  alt={b.title ?? ''}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
+              )}
             </div>
           );
         })}

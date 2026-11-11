@@ -92,3 +92,22 @@ describe('los tres tipos de banner', () => {
     expect(bannerDeCategoria([hero, cat], null)).toBeNull();
   });
 });
+
+describe('bannersDeHero — el fondo del hero', () => {
+  it('un banner con SOLO fondo entra', () => {
+    // Antes del 2026-11-12 el filtro exigía `imageUrl` y lo habría descartado en
+    // silencio: el dueño cargaba el banner, lo veía publicado en el panel, y la portada
+    // seguía con el banano.
+    expect(bannersDeHero([{ title: 'Navidad', backgroundUrl: 'https://cdn/f.png' }])).toHaveLength(1);
+  });
+
+  it('con SOLO arte sigue entrando, como siempre', () => {
+    expect(bannersDeHero([{ title: 'Navidad', imageUrl: 'https://cdn/a.png' }])).toHaveLength(1);
+  });
+
+  it('sin ninguna de las dos NO entra', () => {
+    // El hermano alcanzable: sin él, un filtro que dejara pasar todo aprobaría los de
+    // arriba y la portada dibujaría una diapositiva vacía.
+    expect(bannersDeHero([{ title: 'Navidad' }])).toHaveLength(0);
+  });
+});

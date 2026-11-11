@@ -21,7 +21,14 @@ import { reglaDe as cuerpoDe, reglas, sinComentarios } from './test/css';
 
 const RUTA = join(__dirname, 'styles', 'global.css');
 
-/** Clases que pintan una foto remota. Si agregas una nueva, SÚMALA aquí. */
+/**
+ * Clases que pintan una foto remota. Si agregas una nueva, SÚMALA aquí.
+ *
+ * ⚠️ **`.hero-fondo img` NO está, y no es un olvido.** El fondo del hero vive en una capa
+ * `position: absolute; inset: 0` y se estira al 100 % de ella: no puede empujar nada al
+ * cargar, que es lo único que este guardián vigila. Agregarla lo pondría rojo pidiéndole
+ * un `aspect-ratio` que ahí no significa nada.
+ */
 const CLASES_CON_FOTO_REMOTA = [
   '.banner-cat img',
   '.hero-art--banner',

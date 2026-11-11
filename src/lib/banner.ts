@@ -13,6 +13,13 @@ export interface Banner {
   subtitle?: string | null;
   /** null en los de TEXTO: no tienen imagen. */
   imageUrl?: string | null;
+  /**
+   * EL FONDO del hero: la imagen grande detrás del texto, a todo el ancho.
+   *
+   * ⚠️ Es OTRA cosa que `imageUrl`, que es el arte al costado (el que reemplaza al
+   * banano). Un banner de portada puede traer las dos, solo el fondo, o solo el arte.
+   */
+  backgroundUrl?: string | null;
   /** Solo en CATEGORIA: el slug de la categoría donde se muestra. */
   categorySlug?: string | null;
   linkType?: 'CATEGORY' | 'PRODUCT' | 'URL' | null;
@@ -26,10 +33,13 @@ export interface Banner {
  * del 2026-11-08, y el servidor manda HERO por defecto. Sin esa tolerancia, una API
  * vieja dejaría la portada sin carrusel y sin que nada falle.
  *
- * ⚠️ Sin imagen no entra: una diapositiva vacía es un hueco.
+ * ⚠️ Sin NINGUNA de las dos imágenes no entra: una diapositiva vacía es un hueco. Pero
+ * desde el 2026-11-12 alcanza con el FONDO — un banner sin arte de al lado es válido y
+ * pinta el título sobre la foto. Este filtro exigía `imageUrl` y habría descartado en
+ * silencio justo los banners que el dueño cargue de esa forma.
  */
 export function bannersDeHero(banners: Banner[]): Banner[] {
-  return banners.filter((b) => (b.kind ?? 'HERO') === 'HERO' && !!b.imageUrl);
+  return banners.filter((b) => (b.kind ?? 'HERO') === 'HERO' && (!!b.imageUrl || !!b.backgroundUrl));
 }
 
 /**
