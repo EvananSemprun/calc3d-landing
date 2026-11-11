@@ -108,3 +108,53 @@ describe('el cajón del pedido', () => {
     expect(foto.src).toContain('rojo.jpg');
   });
 });
+
+/**
+ * EL PEDIDO VA DIRECTO A WHATSAPP (2026-11-11).
+ *
+ * ⚠️ Estos tres casos nacen porque este archivo **nunca cubrió el checkout**: al sacar el
+ * formulario y el `POST` a la bandeja, los 5 tests de arriba quedaron verdes sin mirar el
+ * cambio. Un spec que no se pone rojo cuando se borra medio componente no estaba
+ * protegiendo esa mitad.
+ */
+describe('el pedido va directo a WhatsApp', () => {
+  it('no pide ningún dato: el botón está sin pasar por un formulario', async () => {
+    sembrar([RENGLON]);
+    await abrir();
+
+    const boton = await screen.findByRole('link', { name: 'Pedir por WhatsApp' });
+    expect(boton.getAttribute('href')).toContain('wa.me/584146317864');
+    // El mensaje lleva el pedido armado: pieza, cantidad y total.
+    const href = decodeURIComponent(boton.getAttribute('href') ?? '');
+    expect(href).toContain('Identificadores para lápices');
+    expect(href).toContain('Total: $12.50 BCV');
+
+    // Y no quedó ningún campo de contacto en el camino.
+    expect(screen.queryByLabelText(/nombre/i)).toBeNull();
+    expect(screen.queryByLabelText(/whatsapp/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /enviar pedido/i })).toBeNull();
+  });
+
+  it('no dice que el pedido quedó registrado, porque ya no se registra', async () => {
+    sembrar([RENGLON]);
+    await abrir();
+    await screen.findByRole('link', { name: 'Pedir por WhatsApp' });
+    // El texto viejo afirmaba algo que dejó de ser cierto: es la clase de mentira que
+    // nadie nota, porque se lee bien.
+    expect(screen.queryByText(/bandeja/i)).toBeNull();
+    expect(screen.queryByText(/Recibimos tu pedido/i)).toBeNull();
+  });
+
+  it('cerrar el cajón NO vacía el carrito', async () => {
+    // Sin copia en el servidor, vaciar sobre un mensaje que capaz no se envió es perder
+    // el pedido entero. Es la regla 1 del encabezado del componente.
+    sembrar([RENGLON]);
+    await abrir();
+    await screen.findByRole('link', { name: 'Pedir por WhatsApp' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'cerrar' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Carrito').className).not.toContain('open'));
+    expect(JSON.parse(localStorage.getItem(CLAVE_CARRITO) ?? '[]')).toHaveLength(1);
+  });
+});

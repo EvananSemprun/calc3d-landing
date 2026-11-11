@@ -471,10 +471,12 @@ está aislada. Si una medición del listado da ~1,2 s, no mejoró nada: se cort�
 ## Qué es y qué NO es
 - **Es** un catálogo de **solo lectura** que consume la API pública de `calc3d-api`
   (`/public/store/*`). Sin sesión, sin datos personales guardados.
-- **NO es** un ecommerce con pago. El pedido se **registra** en la bandeja del panel y se
-  **cierra por WhatsApp** (decisión explícita: evita pasarela y toda la superficie de
-  seguridad de los pagos).
-- **NO hay cuentas de cliente.** Se pide como invitado: nombre + WhatsApp.
+- **NO es** un ecommerce con pago. El pedido **se cierra por WhatsApp** (decisión
+  explícita: evita pasarela y toda la superficie de seguridad de los pagos).
+- ⚠️ **Y desde el 2026-11-11 tampoco se REGISTRA en ninguna parte**: el botón abre WhatsApp
+  y nada más. Ver «El pedido va directo a WhatsApp» abajo.
+- **NO hay cuentas de cliente, y ya ni siquiera se pide el nombre.** No se guarda ningún
+  dato personal en ningún lado: el único que existe es el que WhatsApp ya trae.
 
 ## SEO (lo que NO se puede regresar)
 - Una página HTML por ruta **y por producto**, con su `<title>`, `description`, canonical,
@@ -704,21 +706,51 @@ llegaría con otro.
   vez** (el único con tramos no tiene recargos). O sea que el agujero habría
   quedado latente hasta que el árbol de Navidad llevara mayoreo.
 
-## Carrito → WhatsApp: la única escritura (y sus reglas)
-`api-escritura.ts` (`enviarPedido`, `enviarConsulta`) es lo único que **escribe**:
-`POST /public/store/orders` y `/custom-requests`. Cuatro cosas que no hay que romper:
-1. **El precio NO se manda.** El payload lleva `{slug, qty, options, customNote?,
-   customImageKey?}` y nada más; el total lo calcula el servidor. `itemsParaPedido` descarta
-   todo lo demás del renglón.
+## El pedido va DIRECTO a WhatsApp (2026-11-11)
+
+⚠️ **La tienda ya no escribe NADA en el servidor.** Hasta el 2026-11-11 el cajón pedía
+nombre y WhatsApp, hacía `POST /public/store/orders` y recién entonces ofrecía el botón;
+la pieza a medida hacía lo mismo contra `/custom-requests`. **Decisión del dueño:** las
+dos puertas abren WhatsApp y punto. El formulario pedía datos que WhatsApp ya trae, en el
+momento exacto de la compra, que es donde se pierden las ventas.
+
+**La bandeja del panel queda sin usarse y NO se quitó** (decisión del dueño): el endpoint
+sigue vivo, y por eso `api-escritura.ts` (`enviarPedido`, `enviarConsulta`),
+`itemsParaPedido` y `validarContacto` **se quedan en el repo con sus tests**. No son
+código muerto por descuido: volver atrás es un import.
+
+**Lo que se perdió, dicho para que no lo descubra alguien dentro de seis meses:**
+- un pedido que no se termina de mandar por WhatsApp **no deja ningún rastro**;
+- el pedido ya no nace con `originChannel: STORE`: la atribución por campaña hay que
+  ponerla a mano al crearlo en el panel;
+- ⚠️ **el total del mensaje lo calcula la TIENDA y el servidor ya no lo recalcula**, así
+  que una regla de precio que falte en `lib/precio.ts` se le manda al cliente **por
+  escrito**. Esto cambia dónde tiene que vivir la validación del árbol de Navidad (el
+  punto 1 del spec de noviembre pedía cerrarla «también en el servidor al crear el
+  pedido», y ya no hay creación de pedido en el servidor).
+
+**Reglas que no hay que romper:**
+1. ⚠️ **El carrito NO se vacía solo**, ni al cerrar el cajón. Sin copia en el servidor,
+   vaciarlo sobre un mensaje que capaz no se envió es perder el pedido entero. Se vacía
+   quitando renglones. Lo mismo con el texto del modal de pieza a medida.
 2. **El renglón del carrito guarda el unitario PRE-TRAMO** (base + recargos de opción); el
    descuento por mayoreo lo aplica `precioUnitarioItem`/`precioRenglon` con la cantidad
    ACTUAL. Guardarlo ya con descuento lo aplicaría dos veces.
 3. **El carrito DENORMALIZA** el nombre/imagen/tramos/mínimo en cada renglón al agregarlo,
    para renderizar el cajón **sin re-traer el catálogo** en cada página (robusto, sin
-   depender de CORS para mostrar). Solo el ENVÍO del pedido y el WhatsApp usan la API.
-4. **Nunca se pierde la venta**: si el POST falla, se muestra el motivo real del backend y
-   se ofrece **igual** el botón de WhatsApp. El carrito se vacía al **cerrar** el cajón
-   (tras enviar), no al enviar.
+   depender de CORS para mostrar). De la API solo sale el mensaje (teléfono y tasa).
+4. **Sin el WhatsApp del negocio no hay enlace: se DICE, no se esconde el botón.** Y
+   mientras la info viaja se dice que está en camino — «todavía no llegó» y «llegó y no
+   trae teléfono» son dos cosas distintas, y antes no se notaba porque el botón aparecía
+   recién después de enviar.
+5. La **pieza a medida** conserva **un** campo, el de qué necesita: sin él no hay mensaje
+   que mandar. El botón queda **apagado y a la vista** con el motivo al lado.
+
+⚠️ **Y una advertencia sobre los tests:** `Carrito.spec.tsx` **nunca cubrió el checkout**,
+así que al borrar el formulario entero los 416 tests quedaron **verdes**. Los casos del
+flujo nuevo están en `Carrito.spec.tsx` («el pedido va directo a WhatsApp», 3) y en
+`PiezaAMedida.spec.tsx` (3, el archivo no existía). Medido por mutación: devolver el
+vaciado automático al cerrar tumba **1** test, el que corresponde.
 
 La **pieza a medida** (`PiezaAMedida`) intercepta los enlaces `[data-bl="cotizar"]` por
 delegación con `preventDefault`; si el JS falla, el enlace a WhatsApp (que pone

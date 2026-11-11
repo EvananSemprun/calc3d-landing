@@ -1,36 +1,41 @@
-// Cajón del carrito + checkout → WhatsApp. Isla global (montada en Base), presente en
-// todas las páginas. Abre cuando se hace clic en cualquier `[data-bl="cart-open"]`
-// (el botón del header), y mantiene la insignia `[data-bl="cart-count"]` al día.
+// Cajón del carrito → WhatsApp. Isla global (montada en Base), presente en todas las
+// páginas. Abre cuando se hace clic en cualquier `[data-bl="cart-open"]` (el botón del
+// header), y mantiene la insignia `[data-bl="cart-count"]` al día.
 //
-// Reglas que NO hay que romper (del sitio viejo):
-//  1. El precio NO se manda (ver api-escritura / itemsParaPedido). Lo calcula la API.
-//  2. Nunca se pierde la venta: si el POST falla, se muestra el motivo real y se ofrece
-//     IGUAL el botón de WhatsApp.
-//  3. El carrito se vacía al CERRAR el cajón (tras enviar), no al enviar: así el mensaje
-//     de WhatsApp sigue armado mientras el cliente lo va a tocar.
+// ⚠️ **EL PEDIDO YA NO SE REGISTRA EN LA BANDEJA** (2026-11-11, decisión del dueño).
+// Antes este cajón pedía nombre y WhatsApp, hacía `POST /public/store/orders` y recién
+// entonces ofrecía el botón. Ahora va DIRECTO a WhatsApp: sin formulario y sin escribir
+// nada en el servidor. Lo que se gana es el paso que se saca en el momento exacto de la
+// compra, que es donde se pierden las ventas. Lo que se pierde va dicho acá, para que no
+// lo descubra alguien dentro de seis meses:
+//  - un pedido que no se termina de mandar por WhatsApp **no deja ningún rastro**;
+//  - el pedido ya no nace con `originChannel: STORE`, así que la atribución por campaña
+//    hay que ponerla a mano al crearlo en el panel;
+//  - el total del mensaje lo calcula ESTA pantalla y el servidor ya no lo recalcula, así
+//    que una regla de precio que falte acá se le manda al cliente **por escrito**.
+//
+// `lib/api-escritura.ts` y los helpers del pedido (`itemsParaPedido`, `validarContacto`)
+// se dejan en el repo A PROPÓSITO: el endpoint sigue vivo y la bandeja sigue en el panel,
+// así que volver atrás es un import. No son código muerto por descuido.
+//
+// Reglas que NO hay que romper:
+//  1. **El carrito NO se vacía solo.** Sin copia en el servidor, vaciarlo sobre un mensaje
+//     que capaz no se envió es perder el pedido entero. Se vacía quitando renglones.
+//  2. Sin el WhatsApp del negocio no hay enlace: **se dice**, no se esconde el botón. Y
+//     mientras la info viaja se dice que está en camino, que no es lo mismo que faltar.
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import Foto from '@/components/ui/Foto';
 import {
   contar,
   fijarCantidad,
   leer,
   quitar,
-  vaciar,
   claveDeItem,
   EVENTO_ABRIR_CARRITO,
   type ItemCarrito,
 } from '@/lib/carrito';
-import { enviarPedido } from '@/lib/api-escritura';
 import { fetchInfo, type InfoApi } from '@/lib/api';
-import {
-  describirOpciones,
-  itemsParaPedido,
-  mensajePedido,
-  precioRenglon,
-  totalPedido,
-  validarContacto,
-} from '@/lib/pedido';
+import { describirOpciones, mensajePedido, precioRenglon, totalPedido } from '@/lib/pedido';
 import { equivalenteEnMoneda, totalRenglon } from '@/lib/precio';
 import { urlWhatsapp } from '@/lib/telefono';
 
@@ -71,10 +76,9 @@ export default function Carrito() {
   const [abierto, setAbierto] = useState(false);
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [info, setInfo] = useState<InfoApi | null>(null);
-  const [datos, setDatos] = useState({ name: '', phone: '', note: '' });
-  const [enviando, setEnviando] = useState(false);
-  const [hecho, setHecho] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Distingue "la info todavía viaja" de "la info llegó y no trae WhatsApp". Sin esto,
+  // el primer render tras abrir el cajón diría que falta el teléfono del negocio.
+  const [infoListo, setInfoListo] = useState(false);
 
   const refrescar = () => setItems(leer());
 
@@ -119,21 +123,19 @@ export default function Carrito() {
   const abrir = () => {
     refrescar();
     setAbierto(true);
-    // La info (teléfono, tasa, nombre) se usa solo para el mensaje de WhatsApp: se
-    // trae perezosamente al abrir. Si falla, el pedido igual se puede enviar.
-    if (!info) fetchInfo().then(setInfo).catch(() => setInfo(null));
-  };
-
-  const cerrar = () => {
-    setAbierto(false);
-    // El pedido ya se envió: vaciar acá (no al enviar) deja el WhatsApp armado.
-    if (hecho) {
-      vaciar();
-      setHecho(false);
-      setError(null);
-      setDatos({ name: '', phone: '', note: '' });
+    // La info (teléfono, tasa, nombre) arma el mensaje de WhatsApp: se trae perezosamente
+    // al abrir. Si falló, se vuelve a intentar al reabrir — puede haber sido un corte.
+    if (!info) {
+      setInfoListo(false);
+      fetchInfo()
+        .then(setInfo)
+        .catch(() => setInfo(null))
+        .finally(() => setInfoListo(true));
     }
   };
+
+  // ⚠️ Cerrar NO vacía el carrito: ver la regla 1 del encabezado.
+  const cerrar = () => setAbierto(false);
 
   const bajar = (i: ItemCarrito) => {
     const min = i.minQty ?? 1;
@@ -144,38 +146,14 @@ export default function Carrito() {
   const subir = (i: ItemCarrito) => fijarCantidad(claveDe(i), i.qty + 1);
 
   const total = totalPedido(items);
+  // El nombre ya no se pide: en WhatsApp el cliente llega con el suyo y pedirlo acá era
+  // un campo más entre el cliente y la compra.
   const urlWa =
     info?.whatsappPhone && items.length
-      ? urlWhatsapp(info.whatsappPhone, mensajePedido({ items, info, nombre: datos.name || undefined }))
+      ? urlWhatsapp(info.whatsappPhone, mensajePedido({ items, info }))
       : null;
 
-  const enviar: React.FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    if (enviando) return;
-    const problema = validarContacto(datos);
-    if (problema) return setError(problema);
-    if (!items.length) return setError('Tu carrito está vacío.');
-
-    setEnviando(true);
-    setError(null);
-    try {
-      const customer = {
-        name: datos.name.trim(),
-        phone: datos.phone.trim(),
-        ...(datos.note.trim() ? { note: datos.note.trim() } : {}),
-      };
-      await enviarPedido(customer, itemsParaPedido(items));
-      setHecho(true);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo enviar.';
-      const conPunto = /[.!?]$/.test(msg.trim()) ? msg.trim() : `${msg.trim()}.`;
-      setError(`${conPunto} Puedes mandarlo igual por WhatsApp.`);
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  const mostrarPie = items.length > 0 || hecho;
+  const mostrarPie = items.length > 0;
 
   return (
     <>
@@ -257,67 +235,19 @@ export default function Carrito() {
               </span>
             </div>
 
-            {!hecho ? (
-              <form className="checkout" onSubmit={enviar} noValidate>
-                <label>
-                  Tu nombre
-                  <input
-                    name="name"
-                    autoComplete="name"
-                    maxLength={80}
-                    value={datos.name}
-                    onChange={(e) => setDatos({ ...datos, name: e.target.value })}
-                    required
-                  />
-                </label>
-                <label>
-                  Tu WhatsApp
-                  <input
-                    name="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    maxLength={30}
-                    placeholder="0412 1234567"
-                    value={datos.phone}
-                    onChange={(e) => setDatos({ ...datos, phone: e.target.value })}
-                    required
-                  />
-                </label>
-                <label>
-                  Algo que debamos saber <span className="dim">(opcional)</span>
-                  <textarea
-                    name="note"
-                    rows={2}
-                    maxLength={500}
-                    value={datos.note}
-                    onChange={(e) => setDatos({ ...datos, note: e.target.value })}
-                  />
-                </label>
-                {error && <p className="checkout-error">{error}</p>}
-                <Button type="submit" className="w-full" disabled={enviando}>
-                  {enviando ? 'Enviando…' : 'Enviar pedido'}
-                </Button>
-              </form>
+            {urlWa ? (
+              <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
+                Pedir por WhatsApp
+              </a>
+            ) : infoListo ? (
+              <p className="dim cart-wa-falta">Falta el WhatsApp del negocio para armar el enlace.</p>
             ) : (
-              <div className="checkout-done">
-                <strong>Recibimos tu pedido</strong>
-                <p className="dim">
-                  Ya está en nuestra bandeja. Confírmalo por WhatsApp y coordinamos pago y entrega.
-                </p>
-              </div>
+              <p className="dim cart-wa-falta">Preparando el enlace de WhatsApp…</p>
             )}
 
-            {(hecho || error) &&
-              (urlWa ? (
-                <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
-                  Pedir por WhatsApp
-                </a>
-              ) : (
-                <p className="dim cart-wa-falta">Falta el WhatsApp del negocio para armar el enlace.</p>
-              ))}
-
-            <p className="dim cart-foot-nota">Coordinamos el pago y la entrega por WhatsApp.</p>
+            <p className="dim cart-foot-nota">
+              Se abre WhatsApp con tu pedido escrito. Ahí coordinamos el pago y la entrega.
+            </p>
           </div>
         )}
       </aside>

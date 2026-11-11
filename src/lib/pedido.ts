@@ -85,11 +85,13 @@ export function mensajePedido({
   return msg;
 }
 
-/** Mensaje de WhatsApp para una consulta de pieza a medida. */
+/** Mensaje de WhatsApp para una consulta de pieza a medida.
+ *
+ *  ⚠️ Ya no lleva nombre (2026-11-11): el modal dejó de pedirlo, porque en WhatsApp el
+ *  cliente llega con el suyo. Un parámetro opcional que nadie pasa es código muerto. */
 export function mensajeConsulta(
   info: Pick<InfoApi, 'businessName'>,
-  nombre: string,
   descripcion: string,
 ): string {
-  return `Hola ${info.businessName}, soy ${nombre}. ${descripcion}`;
+  return `Hola ${info.businessName}, ${descripcion}`;
 }

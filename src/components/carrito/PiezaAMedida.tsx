@@ -1,21 +1,28 @@
 // Modal de "Cotizar una pieza a medida". Isla global (montada en Base). Intercepta por
 // DELEGACIÓN los clics en `[data-bl="cotizar"]` con preventDefault: si el JS falla, el
-// enlace original a WhatsApp (que pone WhatsappCotizar) sigue funcionando. Manda la
-// consulta a la bandeja y ofrece además el WhatsApp.
+// enlace original a WhatsApp (que pone WhatsappCotizar) sigue funcionando.
+//
+// ⚠️ **LA CONSULTA YA NO SE REGISTRA EN LA BANDEJA** (2026-11-11, decisión del dueño), por
+// la misma razón que el carrito: el formulario pedía nombre y WhatsApp antes de dejar
+// escribir, y WhatsApp ya trae las dos cosas. Acá se conserva **un** campo, el de qué
+// necesita, porque sin él no hay mensaje que mandar. Igual que en el carrito: una consulta
+// que no se termina de mandar no deja ningún rastro, y `enviarConsulta` se queda en el repo
+// porque el endpoint y la bandeja siguen vivos.
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { enviarConsulta } from '@/lib/api-escritura';
 import { fetchInfo, type InfoApi } from '@/lib/api';
-import { mensajeConsulta, validarContacto } from '@/lib/pedido';
+import { mensajeConsulta } from '@/lib/pedido';
 import { urlWhatsapp } from '@/lib/telefono';
+
+/** Debajo de esto no hay consulta que valga: un "hola" no se puede cotizar. */
+const MINIMO_DESCRIPCION = 10;
 
 export default function PiezaAMedida() {
   const [abierto, setAbierto] = useState(false);
   const [info, setInfo] = useState<InfoApi | null>(null);
-  const [datos, setDatos] = useState({ name: '', phone: '', description: '' });
-  const [enviando, setEnviando] = useState(false);
-  const [hecho, setHecho] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [descripcionCruda, setDescripcion] = useState('');
+  // "Todavía viaja" no es lo mismo que "llegó y no trae WhatsApp". Ver Carrito.tsx.
+  const [infoListo, setInfoListo] = useState(false);
 
   useEffect(() => {
     const onClickDoc = (e: MouseEvent) => {
@@ -23,7 +30,13 @@ export default function PiezaAMedida() {
       if (target.closest('[data-bl="cotizar"]')) {
         e.preventDefault();
         setAbierto(true);
-        if (!info) fetchInfo().then(setInfo).catch(() => setInfo(null));
+        if (!info) {
+          setInfoListo(false);
+          fetchInfo()
+            .then(setInfo)
+            .catch(() => setInfo(null))
+            .finally(() => setInfoListo(true));
+        }
       }
     };
     const onKey = (e: KeyboardEvent) => {
@@ -38,34 +51,16 @@ export default function PiezaAMedida() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [info]);
 
+  // ⚠️ Cerrar NO borra lo escrito: si el cliente vuelve, su texto sigue ahí. Con la
+  // consulta fuera de la bandeja, esto es lo único que la conserva.
   const cerrar = () => setAbierto(false);
 
+  const descripcion = descripcionCruda.trim();
+  const faltaTexto = descripcion.length < MINIMO_DESCRIPCION;
   const urlWa =
-    info?.whatsappPhone && hecho
-      ? urlWhatsapp(info.whatsappPhone, mensajeConsulta(info, datos.name, datos.description))
+    info?.whatsappPhone && !faltaTexto
+      ? urlWhatsapp(info.whatsappPhone, mensajeConsulta(info, descripcion))
       : null;
-
-  const enviar: React.FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    if (enviando) return;
-    const problema =
-      validarContacto(datos) ||
-      (datos.description.trim().length < 10 ? 'Cuéntanos un poco más de lo que necesitas.' : null);
-    if (problema) return setError(problema);
-
-    setEnviando(true);
-    setError(null);
-    try {
-      await enviarConsulta({ name: datos.name.trim(), phone: datos.phone.trim() }, datos.description.trim());
-      setHecho(true);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo enviar.';
-      const conPunto = /[.!?]$/.test(msg.trim()) ? msg.trim() : `${msg.trim()}.`;
-      setError(`${conPunto} Puedes escribirnos por WhatsApp.`);
-    } finally {
-      setEnviando(false);
-    }
-  };
 
   if (!abierto) return null;
 
@@ -82,62 +77,42 @@ export default function PiezaAMedida() {
           </button>
         </div>
 
-        {!hecho ? (
-          <form className="checkout" onSubmit={enviar} noValidate>
-            <p className="dim custom-intro">Cuéntanos qué necesitas y te pasamos un precio. Sin compromiso.</p>
-            <label>
-              Tu nombre
-              <input
-                name="name"
-                autoComplete="name"
-                maxLength={80}
-                value={datos.name}
-                onChange={(e) => setDatos({ ...datos, name: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Tu WhatsApp
-              <input
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                maxLength={30}
-                placeholder="0412 1234567"
-                value={datos.phone}
-                onChange={(e) => setDatos({ ...datos, phone: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Qué necesitas
-              <textarea
-                name="description"
-                rows={4}
-                maxLength={2000}
-                placeholder="Medidas, cantidad, color, para cuándo…"
-                value={datos.description}
-                onChange={(e) => setDatos({ ...datos, description: e.target.value })}
-                required
-              />
-            </label>
-            {error && <p className="checkout-error">{error}</p>}
-            <Button type="submit" className="w-full" disabled={enviando}>
-              {enviando ? 'Enviando…' : 'Enviar consulta'}
-            </Button>
-          </form>
-        ) : (
-          <div className="checkout-done">
-            <strong>Recibimos tu consulta</strong>
-            <p className="dim">Te escribimos con el precio. Si quieres adelantar, mándanos un WhatsApp.</p>
-            {urlWa && (
-              <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
+        <div className="checkout">
+          <p className="dim custom-intro">Cuéntanos qué necesitas y te pasamos un precio. Sin compromiso.</p>
+          <label>
+            Qué necesitas
+            <textarea
+              name="description"
+              rows={4}
+              maxLength={2000}
+              placeholder="Medidas, cantidad, color, para cuándo…"
+              value={descripcionCruda}
+              onChange={(e) => setDescripcion(e.target.value)}
+              required
+            />
+          </label>
+
+          {urlWa ? (
+            <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
+              Escribir por WhatsApp
+            </a>
+          ) : (
+            <>
+              {/* El botón apagado se queda A LA VISTA con el motivo al lado: esconderlo
+                  deja al cliente escribiendo sin saber qué le falta para mandarlo. */}
+              <Button type="button" className="w-full" disabled>
                 Escribir por WhatsApp
-              </a>
-            )}
-          </div>
-        )}
+              </Button>
+              <p className="dim">
+                {faltaTexto
+                  ? 'Cuéntanos un poco más de lo que necesitas.'
+                  : infoListo
+                    ? 'Falta el WhatsApp del negocio para armar el enlace.'
+                    : 'Preparando el enlace de WhatsApp…'}
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </>
   );
