@@ -1050,8 +1050,20 @@ del catálogo.
   banner es decoración. El catálogo, en cambio, sí es obligatorio.
 - El arte de un banner es remoto y sus medidas no se conocen en el build, así que no puede
   llevar `width`/`height`: la reserva de espacio la hace `.hero-art--banner` con
-  `aspect-ratio: 1 / 1` (el cuadrado del arte propio) + `object-fit: contain`. Sin eso el
-  hero salta cuando la imagen carga.
+  `aspect-ratio` + `object-fit`. Sin eso el hero salta cuando la imagen carga.
+  - ⚠️ **Era `1 / 1` + `contain` y pasó a `16 / 9` + `cover` el 2026-11-11.** El panel
+    dice «Se recomienda horizontal (16:9)» y **previsualiza el arte recortado a 16:9**
+    (`StoreBanners.tsx`), pero el hero reservaba un CUADRADO: una imagen horizontal
+    quedaba centrada con espacio vacío arriba y abajo, ~320×180 dentro de 320×320. O sea
+    que lo aprobado en la vista previa no era lo publicado. Es el mismo criterio que ya
+    estaba escrito para el banner de CATEGORÍA, donde los dos lados sí coincidían.
+  - ⚠️ **Nada comprueba que las dos proporciones sigan iguales**, porque viven en repos
+    distintos (el recorte en `calc3d-web`, el dibujo acá). Si alguna vez se cambia una,
+    hay que cambiar la otra a mano.
+  - ⚠️ **En móvil el banner NO se achica como el banano**: el banano es decoración y a
+    150 px se entiende; un banner lleva un mensaje y a 150 px no se lee. Va a 240 de
+    ancho, que en 16/9 son 135 de alto — menos que el cuadrado del banano, así que el
+    hero no crece.
 - ⚠️ **El banner de CATEGORÍA reserva `16 / 9`** (`.banner-cat img`, + `object-fit: cover`),
   y el número lo eligió el dueño **por coherencia con la vista previa del panel**: el arte
   se sube viéndolo en ese recorte, así que cualquier otra proporción acá recorta distinto de

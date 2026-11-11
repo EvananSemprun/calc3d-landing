@@ -468,7 +468,16 @@ html[data-bl-navegando] { scroll-behavior: auto; }
      Se le reserva el cuadrado del arte propio (680×680) y `contain` evita que un banner
      de otra proporción salga estirado. El arte propio NO pasa por acá: sus atributos ya
      dan la proporción, y un `aspect-ratio` en CSS se los pisaría. */
-  .hero-art--banner { aspect-ratio: 1 / 1; object-fit: contain; }
+  /* ⚠️ **16/9 y no 1/1 (2026-11-11).** El panel dice «Se recomienda horizontal (16:9)» y
+     previsualiza el arte RECORTADO a 16:9, pero acá se reservaba un CUADRADO con
+     `contain`: una imagen horizontal quedaba centrada con espacio vacío arriba y abajo,
+     ocupando ~320×180 dentro de un hueco de 320×320. O sea que lo que el dueño aprobaba
+     en la vista previa no era lo que veía la gente.
+
+     Es el mismo criterio que ya estaba escrito para el banner de CATEGORÍA, donde los dos
+     lados sí coincidían: la proporción de acá tiene que ser la del recorte del panel, o
+     recorta distinto de lo aprobado. `cover` por la misma razón que allá. */
+  .hero-art--banner { aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius-lg); }
   .hero-home { background: var(--ink-800); padding-block: clamp(40px, 7vw, 96px); }
   .hero-home .lead { margin-top: 16px; }
   .hero-home .hero-actions { margin-top: 24px; }
@@ -496,6 +505,11 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   @media (max-width: 560px) {
     .hero .h1, .hero h1 { font-size: 30px; }
     .hero-art, .hero-art-link { max-width: 150px; }
+    /* ⚠️ **El BANNER del dueño no se achica tanto como el banano.** El banano es
+       decoración y a 150 px se entiende igual; un banner lleva un mensaje adentro y a
+       150 px de lado no se lee. Como además va en 16/9, con 240 de ancho mide 135 de
+       alto — menos que los 150 del cuadrado del banano, así que el hero no crece. */
+    .hero-art--banner { max-width: 240px; }
     .hero-home .hero-actions { margin-top: 18px; }
     .hero-home .lead { margin-top: 12px; }
   }
