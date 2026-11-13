@@ -4,6 +4,7 @@
 import type { Categoria } from './catalogo';
 import type { Banner } from './banner';
 import { adapt, type ProductoApi, type ProductoVitrina } from './producto';
+import type { ColeccionPortada } from './portada';
 
 /** Tasa de presentación publicada por el negocio (null = solo USD). */
 export interface TasaApi {
@@ -105,4 +106,15 @@ export async function fetchSale(): Promise<SaleData | null> {
     sale: { title?: string | null; endsAt: string; products: ProductoApi[] } | null;
   }>('/public/store/sale');
   return sale ? { title: sale.title, endsAt: sale.endsAt, products: (sale.products ?? []).map(adapt) } : null;
+}
+
+/**
+ * La colección de la portada, o null si no hay ninguna vigente (el día uno): ahí la
+ * tienda cae a «Destacados». Es EN VIVO: se pide desde el navegador, no se hornea.
+ */
+export async function fetchColeccion(): Promise<ColeccionPortada | null> {
+  const { coleccion } = await getJson<{
+    coleccion: (Omit<ColeccionPortada, 'productos'> & { productos: ProductoApi[] }) | null;
+  }>('/public/store/coleccion');
+  return coleccion ? { ...coleccion, productos: (coleccion.productos ?? []).map(adapt) } : null;
 }

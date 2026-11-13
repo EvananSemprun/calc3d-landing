@@ -7,7 +7,7 @@
  * es el ÚNICO lugar donde se decide cuál de los dos errores es.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NoExiste, fetchProducto } from './api';
+import { NoExiste, fetchColeccion, fetchProducto } from './api';
 
 const responder = (status: number, body: unknown = {}) =>
   vi.stubGlobal(
@@ -48,5 +48,26 @@ describe('getJson distingue el 404 del resto', () => {
   it('200 devuelve el producto adaptado', async () => {
     responder(200, { slug: 'arbol', name: 'Árbol', priceUsd: 8, minQty: 1 });
     await expect(fetchProducto('arbol')).resolves.toMatchObject({ id: 'arbol', name: 'Árbol' });
+  });
+});
+
+describe('fetchColeccion', () => {
+  it('sin colección vigente la API dice null y se devuelve null, no una colección vacía', async () => {
+    responder(200, { coleccion: null });
+    await expect(fetchColeccion()).resolves.toBeNull();
+  });
+
+  it('con colección adapta sus productos a la forma de la vitrina', async () => {
+    responder(200, {
+      coleccion: {
+        titulo: 'Navidad',
+        subtitulo: null,
+        verTodo: { tipo: 'NONE', valor: null },
+        productos: [{ slug: 'arbol', name: 'Árbol', priceUsd: 8, minQty: 1 }],
+      },
+    });
+    const c = await fetchColeccion();
+    expect(c?.titulo).toBe('Navidad');
+    expect(c?.productos[0]).toMatchObject({ id: 'arbol', name: 'Árbol' });
   });
 });

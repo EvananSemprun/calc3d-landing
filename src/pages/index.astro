@@ -22,6 +22,7 @@ import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
 import CategoriasEnVivo from '../components/catalogo/CategoriasEnVivo';
 import DestacadosEnVivo from '../components/catalogo/DestacadosEnVivo';
+import ColeccionEnVivo from '../components/catalogo/ColeccionEnVivo';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
 import Pasos from '../components/Pasos.astro';
@@ -29,7 +30,7 @@ import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
 import { cargarTienda } from '../lib/tienda-build';
 import { rutaDeCategoria, rutasDeListados } from '../lib/paginacion';
-import { destacadosDe, TOPE_DESTACADOS } from '../lib/portada';
+import { destacadosDe, franjaDePortada, TOPE_DESTACADOS } from '../lib/portada';
 
 const { completos, info, listados, raices, banners } = await cargarTienda();
 const slidesDelHero = bannersDeHero(banners);
@@ -37,7 +38,9 @@ const rutasDeCategoria = rutasDeListados(listados);
 
 // `raices` ya son las categorías raíz con productos ("Sin categoría" afuera): es lo
 // mismo que lleva el pie de todas las páginas, así que no se recalcula acá.
-const destacados = destacadosDe(completos, TOPE_DESTACADOS);
+// Lo horneado de la franja principal es «Destacados» (la portada de siempre); la colección que
+// el dueño elige en el panel se lee EN VIVO y la reemplaza (`ColeccionEnVivo`).
+const franjaInicial = franjaDePortada(null, completos, TOPE_DESTACADOS);
 
 /**
  * La colección de Navidad: los productos de esa categoría, para la fila deslizable que
@@ -112,7 +115,7 @@ const preguntas = [
 
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mira por categoría" verTodo client:load />
 
-  <DestacadosEnVivo inicial={destacados} tope={TOPE_DESTACADOS} tasa={info.rate} fila verTodo client:load />
+  <ColeccionEnVivo inicial={franjaInicial} tope={TOPE_DESTACADOS} tasa={info.rate} client:load />
 
   <FlashSale tasa={info.rate} client:visible />
 
