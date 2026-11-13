@@ -1,39 +1,36 @@
 import TarjetaProducto from './TarjetaProducto';
 import Carrusel from '@/components/ui/Carrusel';
-import { fetchColeccion, fetchProductosCompletos, type TasaApi } from '@/lib/api';
+import { fetchColeccion, type TasaApi } from '@/lib/api';
 import { franjaDePortada, type FranjaPortada } from '@/lib/portada';
 import { useEnVivo } from '@/lib/vivo';
 
 /**
- * La franja principal de la portada: la COLECCIÓN que el dueño eligió en el panel, o
- * «Destacados» si no hay ninguna vigente.
+ * La franja de la COLECCIÓN del panel, bajo el hero. Sin colección vigente no dibuja nada.
  *
- * Pinta lo horneado (los destacados del build, o sea la portada de siempre) y al montar le
- * pregunta a la API cuál colección vale hoy. Mismo patrón que `DestacadosEnVivo`.
+ * Pinta lo horneado en el build (la colección vigente de ese momento, o nada) y al montar
+ * le pregunta a la API cuál vale hoy: el dueño la cambia o la vacía sin reconstruir el sitio.
+ * Mismo patrón que `DestacadosEnVivo`.
  *
- * ⚠️ Solo se le pide el catálogo completo cuando NO hay colección: es lo que alimenta la
- * caída a «Destacados». Con colección vigente la API ya trae sus productos resueltos.
- * Una caída de la API lanza y se conserva lo horneado (contrato de `useEnVivo`).
+ * ⚠️ «Sin colección» es una respuesta VÁLIDA de la API (`null`), no un error: ahí se
+ * reemplaza lo horneado por nada, o seguiría mostrándose una colección que el dueño ya
+ * apagó. Una caída de la API es otra cosa: lanza y se conserva lo horneado (`useEnVivo`).
  */
 export default function ColeccionEnVivo({
   inicial,
   tope,
   tasa,
 }: {
-  inicial: FranjaPortada;
+  inicial: FranjaPortada | null;
   tope: number;
   tasa: TasaApi | null;
 }) {
-  const { datos } = useEnVivo(inicial, async () => {
-    const coleccion = await fetchColeccion();
-    return franjaDePortada(coleccion, coleccion ? [] : await fetchProductosCompletos(), tope);
-  });
+  const { datos } = useEnVivo<FranjaPortada | null>(inicial, async () => franjaDePortada(await fetchColeccion(), tope));
+
+  if (!datos || datos.productos.length === 0) return null;
 
   // Con una sola categoría en toda la franja, repetirla en cada tarjeta es ruido.
   const unaSolaCategoria = new Set(datos.productos.map((p) => p.cat)).size <= 1;
   const idTitulo = 'franja-portada';
-
-  if (datos.productos.length === 0) return null;
 
   return (
     <section className="section" aria-labelledby={idTitulo}>

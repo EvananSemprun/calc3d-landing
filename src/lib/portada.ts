@@ -44,7 +44,7 @@ export interface ColeccionPortada {
   productos: ProductoVitrina[];
 }
 
-/** Lo que dibuja la franja de la portada, sea colección o «Destacados». */
+/** Lo que dibuja la franja de la colección en la portada. */
 export interface FranjaPortada {
   titulo: string;
   subtitulo: string | null;
@@ -54,10 +54,14 @@ export interface FranjaPortada {
 }
 
 /**
- * Qué muestra la franja principal de la portada.
+ * Qué muestra la franja de la colección, bajo el hero.
  *
- * ⚠️ SIN colección vigente (`null`) cae a «Destacados», no a una lista vacía: es el estado
- * del día uno —el dueño todavía no creó ninguna— y la portada tiene que verse como siempre.
+ * ⚠️ SIN colección vigente (`null`) devuelve `null`: la franja NO se dibuja. NO cae a
+ * «Destacados». Hubo una versión que sí caía (cuando la portada tenía UNA sola franja y
+ * Destacados ocupaba su lugar); ahora «Destacados» es una franja propia que SIEMPRE está
+ * más abajo, y caer a ella desde acá la mostraría dos veces. Si un plan viejo dice «sin
+ * colección cae a Destacados», está superado: el dueño pidió poder vaciar ese espacio
+ * desde el panel.
  *
  * Los productos de una colección van en el orden que fijó el dueño: NO pasan por
  * `destacadosDe`, que los reordenaría por insignia y desharía su orden.
@@ -65,19 +69,8 @@ export interface FranjaPortada {
  * El «Ver todo» a otra COLECCIÓN lleva a su página (`/coleccion/<slug>/`). La API ya lo
  * degrada a NONE si esa colección no tiene página hoy (oculta, vencida o borrada).
  */
-export function franjaDePortada(
-  coleccion: ColeccionPortada | null,
-  completos: readonly ProductoVitrina[],
-  tope: number,
-): FranjaPortada {
-  if (!coleccion) {
-    return {
-      titulo: 'Destacados',
-      subtitulo: null,
-      verTodoHref: '/tienda/',
-      productos: destacadosDe(completos, tope),
-    };
-  }
+export function franjaDePortada(coleccion: ColeccionPortada | null, tope: number): FranjaPortada | null {
+  if (!coleccion) return null;
   const { tipo, valor } = coleccion.verTodo;
   return {
     titulo: coleccion.titulo,

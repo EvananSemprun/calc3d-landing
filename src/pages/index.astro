@@ -1,7 +1,7 @@
 ---
 /**
- * Inicio. Un hero fijo, las CATEGORÍAS como puertas al catálogo y UNA franja de
- * destacados: con mil productos, repetir cuatro tarjetas por cada categoría era elegir
+ * Inicio. Un hero fijo, la COLECCIÓN del panel (si hay una vigente), las CATEGORÍAS como
+ * puertas al catálogo y UNA franja de destacados: con mil productos, repetir cuatro tarjetas por cada categoría era elegir
  * por azar lo que se ve (y costaba 124 islas de React). El carrusel de 3 slides murió
  * con esto: su mensaje quedó en el hero y en `Vias.astro`.
  *
@@ -22,6 +22,7 @@ import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
 import CategoriasEnVivo from '../components/catalogo/CategoriasEnVivo';
 import ColeccionEnVivo from '../components/catalogo/ColeccionEnVivo';
+import DestacadosEnVivo from '../components/catalogo/DestacadosEnVivo';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
 import Pasos from '../components/Pasos.astro';
@@ -29,17 +30,19 @@ import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
 import { cargarTienda } from '../lib/tienda-build';
 import { rutaDeCategoria, rutasDeListados } from '../lib/paginacion';
-import { franjaDePortada, TOPE_DESTACADOS } from '../lib/portada';
+import { destacadosDe, franjaDePortada, TOPE_DESTACADOS } from '../lib/portada';
 
-const { completos, info, listados, raices, banners } = await cargarTienda();
+const { completos, info, listados, raices, banners, coleccion } = await cargarTienda();
 const slidesDelHero = bannersDeHero(banners);
 const rutasDeCategoria = rutasDeListados(listados);
 
 // `raices` ya son las categorías raíz con productos ("Sin categoría" afuera): es lo
 // mismo que lleva el pie de todas las páginas, así que no se recalcula acá.
-// Lo horneado de la franja principal es «Destacados» (la portada de siempre); la colección que
-// el dueño elige en el panel se lee EN VIVO y la reemplaza (`ColeccionEnVivo`).
-const franjaInicial = franjaDePortada(null, completos, TOPE_DESTACADOS);
+// La colección que el dueño eligió en el panel va HORNEADA (HTML para quien entra sin JS y para
+// el buscador) y `ColeccionEnVivo` la refresca al montar. Sin colección vigente, null: no se
+// dibuja nada bajo el hero. «Destacados» es otra franja, siempre presente, más abajo.
+const franjaInicial = franjaDePortada(coleccion, TOPE_DESTACADOS);
+const destacados = destacadosDe(completos, TOPE_DESTACADOS);
 
 const beneficios = [
   { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargas. Sin stock viejo.' },
@@ -86,9 +89,11 @@ const preguntas = [
 >
   <HeroEnVivo slidesIniciales={slidesDelHero} rutasDeCategoria={rutasDeCategoria} arte={{ src: bananoHola.src, width: bananoHola.width, height: bananoHola.height }} client:load />
 
+  <ColeccionEnVivo inicial={franjaInicial} tope={TOPE_DESTACADOS} tasa={info.rate} client:load />
+
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mira por categoría" verTodo client:load />
 
-  <ColeccionEnVivo inicial={franjaInicial} tope={TOPE_DESTACADOS} tasa={info.rate} client:load />
+  <DestacadosEnVivo inicial={destacados} tope={TOPE_DESTACADOS} tasa={info.rate} fila verTodo client:load />
 
   <FlashSale tasa={info.rate} client:visible />
 

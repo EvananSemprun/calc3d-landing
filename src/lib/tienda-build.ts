@@ -5,6 +5,7 @@
 import {
   fetchBanners,
   fetchCategorias,
+  fetchColeccion,
   fetchInfo,
   fetchProductos,
   fetchProductosCompletos,
@@ -12,6 +13,7 @@ import {
 } from './api';
 import type { Banner } from './banner';
 import type { Categoria } from './catalogo';
+import type { ColeccionPortada } from './portada';
 import { categoriasDelIndice, listadosDe, raicesConProductos, type Listado } from './paginacion';
 import type { ProductoVitrina } from './producto';
 
@@ -28,6 +30,12 @@ export interface DatosTienda {
    * próximo build. [] si la API de banners falla — un banner es decoración.
    */
   banners: Banner[];
+  /**
+   * La colección vigente del panel, para hornearla en la portada (sin JS o para el buscador
+   * ya está en el HTML). null si no hay ninguna o si su API falla: como un banner, es
+   * decoración y no tumba el build.
+   */
+  coleccion: ColeccionPortada | null;
   listados: Listado[];
   /** Raíces con productos: los enlaces del pie en TODAS las páginas de la tienda. */
   raices: { slug: string; nombre: string; n: number }[];
@@ -51,12 +59,15 @@ export function cargarTienda(): Promise<DatosTienda> {
     // El catálogo es obligatorio; los banners NO: si fallan, el build sigue sin ellos y
     // el hero usa su arte propio. Publicar la tienda sin un banner es mejor que no publicar.
     fetchBanners().catch(() => [] as Banner[]),
-  ]).then(([productos, completos, categorias, info, banners]) => ({
+    // Igual que los banners: una colección es decoración, su caída no tumba el build.
+    fetchColeccion().catch(() => null),
+  ]).then(([productos, completos, categorias, info, banners, coleccion]) => ({
     productos,
     completos,
     categorias,
     info,
     banners,
+    coleccion,
     // ⚠️ Se deriva de `completos`, NO de `productos`: la respuesta de TARJETA no trae los
     // recargos de las opciones, y sin ellos la tarjeta no puede saber si su precio es un
     // piso («desde $8» en el árbol, que llega a $30). Las dos ya se piden en este mismo
