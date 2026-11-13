@@ -183,3 +183,27 @@ describe('un renglón que no se puede mandar (2026-11-12)', () => {
     expect(document.body.textContent).not.toMatch(/Infinity|NaN/);
   });
 });
+
+describe('nombres para varias unidades en el cajón (2026-11-12)', () => {
+  const ARBOL = {
+    id: 'arbol',
+    qty: 3,
+    opts: { Tamaño: '15 cm', Nombres: 'Hasta 6 nombres' },
+    unit: 7,
+    nombre: 'Árbol de Navidad con nombres',
+    customNote: 'Benedetto',
+  };
+
+  it('sin aclarar NO hay enlace; pregunta; al responder «Sí» aparece el enlace con la aclaración', async () => {
+    sembrar([ARBOL]);
+    await abrir();
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText(/Pedir por WhatsApp/)).toBeNull();
+    expect(screen.getByText('¿Los mismos nombres para las 3 unidades?')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Sí'));
+    await waitFor(() => expect(screen.getByText(/Pedir por WhatsApp/)).toBeTruthy());
+    const href = decodeURIComponent((screen.getByText(/Pedir por WhatsApp/) as HTMLAnchorElement).href);
+    expect(href).toContain('(mismos nombres para los 3)');
+  });
+});

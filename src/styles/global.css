@@ -1860,3 +1860,9 @@ img[data-fundir][data-cargando] { opacity: 0; }
     background: linear-gradient(180deg, rgba(0, 8, 20, 0.72) 0%, rgba(0, 8, 20, 0.88) 100%);
   }
 }
+
+  /* «¿Los mismos nombres para todas?» (ficha y cajón): un fieldset sin marco de navegador. */
+  .pdp-mismos { border: 0; padding: 0; margin: 12px 0 0; min-width: 0; }
+  .pdp-mismos legend { padding: 0; margin-bottom: 6px; font-weight: 600; }
+  .pdp-mismos label { cursor: pointer; margin-right: 12px; }
+  .pdp-mismos p { margin: 6px 0 0; font-size: 13px; }

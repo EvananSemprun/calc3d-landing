@@ -9,6 +9,7 @@ import { useMemo, useRef, useState } from 'react';
 import Galeria from './Galeria';
 import Opciones from './Opciones';
 import Cantidad from '@/components/ui/Cantidad';
+import PreguntaNombres from './PreguntaNombres';
 import Personalizacion from './Personalizacion';
 import { Badge } from '@/components/ui/badge';
 import { useCruce } from '@/components/ui/Cruce';
@@ -57,6 +58,8 @@ export default function Ficha({ producto: p, info }: Props) {
   const [cantidad, setCantidad] = useState(p.minQty || 1);
   const [fotoActiva, setFotoActiva] = useState(0);
   const [nota, setNota] = useState('');
+  // ¿Los mismos nombres para todas las unidades? Solo se pregunta con cantidad > 1.
+  const [mismosNombres, setMismosNombres] = useState<boolean | undefined>(undefined);
   const [foto, setFoto] = useState<File | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [agregado, setAgregado] = useState(false);
@@ -86,6 +89,11 @@ export default function Ficha({ producto: p, info }: Props) {
   const maximoDeNombres = pideNombres ? nombresPedidos(p.optionGroups, elegido) : undefined;
   const problemaNombres =
     maximoDeNombres === undefined ? null : problemaDeNombres(nota, maximoDeNombres);
+
+  // Pide nombres y más de una unidad: hay que aclarar a cuántas valen. Sin respuesta, o con
+  // «No» (que se resuelve pidiendo de a una), el botón de agregar queda apagado.
+  const preguntarMismos = pideNombres && cantidad > 1;
+  const faltaAclararNombres = preguntarMismos && mismosNombres !== true;
 
   const precioBase = precioBaseConOpciones(p, elegido);
   // Lo que aportan las opciones elegidas. Va APARTE porque un tramo por precio fijo
@@ -136,7 +144,7 @@ export default function Ficha({ producto: p, info }: Props) {
   const agregar = async () => {
     if (subiendo) return;
     setError(null);
-    let extra: { customNote?: string; customImageKey?: string } = {};
+    let extra: { customNote?: string; customImageKey?: string; mismosNombres?: boolean } = {};
     try {
       if (foto) {
         setSubiendo(true);
@@ -170,10 +178,12 @@ export default function Ficha({ producto: p, info }: Props) {
       priceTiers: p.priceTiers,
       minQty: p.minQty,
       ...extra,
+      ...(preguntarMismos && nota.trim() ? { mismosNombres: true } : {}),
     });
 
     // Agregado: se limpia la personalización para el próximo renglón.
     setNota('');
+    setMismosNombres(undefined);
     setFoto(null);
     setAgregado(true);
     clearTimeout(temporizador.current);
@@ -326,6 +336,15 @@ export default function Ficha({ producto: p, info }: Props) {
           />
         )}
 
+        {preguntarMismos && (
+          <PreguntaNombres
+            cantidad={cantidad}
+            valor={mismosNombres}
+            onCambiar={setMismosNombres}
+            onDejarEnUno={() => setCantidad(p.minQty || 1)}
+          />
+        )}
+
         <div className="pdp-buy">
           <Cantidad valor={cantidad} minimo={p.minQty || 1} onCambiar={setCantidad} />
           {/* Sin los nombres la pieza no se puede fabricar, así que el botón no deja
@@ -334,7 +353,7 @@ export default function Ficha({ producto: p, info }: Props) {
             type="button"
             className="h-11 px-6"
             onClick={agregar}
-            disabled={subiendo || problemaNombres !== null}
+            disabled={subiendo || problemaNombres !== null || faltaAclararNombres}
           >
             {subiendo ? 'Subiendo foto…' : agregado ? 'Agregado ✓' : 'Agregar al pedido'}
           </Button>

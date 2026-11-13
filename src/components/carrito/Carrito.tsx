@@ -26,9 +26,12 @@
 import { useEffect, useState } from 'react';
 import Foto from '@/components/ui/Foto';
 import Cantidad from '@/components/ui/Cantidad';
+import PreguntaNombres from '@/components/ficha/PreguntaNombres';
+import { pideNombresLaSeleccion } from '@/lib/restricciones';
 import {
   contar,
   fijarCantidad,
+  fijarMismosNombres,
   leer,
   quitar,
   claveDeItem,
@@ -214,6 +217,13 @@ export default function Carrito() {
                         y su borde redondo, así que el recuadro amarillo del hover no
                         envolvía la palabra —la «Q» quedaba afuera— y el botón era más
                         alto que − y +. */}
+                    {i.qty > 1 && i.customNote && pideNombresLaSeleccion(i.opts) && (
+                      <PreguntaNombres
+                        cantidad={i.qty}
+                        valor={i.mismosNombres}
+                        onCambiar={(mismos) => fijarMismosNombres(clave, mismos)}
+                      />
+                    )}
                     <div className="cart-row-qty">
                       <Cantidad
                         valor={i.qty}

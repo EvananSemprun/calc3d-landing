@@ -8,6 +8,7 @@
 import type { ItemCarrito } from './carrito';
 import type { InfoApi } from './api';
 import { MAX_CANTIDAD, avisoDeTope, cantidadValida } from './cantidad';
+import { pideNombresLaSeleccion } from './restricciones';
 import { equivalenteEnMoneda, precioConTramos, totalRenglon } from './precio';
 
 /** Un renglón tal como se manda a `/public/store/orders`. SIN precio. */
@@ -107,6 +108,15 @@ export function problemasDelPedido(items: ItemCarrito[]): ProblemaPedido[] {
       problemas.push({ renglon, texto: `Corrige la cantidad de «${nom}»: ${motivo}.` });
       return;
     }
+    // Nombres para varias unidades sin aclarar a cuántas valen: el pedido del 2026-11-12
+    // llegó así y nadie supo si eran 3 árboles o uno. Solo si el producto PIDE nombres.
+    if (i.qty > 1 && i.customNote && pideNombresLaSeleccion(i.opts) && i.mismosNombres !== true) {
+      problemas.push({
+        renglon,
+        texto: `Aclara los nombres de «${nom}»: ¿son los mismos para las ${i.qty} unidades? Si no, agrégalas una por una.`,
+      });
+      return;
+    }
     const unitario = precioRenglon(i);
     if (!Number.isFinite(unitario) || !Number.isFinite(totalRenglon(unitario, i.qty))) {
       problemas.push({ renglon, texto: `El precio de «${nom}» no es válido. Quítalo y agrégalo de nuevo.` });
@@ -144,6 +154,9 @@ export function mensajePedido({
     const extra: string[] = [];
     // Con saltos de línea adentro (los nombres van uno por renglón) se indenta cada uno,
     // o el mensaje se lee como si fueran productos sueltos del pedido.
+    // Con varias unidades y nombres, dice a cuántas valen: sin esto «Benedetto» bajo un
+    // «3 ×» no se sabe si es de uno o de los tres.
+    if (i.customNote && i.qty > 1 && i.mismosNombres) extra.push(`   (mismos nombres para los ${i.qty})`);
     if (i.customNote) extra.push(`   ${i.customNote.split('\n').join('\n   ')}`);
     // La foto NO viaja: la clave del bucket no le sirve a nadie en un chat. Se le pide al
     // cliente que la mande acá, que es donde ya está escribiendo.

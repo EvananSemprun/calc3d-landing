@@ -167,6 +167,11 @@ export function nombresPedidos(
   return null;
 }
 
+/** ¿Alguna de las opciones elegidas (las del renglón del carrito) pide nombres? */
+export function pideNombresLaSeleccion(opts: Record<string, string> | undefined): boolean {
+  return Object.values(opts ?? {}).some((v) => cantidadDeNombres(v) !== null);
+}
+
 /** Los renglones con texto de verdad. Se ignoran los vacíos y los espacios sueltos. */
 export function lineasDeNombres(texto: string): string[] {
   return texto

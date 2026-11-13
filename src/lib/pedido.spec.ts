@@ -125,3 +125,48 @@ describe('el pedido nunca sale roto (2026-11-12)', () => {
     expect(formatoMonto(Infinity)).toBe('—');
   });
 });
+
+describe('los nombres bajo su renglón (2026-11-12)', () => {
+  const arbol = (extra: Partial<ItemCarrito> = {}): ItemCarrito => ({
+    id: 'arbol',
+    qty: 3,
+    opts: { Tamaño: '15 cm', Nombres: 'Hasta 6 nombres' },
+    unit: 7,
+    nombre: 'Árbol de Navidad con nombres',
+    customNote: 'Benedetto',
+    ...extra,
+  });
+  const otro: ItemCarrito = { id: 'cas', qty: 1, opts: {}, unit: 7, nombre: 'Cascanueces' };
+
+  it('«(mismos nombres para los 3)» e indentados, antes del renglón siguiente', () => {
+    const msg = mensajePedido({ items: [arbol({ mismosNombres: true }), otro], info });
+    expect(msg).toContain(
+      '• 3 × Árbol de Navidad con nombres (Tamaño: 15 cm · Nombres: Hasta 6 nombres) — $7.00 c/u\n' +
+        '   (mismos nombres para los 3)\n' +
+        '   Benedetto\n' +
+        '• 1 × Cascanueces',
+    );
+  });
+
+  it('varios nombres: cada uno indentado', () => {
+    const msg = mensajePedido({ items: [arbol({ mismosNombres: true, customNote: 'Ana\nLuis' })], info });
+    expect(msg).toContain('   Ana\n   Luis');
+  });
+
+  it('con 1 unidad no lleva la aclaración', () => {
+    const msg = mensajePedido({ items: [arbol({ qty: 1 })], info });
+    expect(msg).not.toContain('mismos nombres');
+    expect(msg).toContain('   Benedetto');
+  });
+
+  it('3 unidades con nombres SIN aclarar no se pueden mandar', () => {
+    expect(problemasDelPedido([arbol()])[0].texto).toContain('Aclara los nombres');
+    expect(problemasDelPedido([arbol({ mismosNombres: false })])).toHaveLength(1);
+    expect(problemasDelPedido([arbol({ mismosNombres: true })])).toEqual([]);
+  });
+
+  it('una nota de un producto que NO pide nombres no se cuestiona', () => {
+    const taza: ItemCarrito = { id: 'taza', qty: 3, opts: { Color: 'Rojo' }, unit: 5, customNote: 'Feliz cumple' };
+    expect(problemasDelPedido([taza])).toEqual([]);
+  });
+});

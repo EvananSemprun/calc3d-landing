@@ -40,6 +40,10 @@ export interface ItemCarrito {
   recargo?: number;
   customNote?: string;
   customImageKey?: string;
+  /** Con más de una unidad y nombres: `true` = los MISMOS nombres para todas. Sin esto el
+   *  pedido no dice si los nombres son para las N piezas o para una (pedido real del
+   *  2026-11-12: «3 × árbol» con un solo nombre). `undefined` = nadie lo aclaró. */
+  mismosNombres?: boolean;
   /** Datos de display DENORMALIZADOS al agregar, para que el cajón no tenga que
    *  re-traer el catálogo en cada página. NO viajan al servidor (ver `itemsParaPedido`);
    *  el precio real lo calcula la API. */
@@ -61,6 +65,7 @@ export interface EntradaCarrito {
   recargo?: number;
   customNote?: string;
   customImageKey?: string;
+  mismosNombres?: boolean;
   nombre?: string;
   imagen?: FotoApi | null;
   priceTiers?: TramoPrecio[];
@@ -129,6 +134,7 @@ function sanearRenglon(crudo: unknown): ItemCarrito | null {
   if (esFinito(r.recargo) && r.recargo > 0) item.recargo = r.recargo;
   if (typeof r.customNote === 'string' && r.customNote) item.customNote = r.customNote;
   if (typeof r.customImageKey === 'string' && r.customImageKey) item.customImageKey = r.customImageKey;
+  if (typeof r.mismosNombres === 'boolean') item.mismosNombres = r.mismosNombres;
   if (typeof r.nombre === 'string' && r.nombre) item.nombre = r.nombre;
   if (typeof r.imagen === 'object' && r.imagen !== null) item.imagen = r.imagen as FotoApi;
   if (Array.isArray(r.priceTiers) && r.priceTiers.length) item.priceTiers = r.priceTiers as TramoPrecio[];
@@ -174,6 +180,9 @@ export function agregar(
   if (existente) {
     // Acotado: dos agregados de 600 no pueden sumar 1.200 aunque cada uno sea válido.
     existente.qty = acotarCantidad(existente.qty + entrada.qty, existente.minQty ?? 1);
+    // Misma clave = misma nota: agregar otra vez con los MISMOS nombres es decir, sin
+    // ambigüedad, que valen para todas.
+    if (existente.customNote) existente.mismosNombres = true;
   } else {
     const nuevo: ItemCarrito = {
       id: entrada.id,
@@ -185,6 +194,7 @@ export function agregar(
     if (entrada.recargo) nuevo.recargo = entrada.recargo;
     if (entrada.customNote) nuevo.customNote = entrada.customNote;
     if (entrada.customImageKey) nuevo.customImageKey = entrada.customImageKey;
+    if (entrada.mismosNombres !== undefined) nuevo.mismosNombres = entrada.mismosNombres;
     if (entrada.nombre) nuevo.nombre = entrada.nombre;
     if (entrada.imagen) nuevo.imagen = entrada.imagen;
     if (entrada.priceTiers && entrada.priceTiers.length) nuevo.priceTiers = entrada.priceTiers;
@@ -219,6 +229,20 @@ export function fijarCantidad(
   if (!item) return items;
   if (qty < 1) items = items.filter((i) => i !== item);
   else item.qty = acotarCantidad(qty, item.minQty ?? 1);
+  escribir(items, almacen);
+  return items;
+}
+
+/** Anota si los nombres del renglón valen para TODAS sus unidades (ver `mismosNombres`). */
+export function fijarMismosNombres(
+  clave: string,
+  mismos: boolean,
+  almacen: Almacen | null = almacenPorDefecto(),
+): ItemCarrito[] {
+  const items = leer(almacen);
+  const item = items.find((i) => claveDe(i) === clave);
+  if (!item) return items;
+  item.mismosNombres = mismos;
   escribir(items, almacen);
   return items;
 }

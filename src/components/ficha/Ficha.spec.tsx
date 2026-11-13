@@ -345,3 +345,57 @@ describe('Ficha — 7 nombres no entran en 12 cm', () => {
     );
   });
 });
+
+/**
+ * «3 × ÁRBOL» CON UN SOLO NOMBRE (2026-11-12). El primer pedido real traía tres árboles y
+ * «Benedetto»: no se entendía si el nombre era de los tres ni si de verdad quería tres.
+ */
+describe('Ficha — nombres con más de una unidad', () => {
+  beforeEach(() => localStorage.clear());
+
+  const NOMBRES = 'Escribe los nombres, uno por línea';
+  const agregarBtn = () => screen.getByRole('button', { name: /agregar/i }) as HTMLButtonElement;
+  const subirA3 = () => {
+    fireEvent.click(screen.getByLabelText('más'));
+    fireEvent.click(screen.getByLabelText('más'));
+  };
+
+  it('con 1 unidad NO pregunta nada', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    expect(screen.queryByText(/mismos nombres/)).toBeNull();
+  });
+
+  it('con 3 unidades pregunta, y sin respuesta no deja agregar aunque haya nombres', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    fireEvent.change(screen.getByLabelText(NOMBRES), { target: { value: 'Benedetto' } });
+    expect(agregarBtn().disabled).toBe(false);
+    subirA3();
+    expect(screen.getByText('¿Los mismos nombres para las 3 unidades?')).toBeTruthy();
+    expect(agregarBtn().disabled).toBe(true);
+  });
+
+  it('«Sí» deja agregar y el renglón guarda que son los mismos para todas', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    fireEvent.change(screen.getByLabelText(NOMBRES), { target: { value: 'Benedetto' } });
+    subirA3();
+    fireEvent.click(screen.getByLabelText('Sí'));
+    expect(agregarBtn().disabled).toBe(false);
+    fireEvent.click(agregarBtn());
+    const guardado = JSON.parse(localStorage.getItem('bl_cart_v1') ?? '[]');
+    expect(guardado[0].qty).toBe(3);
+    expect(guardado[0].mismosNombres).toBe(true);
+  });
+
+  it('«No» explica cómo pedirlas por separado, sigue bloqueado, y «Dejar en 1» lo resuelve', () => {
+    render(<Ficha producto={arbol()} info={info} />);
+    fireEvent.change(screen.getByLabelText(NOMBRES), { target: { value: 'Benedetto' } });
+    subirA3();
+    fireEvent.click(screen.getByLabelText('No'));
+    expect(screen.getByText(/agrégalas una por una/)).toBeTruthy();
+    expect(agregarBtn().disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Dejar en 1' }));
+    expect((screen.getByLabelText('Cantidad') as HTMLInputElement).value).toBe('1');
+    expect(screen.queryByText(/mismos nombres/)).toBeNull();
+    expect(agregarBtn().disabled).toBe(false);
+  });
+});

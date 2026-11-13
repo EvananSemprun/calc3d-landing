@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agregar, claveDeItem, contar, leer, vaciar, type Almacen } from './carrito';
+import { agregar, claveDeItem, contar, fijarMismosNombres, leer, vaciar, type Almacen } from './carrito';
 
 /** localStorage de mentira: las pruebas corren en node, sin navegador. */
 function almacenFalso(): Almacen & { datos: Map<string, string> } {
@@ -152,5 +152,24 @@ describe('leer: sanea lo guardado (2026-11-12)', () => {
     const a = almacenFalso();
     agregar({ id: 'x', qty: 600, unit: 7 }, a);
     expect(agregar({ id: 'x', qty: 600, unit: 7 }, a)[0].qty).toBe(999);
+  });
+});
+
+describe('mismosNombres (2026-11-12)', () => {
+  it('sobrevive al saneado y fijarMismosNombres lo cambia', () => {
+    const a = almacenFalso();
+    agregar({ id: 'arbol', qty: 3, unit: 7, opts: { N: 'Hasta 6 nombres' }, customNote: 'Ana', mismosNombres: true }, a);
+    expect(leer(a)[0].mismosNombres).toBe(true);
+    const clave = claveDeItem('arbol', { N: 'Hasta 6 nombres' }, 'Ana');
+    fijarMismosNombres(clave, false, a);
+    expect(leer(a)[0].mismosNombres).toBe(false);
+  });
+
+  it('agregar otra vez con la MISMA nota los da por iguales para todas', () => {
+    const a = almacenFalso();
+    agregar({ id: 'arbol', qty: 1, unit: 7, customNote: 'Ana' }, a);
+    expect(leer(a)[0].mismosNombres).toBeUndefined();
+    agregar({ id: 'arbol', qty: 1, unit: 7, customNote: 'Ana' }, a);
+    expect(leer(a)[0]).toMatchObject({ qty: 2, mismosNombres: true });
   });
 });
