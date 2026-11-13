@@ -1224,12 +1224,7 @@ Cinco cambios que pidió el dueño porque «se veía vacía». Lo que no hay que
   justo arriba. El contenido ya está horneado, no hay nada que esperar. Las demás
   entradas siguen, que están más abajo. El selector viejo quedó anotado en el CSS por si
   alguna vez se quiere devolver.
-- **La franja de temporada** (`Colección Navidad 2026`) es `DestacadosEnVivo` con
-  `categoria` y `fila`: una sola definición para las dos franjas de la portada. Si esa
-  categoría se queda sin productos, no dibuja nada — **en enero no hay que acordarse de
-  sacarla**, pero sí de cambiar `CATEGORIA_TEMPORADA` si la temporada es otra.
-  - ⚠️ El `id` del título se deriva de la categoría: con un id fijo, las dos franjas de
-    la portada lo repetirían y `aria-labelledby` apuntaría siempre a la primera.
+- **La franja principal es la COLECCIÓN del panel** (2026-11-13): `ColeccionEnVivo` pinta «Destacados» horneado y al montar lee `GET /public/store/coleccion`; sin colección vigente (`null`) se queda en «Destacados» (`franjaDePortada`, `lib/portada.ts`). La franja hardcodeada «Colección Navidad 2026» se **quitó**: la colección la reemplaza. Cada colección tiene página `/coleccion/<slug>/` (`PaginaColeccion`; 404 de la API si está oculta o fuera de ventana; una creada tras el build la rescata la 404 vía `RescatarColeccion`).
 - **Destacados son 8** (`TOPE_DESTACADOS`), en 4 columnas y **2 en celular**:
   `.shop-grid--destacados` no baja a una columna, porque 8 productos en una columna son
   ocho pantallas de scroll y la portada se sigue sintiendo vacía.

@@ -12,6 +12,7 @@ import Base from '../layouts/Base.astro';
 import { buttonVariants } from '../components/ui/button';
 import bananoError from '../assets/brand/banano-error.png';
 import RescatarProducto from '../components/ficha/RescatarProducto';
+import RescatarColeccion from '../components/catalogo/RescatarColeccion';
 import { cargarTienda } from '../lib/tienda-build';
 
 const { info } = await cargarTienda();
@@ -25,6 +26,7 @@ const { info } = await cargarTienda();
   <section class="section">
     <div class="container">
       <RescatarProducto info={info} client:load />
+      <RescatarColeccion tasa={info.rate} client:load />
     </div>
   </section>
 
@@ -46,7 +48,7 @@ const { info } = await cargarTienda();
   // El cartel se esconde ANTES de pintar si la ruta es una ficha: así nadie ve «esta
   // página no existe» un instante y después el producto. Es `is:inline` y va acá, sin
   // esperar a ningún evento, justo por eso.
-  if (/^\/producto\/[^/]+\/?$/.test(location.pathname)) {
+  if (/^\/(producto|coleccion)\/[^/]+\/?$/.test(location.pathname)) {
     document.getElementById('cartel-404')?.setAttribute('hidden', '');
     // La pestaña, por el mismo motivo: `FichaEnVivo` le pone el nombre del producto
     // apenas la API contesta, pero hasta entonces diría «Página no encontrada». Se

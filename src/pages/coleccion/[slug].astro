@@ -1,0 +1,40 @@
+---
+/**
+ * `/coleccion/<slug>/`: la página de una colección del panel (adónde lleva su «Ver todo»).
+ * Una página estática por colección que tiene página hoy; `PaginaColeccion` la refresca en
+ * vivo. Una colección creada después del build la rescata la 404 (como las fichas).
+ *
+ * ⚠️ Las colecciones son decoración comercial, como los banners: si la API de colecciones
+ * falla en el build se siguen armando las demás páginas en vez de no publicar la tienda.
+ */
+import Base from '../../layouts/Base.astro';
+import PaginaColeccion from '../../components/catalogo/PaginaColeccion';
+import { fetchColecciones } from '../../lib/api';
+import { rutaDeColeccion } from '../../lib/portada';
+import { cargarTienda } from '../../lib/tienda-build';
+import type { ColeccionPortada } from '../../lib/portada';
+
+export async function getStaticPaths() {
+  const { info, raices } = await cargarTienda();
+  const colecciones = await fetchColecciones().catch(() => [] as ColeccionPortada[]);
+  return colecciones.map((coleccion) => ({ params: { slug: coleccion.slug }, props: { coleccion, info, raices } }));
+}
+
+const { coleccion, info, raices } = Astro.props;
+---
+
+<Base
+  title={`${coleccion.titulo} — ${info.businessName}`}
+  description={coleccion.subtitulo ?? `${coleccion.titulo}: una selección de impresión 3D hecha a pedido en nuestro taller.`}
+  canonical={rutaDeColeccion(coleccion.slug)}
+  categorias={raices}
+>
+  <section class="shop-head">
+    <div class="container">
+      <nav class="crumbs" aria-label="Ruta">
+        <a href="/tienda/">Tienda</a><span>/</span><span class="dim">{coleccion.titulo}</span>
+      </nav>
+    </div>
+  </section>
+  <PaginaColeccion inicial={coleccion} slug={coleccion.slug} tasa={info.rate} client:load />
+</Base>

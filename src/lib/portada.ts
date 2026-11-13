@@ -35,6 +35,8 @@ export function destacadosDe(productos: readonly ProductoVitrina[], tope: number
 
 /** La colección que publica la API (`GET /public/store/coleccion`), con sus productos adaptados. */
 export interface ColeccionPortada {
+  /** Su enlace: `/coleccion/<slug>/`. */
+  slug: string;
   titulo: string;
   subtitulo: string | null;
   /** Viaja por SLUG: la API no publica ids internos. */
@@ -60,8 +62,8 @@ export interface FranjaPortada {
  * Los productos de una colección van en el orden que fijó el dueño: NO pasan por
  * `destacadosDe`, que los reordenaría por insignia y desharía su orden.
  *
- * ⚠️ El «Ver todo» a otra COLECCIÓN no genera enlace: la tienda todavía no tiene la página
- * `/coleccion/<slug>/`, y publicar la ruta sería un enlace muerto. Cuando exista, se cablea acá.
+ * El «Ver todo» a otra COLECCIÓN lleva a su página (`/coleccion/<slug>/`). La API ya lo
+ * degrada a NONE si esa colección no tiene página hoy (oculta, vencida o borrada).
  */
 export function franjaDePortada(
   coleccion: ColeccionPortada | null,
@@ -80,7 +82,19 @@ export function franjaDePortada(
   return {
     titulo: coleccion.titulo,
     subtitulo: coleccion.subtitulo,
-    verTodoHref: tipo === 'CATEGORIA' && valor ? `/tienda/${encodeURIComponent(valor)}/` : null,
+    verTodoHref: valor ? rutaDeVerTodo(tipo, valor) : null,
     productos: coleccion.productos.slice(0, tope),
   };
+}
+
+/** Adónde lleva un «Ver todo» por SLUG. NONE no lleva a ningún lado. */
+function rutaDeVerTodo(tipo: ColeccionPortada['verTodo']['tipo'], valor: string): string | null {
+  if (tipo === 'CATEGORIA') return `/tienda/${encodeURIComponent(valor)}/`;
+  if (tipo === 'COLECCION') return rutaDeColeccion(valor);
+  return null;
+}
+
+/** La página de una colección. Con barra final, como el resto de las rutas del sitio. */
+export function rutaDeColeccion(slug: string): string {
+  return `/coleccion/${encodeURIComponent(slug)}/`;
 }

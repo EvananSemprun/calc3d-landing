@@ -118,3 +118,19 @@ export async function fetchColeccion(): Promise<ColeccionPortada | null> {
   }>('/public/store/coleccion');
   return coleccion ? { ...coleccion, productos: (coleccion.productos ?? []).map(adapt) } : null;
 }
+
+/** Las colecciones que tienen página hoy, para armarlas en el build. */
+export async function fetchColecciones(): Promise<ColeccionPortada[]> {
+  const { colecciones } = await getJson<{ colecciones: (Omit<ColeccionPortada, 'productos'> & { productos: ProductoApi[] })[] }>(
+    '/public/store/colecciones',
+  );
+  return (colecciones ?? []).map((c) => ({ ...c, productos: (c.productos ?? []).map(adapt) }));
+}
+
+/** UNA colección por su enlace. Lanza `NoExiste` si no existe, está oculta o vencida. */
+export async function fetchColeccionPorSlug(slug: string): Promise<ColeccionPortada> {
+  const c = await getJson<Omit<ColeccionPortada, 'productos'> & { productos: ProductoApi[] }>(
+    `/public/store/coleccion/${encodeURIComponent(slug)}`,
+  );
+  return { ...c, productos: (c.productos ?? []).map(adapt) };
+}

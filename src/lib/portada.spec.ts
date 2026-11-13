@@ -43,6 +43,7 @@ describe('destacadosDe', () => {
 
 describe('franjaDePortada', () => {
   const coleccion = (extra: Partial<ColeccionPortada> = {}): ColeccionPortada => ({
+    slug: 'navidad-2026',
     titulo: 'Colección Navidad',
     subtitulo: 'Lo de la temporada',
     verTodo: { tipo: 'CATEGORIA', valor: 'navidad' },
@@ -82,8 +83,8 @@ describe('franjaDePortada', () => {
     expect(f.verTodoHref).toBeNull();
   });
 
-  it('un «Ver todo» a otra colección no inventa una ruta que la tienda todavía no tiene', () => {
-    const f = franjaDePortada(coleccion({ verTodo: { tipo: 'COLECCION', valor: 'otra' } }), catalogo, 8);
-    expect(f.verTodoHref).toBeNull();
+  it('un «Ver todo» a otra colección lleva a SU página, que ahora existe', () => {
+    const f = franjaDePortada(coleccion({ verTodo: { tipo: 'COLECCION', valor: 'regalos' } }), catalogo, 8);
+    expect(f.verTodoHref).toBe('/coleccion/regalos/');
   });
 });

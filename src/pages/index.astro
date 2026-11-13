@@ -21,7 +21,6 @@ import { bannersDeHero } from '../lib/banner';
 import Vias from '../components/inicio/Vias.astro';
 import FlashSale from '../components/inicio/FlashSale';
 import CategoriasEnVivo from '../components/catalogo/CategoriasEnVivo';
-import DestacadosEnVivo from '../components/catalogo/DestacadosEnVivo';
 import ColeccionEnVivo from '../components/catalogo/ColeccionEnVivo';
 import TarjetaProducto from '../components/catalogo/TarjetaProducto';
 import Beneficios from '../components/Beneficios.astro';
@@ -30,7 +29,7 @@ import Faq from '../components/Faq.astro';
 import CtaCotizar from '../components/CtaCotizar.astro';
 import { cargarTienda } from '../lib/tienda-build';
 import { rutaDeCategoria, rutasDeListados } from '../lib/paginacion';
-import { destacadosDe, franjaDePortada, TOPE_DESTACADOS } from '../lib/portada';
+import { franjaDePortada, TOPE_DESTACADOS } from '../lib/portada';
 
 const { completos, info, listados, raices, banners } = await cargarTienda();
 const slidesDelHero = bannersDeHero(banners);
@@ -41,21 +40,6 @@ const rutasDeCategoria = rutasDeListados(listados);
 // Lo horneado de la franja principal es «Destacados» (la portada de siempre); la colección que
 // el dueño elige en el panel se lee EN VIVO y la reemplaza (`ColeccionEnVivo`).
 const franjaInicial = franjaDePortada(null, completos, TOPE_DESTACADOS);
-
-/**
- * La colección de Navidad: los productos de esa categoría, para la fila deslizable que
- * va justo debajo del hero. Es la temporada que el dueño está cargando, y la portada
- * tenía categorías y destacados genéricos sin nada que dijera «esto es lo de ahora».
- *
- * ⚠️ Si la categoría no existe o se queda sin productos, `DestacadosEnVivo` no dibuja
- * nada: la portada no muestra una franja vacía ni hay que acordarse de sacarla en enero.
- */
-const CATEGORIA_TEMPORADA = 'navidad';
-const TITULO_TEMPORADA = 'Colección Navidad 2026';
-const navidenos = destacadosDe(
-  completos.filter((p) => p.cat === CATEGORIA_TEMPORADA),
-  TOPE_DESTACADOS,
-);
 
 const beneficios = [
   { titulo: 'Hecho a pedido', texto: 'Producimos cuando encargas. Sin stock viejo.' },
@@ -101,17 +85,6 @@ const preguntas = [
   categorias={raices}
 >
   <HeroEnVivo slidesIniciales={slidesDelHero} rutasDeCategoria={rutasDeCategoria} arte={{ src: bananoHola.src, width: bananoHola.width, height: bananoHola.height }} client:load />
-
-  <DestacadosEnVivo
-    inicial={navidenos}
-    tope={TOPE_DESTACADOS}
-    tasa={info.rate}
-    titulo={TITULO_TEMPORADA}
-    categoria={CATEGORIA_TEMPORADA}
-    fila
-    verTodo
-    client:load
-  />
 
   <CategoriasEnVivo inicial={raices} modo="raices" titulo="Mira por categoría" verTodo client:load />
 
