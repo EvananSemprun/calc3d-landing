@@ -7,6 +7,7 @@
 // agregar), así el cajón no necesita re-traer el catálogo.
 import type { ItemCarrito } from './carrito';
 import type { InfoApi } from './api';
+import { MAX_CANTIDAD, avisoDeTope, cantidadValida } from './cantidad';
 import { equivalenteEnMoneda, precioConTramos, totalRenglon } from './precio';
 
 /** Un renglón tal como se manda a `/public/store/orders`. SIN precio. */
@@ -62,6 +63,61 @@ export function totalPedido(items: ItemCarrito[]): number {
   return items.reduce((s, i) => s + totalRenglon(precioRenglon(i), i.qty), 0);
 }
 
+const formatoDinero = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  useGrouping: false,
+});
+
+/**
+ * Un monto con 2 decimales y SIN notación científica. Todo monto que se escriba en un
+ * mensaje o en pantalla pasa por acá: interpolar el número directo imprime «7e+60» en
+ * cuanto es grande (así salió el pedido del 2026-11-12). Lo no finito no se formatea:
+ * devuelve «—», que no se confunde con un precio.
+ */
+export function formatoMonto(n: number): string {
+  return Number.isFinite(n) ? formatoDinero.format(n) : '—';
+}
+
+/** Un renglón que no se puede mandar, y por qué. */
+export interface ProblemaPedido {
+  /** Posición del renglón en el carrito, desde 1 (0 = el pedido entero). */
+  renglon: number;
+  texto: string;
+}
+
+/**
+ * Qué renglones NO se pueden mandar por WhatsApp. Vacío = el pedido es enviable.
+ *
+ * ⚠️ Va ADEMÁS del tope del campo, no en lugar de él: el carrito viaja en localStorage y
+ * se puede editar a mano, así que el campo no es la última línea de defensa. Chequea
+ * cantidad entera dentro de rango, precio finito y que el total del pedido sea finito.
+ */
+export function problemasDelPedido(items: ItemCarrito[]): ProblemaPedido[] {
+  const problemas: ProblemaPedido[] = [];
+  items.forEach((i, idx) => {
+    const renglon = idx + 1;
+    const nom = i.nombre ?? 'Producto';
+    const minimo = i.minQty ?? 1;
+    if (!cantidadValida(i.qty, minimo)) {
+      const motivo =
+        typeof i.qty === 'number' && Number.isFinite(i.qty) && i.qty > MAX_CANTIDAD
+          ? avisoDeTope()
+          : `La cantidad tiene que ser un número entero entre ${Math.max(1, minimo)} y ${MAX_CANTIDAD}`;
+      problemas.push({ renglon, texto: `Corrige la cantidad de «${nom}»: ${motivo}.` });
+      return;
+    }
+    const unitario = precioRenglon(i);
+    if (!Number.isFinite(unitario) || !Number.isFinite(totalRenglon(unitario, i.qty))) {
+      problemas.push({ renglon, texto: `El precio de «${nom}» no es válido. Quítalo y agrégalo de nuevo.` });
+    }
+  });
+  if (!problemas.length && !Number.isFinite(totalPedido(items))) {
+    problemas.push({ renglon: 0, texto: 'El total del pedido no es válido. Revisa las cantidades.' });
+  }
+  return problemas;
+}
+
 /** Mensaje de WhatsApp con el detalle del pedido, el total y el equivalente a la tasa. */
 export function mensajePedido({
   items,
@@ -77,10 +133,14 @@ export function mensajePedido({
   // —los nombres del árbol de Navidad, entre otras cosas— se perdía entero y en silencio:
   // el carrito lo mostraba en pantalla y el mensaje no lo decía. Sin esto, el pedido llega
   // sin el dato con el que se fabrica la pieza.
+  // Última barrera: quien arma el enlace valida antes con `problemasDelPedido`, pero un
+  // mensaje con «1e+60» no tiene que poder salir por ningún camino.
+  const problemas = problemasDelPedido(items);
+  if (problemas.length) throw new Error(problemas.map((p) => p.texto).join(' '));
   const lineas = items.flatMap((i) => {
     const detalle = describirOpciones(i.opts);
     const nom = i.nombre ?? 'Producto';
-    const fila = `• ${i.qty} × ${nom}${detalle ? ` (${detalle})` : ''} — $${precioRenglon(i).toFixed(2)} c/u`;
+    const fila = `• ${i.qty} × ${nom}${detalle ? ` (${detalle})` : ''} — $${formatoMonto(precioRenglon(i))} c/u`;
     const extra: string[] = [];
     // Con saltos de línea adentro (los nombres van uno por renglón) se indenta cada uno,
     // o el mensaje se lee como si fueran productos sueltos del pedido.
@@ -92,7 +152,7 @@ export function mensajePedido({
   });
   const total = totalPedido(items);
   const quien = nombre ? `soy ${nombre} y ` : '';
-  let msg = `Hola ${info.businessName}, ${quien}quiero hacer este pedido:\n\n${lineas.join('\n')}\n\nTotal: $${total.toFixed(2)} BCV`;
+  let msg = `Hola ${info.businessName}, ${quien}quiero hacer este pedido:\n\n${lineas.join('\n')}\n\nTotal: $${formatoMonto(total)} BCV`;
   const alt = equivalenteEnMoneda(total, info.rate);
   if (alt) msg += `\n(≈ ${alt} ${info.rate?.currencyCode} a la tasa de hoy)`;
   return msg;

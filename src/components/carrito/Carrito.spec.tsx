@@ -158,3 +158,28 @@ describe('el pedido va directo a WhatsApp', () => {
     expect(JSON.parse(localStorage.getItem(CLAVE_CARRITO) ?? '[]')).toHaveLength(1);
   });
 });
+
+describe('un carrito roto en el teléfono (2026-11-12)', () => {
+  it('con qty 1e+60 guardado, el cajón muestra el tope y el enlace NO lleva «e+»', async () => {
+    sembrar([{ ...RENGLON, qty: 1e60 }]);
+    await abrir();
+    await waitFor(() => expect(screen.getByText(/Pedir por WhatsApp/)).toBeTruthy());
+    const href = (screen.getByText(/Pedir por WhatsApp/) as HTMLAnchorElement).href;
+    const msg = decodeURIComponent(href);
+    expect(msg).not.toMatch(/e\+/i);
+    expect(msg).toContain('999 ×');
+    expect(document.body.textContent).not.toMatch(/e\+60/);
+  });
+});
+
+describe('un renglón que no se puede mandar (2026-11-12)', () => {
+  it('con un precio que desborda NO hay enlace de WhatsApp y se dice qué corregir', async () => {
+    // 1e308 pasa el saneado (es finito) pero × 5 da Infinity: solo lo ataja la validación.
+    sembrar([{ ...RENGLON, qty: 5, unit: 1e308, priceTiers: undefined }]);
+    await abrir();
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByRole('alert').textContent).toContain('Identificadores para lápices');
+    expect(screen.queryByText(/Pedir por WhatsApp/)).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Infinity|NaN/);
+  });
+});

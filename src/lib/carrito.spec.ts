@@ -108,3 +108,49 @@ describe('contar / vaciar / leer', () => {
     expect(contar(null)).toBe(0);
   });
 });
+
+describe('leer: sanea lo guardado (2026-11-12)', () => {
+  const guardar = (a: Almacen, datos: unknown) => a.setItem('bl_cart_v1', JSON.stringify(datos));
+  const base = { id: 'x', opts: {}, unit: 7 };
+
+  it('un qty de 1e+60 ya guardado se acota al tope al cargar', () => {
+    const a = almacenFalso();
+    // JSON.stringify(1e60) escribe «1e+60», justo lo que quedó en el teléfono.
+    guardar(a, [{ ...base, qty: 1e60 }]);
+    expect(a.getItem('bl_cart_v1')).toContain('1e+60');
+    expect(leer(a)[0].qty).toBe(999);
+  });
+
+  it('negativos, cero y decimales se llevan a una cantidad entera válida', () => {
+    const a = almacenFalso();
+    guardar(a, [{ ...base, id: 'a', qty: -5 }, { ...base, id: 'b', qty: 0 }, { ...base, id: 'c', qty: 2.5 }]);
+    expect(leer(a).map((i) => i.qty)).toEqual([1, 1, 2]);
+  });
+
+  it('respeta el mínimo del producto', () => {
+    const a = almacenFalso();
+    guardar(a, [{ ...base, qty: 1, minQty: 6 }]);
+    expect(leer(a)[0].qty).toBe(6);
+  });
+
+  it('tira lo que no tiene forma de renglón', () => {
+    const a = almacenFalso();
+    guardar(a, [
+      { ...base, qty: 2 },
+      { qty: 2, unit: 7 }, // sin id
+      { id: 'y', qty: 2 }, // sin precio
+      { id: 'z', qty: 'mucho', unit: 1 },
+      { id: 'w', qty: 1, unit: -3 },
+      'texto',
+      null,
+      42,
+    ]);
+    expect(leer(a).map((i) => i.id)).toEqual(['x']);
+  });
+
+  it('agregar no pasa del tope aunque cada suma sea válida', () => {
+    const a = almacenFalso();
+    agregar({ id: 'x', qty: 600, unit: 7 }, a);
+    expect(agregar({ id: 'x', qty: 600, unit: 7 }, a)[0].qty).toBe(999);
+  });
+});

@@ -11,6 +11,7 @@
 
 import type { TramoPrecio } from './precio';
 import type { FotoApi } from './producto';
+import { MAX_CANTIDAD, acotarCantidad } from './cantidad';
 
 export const CLAVE_CARRITO = 'bl_cart_v1';
 
@@ -96,11 +97,51 @@ function claveDe(i: ItemCarrito): string {
   return claveDeItem(i.id, i.opts, i.customNote, i.customImageKey);
 }
 
+const esFinito = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+
+/**
+ * Un renglón guardado, saneado, o `null` si no tiene forma de renglón.
+ *
+ * ⚠️ localStorage es una entrada NO confiable: lo editó una versión vieja, otra pestaña o
+ * el propio cliente a mano. Hasta el 2026-11-12 `leer` casteaba el JSON a `ItemCarrito[]`
+ * sin mirar nada, así que un `qty: 1e60` guardado sobrevivía a recargar y salía en el
+ * mensaje de WhatsApp. Se descarta lo que no es un renglón (sin id, sin precio) y se
+ * acota la cantidad a [mínimo, MAX_CANTIDAD].
+ */
+function sanearRenglon(crudo: unknown): ItemCarrito | null {
+  if (typeof crudo !== 'object' || crudo === null || Array.isArray(crudo)) return null;
+  const r = crudo as Record<string, unknown>;
+  if (typeof r.id !== 'string' || !r.id) return null;
+  if (!esFinito(r.qty) || !esFinito(r.unit) || r.unit < 0) return null;
+
+  const minQty = esFinito(r.minQty) && r.minQty >= 1 ? Math.min(Math.trunc(r.minQty), MAX_CANTIDAD) : undefined;
+  const opts: Record<string, string> = {};
+  if (typeof r.opts === 'object' && r.opts !== null && !Array.isArray(r.opts)) {
+    for (const [k, v] of Object.entries(r.opts)) if (typeof v === 'string') opts[k] = v;
+  }
+
+  const item: ItemCarrito = {
+    id: r.id,
+    qty: acotarCantidad(r.qty, minQty ?? 1, MAX_CANTIDAD),
+    opts,
+    unit: r.unit,
+  };
+  if (esFinito(r.recargo) && r.recargo > 0) item.recargo = r.recargo;
+  if (typeof r.customNote === 'string' && r.customNote) item.customNote = r.customNote;
+  if (typeof r.customImageKey === 'string' && r.customImageKey) item.customImageKey = r.customImageKey;
+  if (typeof r.nombre === 'string' && r.nombre) item.nombre = r.nombre;
+  if (typeof r.imagen === 'object' && r.imagen !== null) item.imagen = r.imagen as FotoApi;
+  if (Array.isArray(r.priceTiers) && r.priceTiers.length) item.priceTiers = r.priceTiers as TramoPrecio[];
+  if (minQty) item.minQty = minQty;
+  return item;
+}
+
 export function leer(almacen: Almacen | null = almacenPorDefecto()): ItemCarrito[] {
   if (!almacen) return [];
   try {
     const datos: unknown = JSON.parse(almacen.getItem(CLAVE_CARRITO) ?? 'null');
-    return Array.isArray(datos) ? (datos as ItemCarrito[]) : [];
+    if (!Array.isArray(datos)) return [];
+    return datos.map(sanearRenglon).filter((i): i is ItemCarrito => i !== null);
   } catch {
     return [];
   }
@@ -131,9 +172,15 @@ export function agregar(
   const items = leer(almacen);
   const existente = items.find((i) => claveDe(i) === clave);
   if (existente) {
-    existente.qty += entrada.qty;
+    // Acotado: dos agregados de 600 no pueden sumar 1.200 aunque cada uno sea válido.
+    existente.qty = acotarCantidad(existente.qty + entrada.qty, existente.minQty ?? 1);
   } else {
-    const nuevo: ItemCarrito = { id: entrada.id, qty: entrada.qty, opts, unit: entrada.unit };
+    const nuevo: ItemCarrito = {
+      id: entrada.id,
+      qty: acotarCantidad(entrada.qty, entrada.minQty ?? 1),
+      opts,
+      unit: entrada.unit,
+    };
     // Solo si suma: un recargo en 0 es el default y no hace falta guardarlo.
     if (entrada.recargo) nuevo.recargo = entrada.recargo;
     if (entrada.customNote) nuevo.customNote = entrada.customNote;
@@ -171,7 +218,7 @@ export function fijarCantidad(
   const item = items.find((i) => claveDe(i) === clave);
   if (!item) return items;
   if (qty < 1) items = items.filter((i) => i !== item);
-  else item.qty = qty;
+  else item.qty = acotarCantidad(qty, item.minQty ?? 1);
   escribir(items, almacen);
   return items;
 }

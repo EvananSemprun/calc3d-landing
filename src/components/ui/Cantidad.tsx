@@ -8,11 +8,14 @@
 // gane el teclado o la pulsación mantenida la otra se queda atrás y nadie se entera, que
 // es exactamente lo que le pasó a las dos tarjetas del catálogo con la insignia «Nuevo».
 import { useEffect, useRef, useState } from 'react';
+import { MAX_CANTIDAD, acotarCantidad, avisoDeTope } from '@/lib/cantidad';
 
 interface Props {
   valor: number;
   /** El mínimo que se puede pedir de este producto. Nunca baja de 1. */
   minimo?: number;
+  /** El tope que se puede pedir por acá. Por defecto 999: más se coordina por WhatsApp. */
+  maximo?: number;
   onCambiar: (n: number) => void;
   /** Para distinguirlos cuando hay varios en pantalla (un renglón por producto). */
   etiqueta?: string;
@@ -22,8 +25,18 @@ interface Props {
 const ESPERA_MS = 400;
 const REPITE_MS = 90;
 
-export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Cantidad' }: Props) {
+export default function Cantidad({
+  valor,
+  minimo = 1,
+  maximo = MAX_CANTIDAD,
+  onCambiar,
+  etiqueta = 'Cantidad',
+}: Props) {
   const min = Math.max(1, minimo);
+  const max = Math.max(min, maximo);
+  // El aviso de tope es ESTADO visible (un `role=status`), no un `title`: un `title` no
+  // lo ve nadie en un teléfono ni lo anuncia un lector de pantalla.
+  const [pasado, setPasado] = useState(false);
   // Buffer de TEXTO, no de número: sin él no se puede borrar para escribir otra cifra —
   // el campo volvería a `min` en cuanto queda vacío y haría imposible tipear «24».
   const [texto, setTexto] = useState(String(valor));
@@ -57,7 +70,9 @@ export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Can
   };
 
   const paso = (delta: number) => {
-    const siguiente = Math.max(min, Math.trunc(actual.current) + delta);
+    const pedido = Math.trunc(actual.current) + delta;
+    setPasado(pedido > max);
+    const siguiente = acotarCantidad(pedido, min, max);
     actual.current = siguiente;
     setTexto(String(siguiente));
     onCambiar(siguiente);
@@ -79,6 +94,16 @@ export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Can
     const limpio = crudo.replace(/\D/g, '');
     setTexto(limpio);
     const n = Number(limpio);
+    // ⚠️ El tope va ANTES de confirmar: `Number('1' + 60 ceros)` es 1e60 y de ahí salió
+    // el «$7e+60» del pedido real. Se deja el máximo en el campo y se avisa.
+    if (limpio !== '' && n > max) {
+      setPasado(true);
+      setTexto(String(max));
+      actual.current = max;
+      onCambiar(max);
+      return;
+    }
+    setPasado(false);
     // Se confirma EN EL ACTO cuando ya es válido, para que el total, el tramo de mayoreo
     // y el carrito se muevan mientras escribe. Lo inválido espera al blur.
     if (limpio !== '' && n >= min) {
@@ -91,7 +116,7 @@ export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Can
   const confirmar = () => {
     enfocado.current = false;
     const n = Number(texto);
-    const bueno = texto !== '' && Number.isFinite(n) && n >= min ? Math.trunc(n) : min;
+    const bueno = texto !== '' && Number.isFinite(n) && n >= min ? acotarCantidad(n, min, max) : min;
     actual.current = bueno;
     setTexto(String(bueno));
     if (bueno !== valor) onCambiar(bueno);
@@ -118,6 +143,7 @@ export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Can
   });
 
   return (
+    <>
     <div className="qty">
       <button {...botonProps(-1)} aria-label="menos" disabled={valor <= min}>
         –
@@ -152,5 +178,11 @@ export default function Cantidad({ valor, minimo = 1, onCambiar, etiqueta = 'Can
         +
       </button>
     </div>
+    {pasado && (
+      <p className="qty-aviso" role="status">
+        {avisoDeTope(max)}
+      </p>
+    )}
+    </>
   );
 }

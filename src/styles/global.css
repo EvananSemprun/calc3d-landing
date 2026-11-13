@@ -1210,6 +1210,9 @@ html[data-bl-navegando] { scroll-behavior: auto; }
     font-size: 15px;
   }
   .qty-input:focus-visible { outline: 2px solid var(--yellow); outline-offset: 1px; }
+  /* Aviso al pasarse del tope: ocupa la fila entera bajo el contador (los dos padres, la
+     ficha y el renglón del carrito, son flex y tienen que poder envolver). */
+  .qty-aviso { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--yellow); }
 
   .pdp-desc { color: var(--text-dim); white-space: pre-wrap; }
   .pdp-specs-title { font-size: 20px; margin-top: 10px; }
@@ -1409,7 +1412,7 @@ html[data-bl-navegando] { scroll-behavior: auto; }
   /* ⚠️ El `align-items` hace falta desde que «Quitar» salió del `.qty`: antes lo alineaba
      el `inline-flex` de ese contenedor, y al quedar como hermanos el botón se iba 2 px
      abajo del contador. Medido a 390 px. */
-  .cart-row-qty { margin-top: 8px; display: flex; align-items: center; }
+  .cart-row-qty { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; }
   /* ⚠️ Vivía DENTRO del `.qty` y perdía por especificidad contra `.qty button` (0,1,1
      contra 0,1,0): heredaba su `width: 32px` y su borde, así que el recuadro del hover no
      envolvía la palabra —la «Q» quedaba afuera— y era más alto que − y +. El arreglo es

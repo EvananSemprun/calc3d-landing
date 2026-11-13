@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { itemsParaPedido, mensajePedido, precioRenglon, totalPedido, validarContacto } from './pedido';
+import { formatoMonto, itemsParaPedido, mensajePedido, precioRenglon, problemasDelPedido, totalPedido, validarContacto } from './pedido';
 import type { ItemCarrito } from './carrito';
 import type { InfoApi } from './api';
 
@@ -80,5 +80,48 @@ describe('mensajePedido', () => {
     // «BCV» y no «USD»: lo publicado esta en dolares BCV, que no es el dolar del costeo.
     expect(msg).toContain('Total: $20.00 BCV');
     expect(msg).toContain('Bs'); // equivalente a la tasa
+  });
+});
+
+describe('el pedido nunca sale roto (2026-11-12)', () => {
+  const rojo = (qty: number): ItemCarrito => ({ id: 'cas', qty, opts: {}, unit: 7, nombre: 'Cascanueces' });
+
+  it('con 1e60 NO se arma el mensaje: lanza y dice qué corregir', () => {
+    expect(() => mensajePedido({ items: [rojo(1e60)], info })).toThrow(/Cascanueces/);
+    expect(problemasDelPedido([rojo(1e60)])[0].texto).toContain('999 unidades');
+  });
+
+  it.each([1e60, 1e21, -5, 0, 2.5, 999999, NaN, Infinity])('problemasDelPedido rechaza qty %s', (q) => {
+    expect(problemasDelPedido([rojo(q)])).toHaveLength(1);
+  });
+
+  it('señala el RENGLÓN que falla', () => {
+    const p = problemasDelPedido([rojo(1), rojo(5000)]);
+    expect(p.map((x) => x.renglon)).toEqual([2]);
+  });
+
+  it('un precio no finito también bloquea', () => {
+    const roto: ItemCarrito = { id: 'x', qty: 1, opts: {}, unit: Infinity };
+    expect(problemasDelPedido([roto])).toHaveLength(1);
+  });
+
+  it('un pedido válido no tiene problemas', () => {
+    expect(problemasDelPedido([rojo(1), rojo(999)])).toEqual([]);
+  });
+
+  it.each([1, 3, 999])('el mensaje con qty %s no lleva «e+», NaN ni Infinity', (q) => {
+    const msg = mensajePedido({ items: [rojo(q)], info });
+    expect(msg).not.toMatch(/e\+/i);
+    expect(msg).not.toContain('NaN');
+    expect(msg).not.toContain('Infinity');
+    expect(msg).toContain('$7.00 c/u');
+  });
+
+  it('formatoMonto: 2 decimales y jamás notación científica', () => {
+    expect(formatoMonto(7)).toBe('7.00');
+    expect(formatoMonto(7e60)).not.toMatch(/e/i);
+    expect(formatoMonto(1234.5)).toBe('1234.50');
+    expect(formatoMonto(NaN)).toBe('—');
+    expect(formatoMonto(Infinity)).toBe('—');
   });
 });

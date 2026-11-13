@@ -36,7 +36,14 @@ import {
   type ItemCarrito,
 } from '@/lib/carrito';
 import { fetchInfo, type InfoApi } from '@/lib/api';
-import { describirOpciones, mensajePedido, precioRenglon, totalPedido } from '@/lib/pedido';
+import {
+  describirOpciones,
+  formatoMonto,
+  mensajePedido,
+  precioRenglon,
+  problemasDelPedido,
+  totalPedido,
+} from '@/lib/pedido';
 import { equivalenteEnMoneda, totalRenglon } from '@/lib/precio';
 import { urlWhatsapp } from '@/lib/telefono';
 
@@ -145,8 +152,11 @@ export default function Carrito() {
   const total = totalPedido(items);
   // El nombre ya no se pide: en WhatsApp el cliente llega con el suyo y pedirlo acá era
   // un campo más entre el cliente y la compra.
+  // ⚠️ Se valida ANTES de armar el enlace: con un renglón roto no se manda nada y se dice
+  // cuál corregir, en vez de abrir WhatsApp con un mensaje absurdo.
+  const problemas = problemasDelPedido(items);
   const urlWa =
-    info?.whatsappPhone && items.length
+    info?.whatsappPhone && items.length && !problemas.length
       ? urlWhatsapp(info.whatsappPhone, mensajePedido({ items, info }))
       : null;
 
@@ -196,8 +206,8 @@ export default function Carrito() {
                         lo que ese renglón suma al total. Antes solo estaba el unitario,
                         así que con 10 unidades no había forma de ver cuánto pesaba. */}
                     <div className="cart-row-price">
-                      <strong>${totalRenglon(precioRenglon(i), i.qty).toFixed(2)}</strong>
-                      <span className="dim cart-row-unit"> · ${precioRenglon(i).toFixed(2)} c/u</span>
+                      <strong>${formatoMonto(totalRenglon(precioRenglon(i), i.qty))}</strong>
+                      <span className="dim cart-row-unit"> · ${formatoMonto(precioRenglon(i))} c/u</span>
                     </div>
                     {/* ⚠️ «Quitar» va FUERA del `.qty`, y no es cosmético: adentro perdía
                         por especificidad contra `.qty button` y heredaba su `width: 32px`
@@ -227,7 +237,7 @@ export default function Carrito() {
             <div className="cart-total">
               <span className="dim">Total</span>
               <span className="cart-total-val">
-                ${total.toFixed(2)} BCV
+                ${formatoMonto(total)} BCV
                 {equivalenteEnMoneda(total, info?.rate) && (
                   <span className="price-alt">
                     ≈ {equivalenteEnMoneda(total, info?.rate)} {info?.rate?.currencyCode}
@@ -236,7 +246,13 @@ export default function Carrito() {
               </span>
             </div>
 
-            {urlWa ? (
+            {problemas.length ? (
+              <div className="cart-wa-falta" role="alert">
+                {problemas.map((p) => (
+                  <p key={p.renglon + p.texto}>{p.texto}</p>
+                ))}
+              </div>
+            ) : urlWa ? (
               <a className="btn-wa" href={urlWa} target="_blank" rel="noopener noreferrer">
                 Pedir por WhatsApp
               </a>

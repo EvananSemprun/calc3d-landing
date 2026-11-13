@@ -113,3 +113,85 @@ describe('Cantidad', () => {
     expect(onCambiar).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * EL TOPE (2026-11-12). Bug en producción: pegar un 1 y sesenta ceros pasaba el filtro de
+ * «solo dígitos» y el pedido salió como «1e+60 × … Total: $7e+60 BCV».
+ */
+describe('Cantidad: el tope', () => {
+  const AVISO = 'Para más de 999 unidades escríbenos por WhatsApp';
+
+  it.each([
+    ['1e60', '160'], // la «e» se quita: queda 160, dentro del tope
+    ['1e+60', '160'],
+    ['-5', '5'],
+    ['2.5', '25'],
+  ])('«%s» no produce nada fuera de rango', (escrito, esperado) => {
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={1} onCambiar={onCambiar} />);
+    fireEvent.change(campo(), { target: { value: escrito } });
+    expect(campo().value).toBe(esperado);
+    for (const [n] of onCambiar.mock.calls) expect(n).toBeLessThanOrEqual(999);
+  });
+
+  it('999999 se queda en 999 y AVISA a la vista', () => {
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={1} onCambiar={onCambiar} />);
+    fireEvent.change(campo(), { target: { value: '999999' } });
+    expect(campo().value).toBe('999');
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+    expect(screen.getByRole('status').textContent).toBe(AVISO);
+  });
+
+  it('un pegado de 61 dígitos (1 y sesenta ceros) queda en 999', () => {
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={1} onCambiar={onCambiar} />);
+    fireEvent.change(campo(), { target: { value: '1' + '0'.repeat(60) } });
+    expect(campo().value).toBe('999');
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+    expect(onCambiar.mock.calls.some(([n]) => !Number.isFinite(n) || n > 999)).toBe(false);
+  });
+
+  it('un pegado de cientos de dígitos (Number da Infinity) también', () => {
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={1} onCambiar={onCambiar} />);
+    fireEvent.change(campo(), { target: { value: '9'.repeat(400) } });
+    expect(campo().value).toBe('999');
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+  });
+
+  it('el aviso se va al volver a escribir una cantidad válida', () => {
+    render(<Cantidad valor={1} onCambiar={vi.fn()} />);
+    fireEvent.change(campo(), { target: { value: '5000' } });
+    expect(screen.queryByRole('status')).not.toBeNull();
+    fireEvent.change(campo(), { target: { value: '12' } });
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('el tope es configurable por producto', () => {
+    render(<Cantidad valor={1} maximo={50} onCambiar={vi.fn()} />);
+    fireEvent.change(campo(), { target: { value: '51' } });
+    expect(campo().value).toBe('50');
+    expect(screen.getByRole('status').textContent).toBe('Para más de 50 unidades escríbenos por WhatsApp');
+  });
+
+  it('«+» y la flecha ↑ también respetan el tope, y avisan', () => {
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={999} onCambiar={onCambiar} />);
+    fireEvent.click(mas());
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+    expect(screen.getByRole('status').textContent).toBe(AVISO);
+    fireEvent.keyDown(campo(), { key: 'ArrowUp' });
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+  });
+
+  it('dejar apretado «+» se frena en el tope', () => {
+    vi.useFakeTimers();
+    const onCambiar = vi.fn();
+    render(<Cantidad valor={995} onCambiar={onCambiar} />);
+    fireEvent.pointerDown(mas());
+    act(() => void vi.advanceTimersByTime(400 + 90 * 30));
+    expect(onCambiar.mock.calls.every(([n]) => n <= 999)).toBe(true);
+    expect(onCambiar).toHaveBeenLastCalledWith(999);
+  });
+});
